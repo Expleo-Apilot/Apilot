@@ -11,4 +11,12 @@
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Api\" />
+      <Folder Include="Application\" />
+      <Folder Include="Domain\" />
+      <Folder Include="Infrastructure\" />
+      <Folder Include="Web\" />
+    </ItemGroup>
+
 </Project>
