@@ -7,6 +7,7 @@ using dev.Application.DTOs.AuthenticationDto;
 using dev.Application.DTOs.Request;
 using dev.Application.DTOs.Response;
 using dev.Application.Interfaces;
+using dev.Domain.Enums;
 
 namespace dev.Infrastructure.Services;
 
@@ -97,7 +98,7 @@ public class PerformRequestService : IPerformRequestService
     {
         switch (authentication.AuthType)
         {
-            case AuthType.BasicAuth:
+            case AuthType.Basic:
                 if (authentication.AuthData.TryGetValue("username", out var username) && 
                     authentication.AuthData.TryGetValue("password", out var password))
                 {
@@ -107,7 +108,7 @@ public class PerformRequestService : IPerformRequestService
                 }
                 break;
                 
-            case AuthType.BearerToken:
+            case AuthType.Bearer:
                 if (authentication.AuthData.TryGetValue("token", out var token))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

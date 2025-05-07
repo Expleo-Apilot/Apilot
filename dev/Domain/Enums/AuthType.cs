@@ -1,8 +1,8 @@
-﻿namespace Apilot.Domain.Enums;
+﻿namespace dev.Domain.Enums;
 
 public enum AuthType
 {
     NoAuth,
-    BasicAuth,
-    BearerToken
+    Basic,
+    Bearer
 }

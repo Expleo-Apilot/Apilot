@@ -1,4 +1,5 @@
 ﻿using Apilot.Domain.Enums;
+using dev.Domain.Enums;
 
 namespace dev.Application.DTOs.AuthenticationDto;
 
