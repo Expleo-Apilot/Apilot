@@ -84,7 +84,10 @@ public class PerformRequestService : IPerformRequestService
 
     private HttpRequestMessage CreateHttpRequestMessage(PerformRequestDto request, HttpMethod method)
     {
-        var httpRequestMessage = new HttpRequestMessage(method, request.Url);
+        var url = ApplyQueryParameters(request.Url, request.Parameters);
+        
+       // Console.WriteLine("**********************URL"+url);
+        var httpRequestMessage = new HttpRequestMessage(method, url);
         
         foreach (var header in request.Headers)
         {
@@ -94,6 +97,31 @@ public class PerformRequestService : IPerformRequestService
         return httpRequestMessage;
     }
 
+    private string ApplyQueryParameters(string baseUrl, Dictionary<string, string>? parameters)
+    {
+        if (parameters == null || !parameters.Any())
+        {
+            return baseUrl;
+        }
+
+        var uriBuilder = new UriBuilder(baseUrl);
+        var query = string.Join("&", parameters.Select(p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
+        
+        if (string.IsNullOrEmpty(uriBuilder.Query) || uriBuilder.Query == "?")
+        {
+            uriBuilder.Query = query;
+        }
+        else
+        {
+            var existingQuery = uriBuilder.Query.TrimStart('?');
+            uriBuilder.Query = $"{existingQuery}&{query}";
+        }
+
+        return uriBuilder.Uri.ToString();
+    }
+   
+
+    
     private void ApplyAuthentication(HttpRequestMessage request, AuthenticationDto authentication)
     {
         switch (authentication.AuthType)
@@ -221,4 +249,5 @@ public class PerformRequestService : IPerformRequestService
         
         return cookieDto;
     }
+    
 }

@@ -9,4 +9,6 @@ public class PerformRequestDto
     public required Dictionary<string, string> Headers { get; set; }
     public AuthenticationDto.AuthenticationDto? Authentication { get; set; }
     public object? Body { get; set; }
+    
+    public Dictionary<string, string>? Parameters { get; set; } = new Dictionary<string, string>();
 }
