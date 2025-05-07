@@ -7,15 +7,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="MediatR" Version="12.5.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.13"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Api\" />
-      <Folder Include="Application\" />
       <Folder Include="Domain\" />
-      <Folder Include="Infrastructure\" />
       <Folder Include="Web\" />
     </ItemGroup>
 
