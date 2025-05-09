@@ -3,4 +3,5 @@
 public class ResponseCookiesDto
 {
     public List<CookieDto> Cookies { get; set; } = new List<CookieDto>();
+    
 }

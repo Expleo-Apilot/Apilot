@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
 using dev.Application.DTOs.Request;
 using dev.Application.Interfaces;
+using dev.Infrastructure.Data;
 using dev.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,11 +21,14 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 
 builder.Services.AddHttpClient<IPerformRequestService, PerformRequestService>();
 
+builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddMediatR(cfg => 
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
 });
 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options =>
 {
