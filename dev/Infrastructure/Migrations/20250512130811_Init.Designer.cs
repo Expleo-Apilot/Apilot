@@ -12,7 +12,7 @@ using dev.Infrastructure.Data;
 namespace dev.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250509094450_Init")]
+    [Migration("20250512130811_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -411,16 +411,10 @@ namespace dev.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsMany("dev.Application.DTOs.Request.PerformRequestDto", "Requests", b1 =>
+                    b.OwnsOne("dev.Application.DTOs.Request.PerformRequestDto", "Requests", b1 =>
                         {
                             b1.Property<int>("HistoryEntityId")
                                 .HasColumnType("int");
-
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("int");
-
-                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
 
                             b1.Property<string>("Body")
                                 .HasColumnType("nvarchar(max)");
@@ -439,9 +433,9 @@ namespace dev.Infrastructure.Migrations
                                 .IsRequired()
                                 .HasColumnType("nvarchar(max)");
 
-                            b1.HasKey("HistoryEntityId", "Id");
+                            b1.HasKey("HistoryEntityId");
 
-                            b1.ToTable("PerformRequestDto");
+                            b1.ToTable("Histories");
 
                             b1.WithOwner()
                                 .HasForeignKey("HistoryEntityId");
@@ -451,9 +445,6 @@ namespace dev.Infrastructure.Migrations
                                     b2.Property<int>("PerformRequestDtoHistoryEntityId")
                                         .HasColumnType("int");
 
-                                    b2.Property<int>("PerformRequestDtoId")
-                                        .HasColumnType("int");
-
                                     b2.Property<string>("AuthData")
                                         .IsRequired()
                                         .HasColumnType("nvarchar(max)");
@@ -461,18 +452,19 @@ namespace dev.Infrastructure.Migrations
                                     b2.Property<int>("AuthType")
                                         .HasColumnType("int");
 
-                                    b2.HasKey("PerformRequestDtoHistoryEntityId", "PerformRequestDtoId");
+                                    b2.HasKey("PerformRequestDtoHistoryEntityId");
 
-                                    b2.ToTable("PerformRequestDto");
+                                    b2.ToTable("Histories");
 
                                     b2.WithOwner()
-                                        .HasForeignKey("PerformRequestDtoHistoryEntityId", "PerformRequestDtoId");
+                                        .HasForeignKey("PerformRequestDtoHistoryEntityId");
                                 });
 
                             b1.Navigation("Authentication");
                         });
 
-                    b.Navigation("Requests");
+                    b.Navigation("Requests")
+                        .IsRequired();
 
                     b.Navigation("Workspace");
                 });

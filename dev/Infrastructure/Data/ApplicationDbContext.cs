@@ -74,7 +74,7 @@ public class ApplicationDbContext : DbContext
         
 
         modelBuilder.Entity<HistoryEntity>()
-            .OwnsMany(r => r.Requests, req =>
+            .OwnsOne(r => r.Requests, req =>
             {
 
                 req.Property(a => a.Url);
@@ -168,6 +168,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<RequestEntity>().HasQueryFilter(p => !p.IsDeleted);
         modelBuilder.Entity<ResponseEntity>().HasQueryFilter(p => !p.IsDeleted);
         modelBuilder.Entity<Environment>().HasQueryFilter(p => !p.IsDeleted);
+        modelBuilder.Entity<HistoryEntity>().HasQueryFilter(p => !p.IsDeleted);
         
     }
 }

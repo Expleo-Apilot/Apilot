@@ -98,6 +98,13 @@ namespace dev.Infrastructure.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     TimeStamp = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Requests_HttpMethod = table.Column<int>(type: "int", nullable: false),
+                    Requests_Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Requests_Headers = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Requests_Authentication_AuthType = table.Column<int>(type: "int", nullable: true),
+                    Requests_Authentication_AuthData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Requests_Body = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Requests_Parameters = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     WorkSpaceId = table.Column<int>(type: "int", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
@@ -136,32 +143,6 @@ namespace dev.Infrastructure.Migrations
                         name: "FK_Folders_Collections_CollectionId",
                         column: x => x.CollectionId,
                         principalTable: "Collections",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PerformRequestDto",
-                columns: table => new
-                {
-                    HistoryEntityId = table.Column<int>(type: "int", nullable: false),
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    HttpMethod = table.Column<int>(type: "int", nullable: false),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Headers = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Authentication_AuthType = table.Column<int>(type: "int", nullable: true),
-                    Authentication_AuthData = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Body = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Parameters = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PerformRequestDto", x => new { x.HistoryEntityId, x.Id });
-                    table.ForeignKey(
-                        name: "FK_PerformRequestDto_Histories_HistoryEntityId",
-                        column: x => x.HistoryEntityId,
-                        principalTable: "Histories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -283,13 +264,10 @@ namespace dev.Infrastructure.Migrations
                 name: "Environments");
 
             migrationBuilder.DropTable(
-                name: "PerformRequestDto");
+                name: "Histories");
 
             migrationBuilder.DropTable(
                 name: "Responses");
-
-            migrationBuilder.DropTable(
-                name: "Histories");
 
             migrationBuilder.DropTable(
                 name: "Requests");

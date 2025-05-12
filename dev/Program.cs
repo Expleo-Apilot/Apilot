@@ -19,6 +19,14 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 
+builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+builder.Services.AddScoped<ICollectionService , CollectionService>();
+builder.Services.AddScoped<IFolderService , FolderService>();
+builder.Services.AddScoped<IRequestService , RequestService>();
+builder.Services.AddScoped<IEnvironmentService , EnvironmentService>();
+builder.Services.AddScoped<IResponseService , ResponseService>();
+builder.Services.AddScoped<IHistoryService , HistoryService>();
+
 builder.Services.AddHttpClient<IPerformRequestService, PerformRequestService>();
 
 builder.Services.AddAutoMapper(typeof(Program));

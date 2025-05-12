@@ -6,8 +6,7 @@ public class HistoryEntity
 {
     public int Id { get; set; }
     public DateTime TimeStamp { get; set; }
-    public List<PerformRequestDto>? Requests { get; set; } = new List<PerformRequestDto>();
-    
+    public PerformRequestDto Requests { get; set; } 
     public int WorkSpaceId { get; set; }
     public Workspace Workspace { get; set; }
     public bool IsDeleted { get; set; }
