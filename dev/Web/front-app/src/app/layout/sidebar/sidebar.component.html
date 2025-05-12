@@ -1,0 +1,147 @@
+<div class="sidebar-container">
+  <div class="sidebar-nav">
+    <div class="nav-item" [class.active]="activeNavItem === 'collections'" (click)="setActiveNavItem('collections')">
+      <mat-icon>folder</mat-icon>
+      <span>Collections</span>
+    </div>
+    <div class="nav-item" [class.active]="activeNavItem === 'environments'" (click)="setActiveNavItem('environments')">
+      <mat-icon>layers</mat-icon>
+      <span>Env</span>
+    </div>
+    <div class="nav-item" [class.active]="activeNavItem === 'history'" (click)="setActiveNavItem('history')">
+      <mat-icon>history</mat-icon>
+      <span>History</span>
+    </div>
+  </div>
+
+  <div class="sidebar-content">
+    <div *ngIf="activeNavItem === 'collections'" class="content-area collections-area">
+      <div class="<!--content-header-->">
+        <div class="action-buttons">
+          <button mat-icon-button><mat-icon>add</mat-icon></button>
+        </div>
+        <div class="search-area">
+          <mat-icon class="filter-icon">filter_list</mat-icon>
+          <input type="text" placeholder="Filter" class="search-input">
+        </div>
+      </div>
+
+      <div class="collections-list">
+        <div class="collection-item">
+          <div class="collection-header">
+            <mat-icon>arrow_drop_down</mat-icon>
+            <span>End-to-End Tests</span>
+            <span class="star-icon">⭐</span>
+          </div>
+          <div class="collection-subitems">
+            <div class="collection-subitem">
+              <mat-icon>subdirectory_arrow_right</mat-icon>
+              <span>Process a VALID transaction</span>
+            </div>
+            <div class="collection-subitem">
+              <mat-icon>subdirectory_arrow_right</mat-icon>
+              <span>Attempt an INVALID transaction</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="collection-item">
+          <div class="collection-header">
+            <mat-icon>arrow_right</mat-icon>
+            <span>API Documentation #reference</span>
+          </div>
+        </div>
+
+        <div class="collection-item">
+          <div class="collection-header">
+            <mat-icon>arrow_right</mat-icon>
+            <span>books api</span>
+          </div>
+        </div>
+
+        <div class="collection-item">
+          <div class="collection-header">
+            <mat-icon>arrow_right</mat-icon>
+            <span>New Collection</span>
+          </div>
+        </div>
+
+        <div class="collection-item">
+          <div class="collection-header">
+            <mat-icon>arrow_right</mat-icon>
+            <span>RESTful API Basics #blueprint</span>
+          </div>
+        </div>
+
+        <div class="collection-item">
+          <div class="collection-header">
+            <mat-icon>arrow_right</mat-icon>
+            <span>TEST</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="activeNavItem === 'environments'" class="content-area environments-area">
+      <div class="content-header">
+        <span class="area-title">Environments</span>
+        <button mat-icon-button><mat-icon>add</mat-icon></button>
+      </div>
+      <div class="environments-list">
+        <div class="environment-item">
+          <span>Development</span>
+        </div>
+        <div class="environment-item">
+          <span>Staging</span>
+        </div>
+        <div class="environment-item">
+          <span>Production</span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="activeNavItem === 'flows'" class="content-area flows-area">
+      <div class="content-header">
+        <span class="area-title">Flows</span>
+        <button mat-icon-button><mat-icon>add</mat-icon></button>
+      </div>
+      <div class="no-flows">
+        <p>No flows available</p>
+        <button mat-button color="primary">Create Flow</button>
+      </div>
+    </div>
+
+    <div *ngIf="activeNavItem === 'history'" class="content-area history-area">
+      <div class="content-header">
+        <span class="area-title">History</span>
+        <div class="action-buttons">
+          <button mat-icon-button><mat-icon>filter_list</mat-icon></button>
+          <button mat-icon-button><mat-icon>more_vert</mat-icon></button>
+        </div>
+      </div>
+      <div class="history-list">
+        <div class="history-item">
+          <div class="request-info">
+            <span class="request-method get">GET</span>
+            <span class="request-url">/api/books</span>
+          </div>
+          <span class="request-time">10:30 AM</span>
+        </div>
+        <div class="history-item">
+          <div class="request-info">
+            <span class="request-method post">POST</span>
+            <span class="request-url">/api/books</span>
+          </div>
+          <span class="request-time">Yesterday</span>
+        </div>
+        <div class="history-item">
+          <div class="request-info">
+            <span class="request-method put">PUT</span>
+            <span class="request-url">/api/books/1</span>
+          </div>
+          <span class="request-time">May 5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
