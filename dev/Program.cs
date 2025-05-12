@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
 using dev.Application.DTOs.Request;
 using dev.Application.Interfaces;
+using dev.Infrastructure.Data;
 using dev.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,13 +19,24 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 
+builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+builder.Services.AddScoped<ICollectionService , CollectionService>();
+builder.Services.AddScoped<IFolderService , FolderService>();
+builder.Services.AddScoped<IRequestService , RequestService>();
+builder.Services.AddScoped<IEnvironmentService , EnvironmentService>();
+builder.Services.AddScoped<IResponseService , ResponseService>();
+builder.Services.AddScoped<IHistoryService , HistoryService>();
+
 builder.Services.AddHttpClient<IPerformRequestService, PerformRequestService>();
 
+builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddMediatR(cfg => 
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
 });
 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options =>
 {

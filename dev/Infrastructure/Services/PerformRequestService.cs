@@ -2,6 +2,8 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Xml;
+using System.Xml.Serialization;
 using Apilot.Domain.Enums;
 using dev.Application.DTOs.AuthenticationDto;
 using dev.Application.DTOs.Request;
@@ -190,23 +192,41 @@ public class PerformRequestService : IPerformRequestService
         }
 
         string contentType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+        string responseBody = await response.Content.ReadAsStringAsync();
+
         
-       
-        if (contentType.Contains("application/json"))
+        if (string.IsNullOrWhiteSpace(responseBody))
         {
-            try
+            return string.Empty;
+        }
+
+        try 
+        {
+            switch (contentType.ToLowerInvariant())
             {
-                string jsonString = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<object>(jsonString, _jsonOptions) ?? jsonString;
-            }
-            catch
-            {
-                return await response.Content.ReadAsStringAsync();
+                case string ct when ct.Contains("application/json"):
+                    return TryParseJson(responseBody);
+
+                case string ct when ct.Contains("application/xml") || ct.Contains("text/xml"):
+                    return TryParseXml(responseBody);
+
+                case string ct when ct.Contains("text/plain"):
+                    return responseBody;
+
+                case string ct when ct.Contains("application/x-www-form-urlencoded"):
+                    return ParseFormUrlEncoded(responseBody);
+
+                default:
+                    return responseBody;
             }
         }
-        
-        return await response.Content.ReadAsStringAsync();
+        catch
+        {
+            
+            return responseBody;
+        }
     }
+
 
     private ResponseCookiesDto ExtractCookies(HttpResponseMessage response)
     {
@@ -250,4 +270,94 @@ public class PerformRequestService : IPerformRequestService
         return cookieDto;
     }
     
+    
+    
+    // handle content type
+    
+    
+   private object TryParseJson(string jsonString)
+    {
+        try 
+        {
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(jsonString, _jsonOptions);
+            return jsonElement.ValueKind != JsonValueKind.Undefined ? jsonElement : (object)jsonString;
+        }
+        catch
+        {
+            return jsonString;
+        }
+    }
+
+    private object TryParseXml(string xmlString)
+    {
+        try 
+        {
+            
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(xmlString);
+            
+            return ConvertXmlToObject(xmlDoc.DocumentElement);
+        }
+        catch
+        {
+            return xmlString;
+        }
+    }
+
+    private object ConvertXmlToObject(XmlElement element)
+    {
+        
+        var dict = new Dictionary<string, object>();
+        
+       
+        foreach (XmlAttribute attr in element.Attributes)
+        {
+            dict[$"@{attr.Name}"] = attr.Value;
+        }
+        
+       
+        foreach (XmlElement childElement in element.ChildNodes.OfType<XmlElement>())
+        {
+            if (dict.ContainsKey(childElement.Name))
+            {
+               
+                if (dict[childElement.Name] is List<object> list)
+                {
+                    list.Add(ConvertXmlToObject(childElement));
+                }
+                else
+                {
+                    dict[childElement.Name] = new List<object> 
+                    { 
+                        dict[childElement.Name], 
+                        ConvertXmlToObject(childElement) 
+                    };
+                }
+            }
+            else
+            {
+                dict[childElement.Name] = ConvertXmlToObject(childElement);
+            }
+        }
+        
+        
+        if (element.ChildNodes.OfType<XmlText>().Any())
+        {
+            dict["#text"] = element.InnerText.Trim();
+        }
+        
+        return dict;
+    }
+
+    private Dictionary<string, string> ParseFormUrlEncoded(string formData)
+    {
+        return formData.Split('&')
+            .Select(part => part.Split('='))
+            .Where(parts => parts.Length > 0)
+            .ToDictionary(
+                parts => Uri.UnescapeDataString(parts[0]), 
+                parts => parts.Length > 1 ? Uri.UnescapeDataString(parts[1]) : string.Empty
+            );
+    }
+
 }
