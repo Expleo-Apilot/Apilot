@@ -1,6 +1,5 @@
 ﻿using dev.Application.DTOs.Swagger;
 using dev.Application.Features.SwaggerImport.Commands;
-using dev.Application.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,21 +7,19 @@ namespace dev.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class Test : ControllerBase
+public class SwaggerController : ControllerBase
 {
     
     private readonly IMediator _mediator;
-    private readonly IRequestService _requestService;
 
-    public Test(IRequestService requestService, IMediator mediator)
-    {
-        _requestService = requestService;
+    public SwaggerController(IMediator mediator)
+    { 
         _mediator = mediator;
     }
 
 
     [HttpPost("url")]
-    public async Task<IActionResult> Post([FromQuery] OpenApiImportRequest request)
+    public async Task<IActionResult> ImportFromUrl([FromQuery] OpenApiImportRequest request)
     {
         var cmd = new ImportOpenApiCollectionCommand
         {
@@ -34,7 +31,7 @@ public class Test : ControllerBase
     }
     
     [HttpPost("file")]
-    public async Task<IActionResult> Query([FromQuery] OpenApiFileUploadRequest request)
+    public async Task<IActionResult> ImportFromFile([FromQuery] OpenApiFileUploadRequest request)
     {
         var cmd = new ImportOpenApiFromFileCommand
         {
@@ -44,14 +41,7 @@ public class Test : ControllerBase
         
         return Ok(result);
     }
-
-
-    [HttpGet("request")]
-    public async Task<IActionResult> Get()
-    {
-        var requests = await _requestService.GetAllRequestsAsync();
-        return Ok(requests);
-    }
+    
     
     
 }
