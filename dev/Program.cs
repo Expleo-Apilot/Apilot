@@ -1,16 +1,18 @@
 using System.Text.Json.Serialization;
-using dev.Application.DTOs.Request;
 using dev.Application.Interfaces;
 using dev.Infrastructure.Data;
 using dev.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
@@ -26,8 +28,11 @@ builder.Services.AddScoped<IRequestService , RequestService>();
 builder.Services.AddScoped<IEnvironmentService , EnvironmentService>();
 builder.Services.AddScoped<IResponseService , ResponseService>();
 builder.Services.AddScoped<IHistoryService , HistoryService>();
+builder.Services.AddScoped<IOpenApiImportService, OpenApiImportService>();
+builder.Services.AddScoped<IOpenApiFileHandlerService , OpenApiFileHandlerService>();
 
 builder.Services.AddHttpClient<IPerformRequestService, PerformRequestService>();
+
 
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddMediatR(cfg => 
