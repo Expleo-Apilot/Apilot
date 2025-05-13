@@ -4,7 +4,9 @@ public enum ApiHttpMethod
 {
     GET,
     POST,
-    DELETE,
     PUT,
+    DELETE,
     PATCH,
+    HEAD,
+    OPTIONS
 }
