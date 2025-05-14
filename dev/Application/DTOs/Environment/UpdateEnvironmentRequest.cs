@@ -1,8 +1,8 @@
 ﻿namespace dev.Application.DTOs.Environment;
 
-public class CreateEnvironmentDto
+public class UpdateEnvironmentRequest
 {
+    public int Id { get; set; }
     public required string Name { get; set; } 
-    public int WorkSpaceId { get; set; }
-    
+   
 }

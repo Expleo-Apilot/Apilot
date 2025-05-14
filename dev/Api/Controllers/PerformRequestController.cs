@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("")]
 [ApiController]
 public class PerformRequestController : ControllerBase
 {
@@ -18,7 +18,7 @@ public class PerformRequestController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpPost]
+    [HttpPost("/PerformRequest")]
     public async Task<IActionResult> PerformRequest([FromBody] PerformRequestDto performRequestDto)
     {
         

@@ -22,12 +22,12 @@ public class EnvironmentService : IEnvironmentService
     }
     
     
-    public async Task<EnvironmentDto> CreateEnvironmentAsync(CreateEnvironmentDto environmentDto)
+    public async Task<EnvironmentDto> CreateEnvironmentAsync(CreateEnvironmentRequest environmentRequest)
     {
         try
         {
-            _logger.LogInformation("Creating environment with name: {Name}", environmentDto.Name);
-            var env = _mapper.Map<Environment>(environmentDto);
+            _logger.LogInformation("Creating environment with name: {Name}", environmentRequest.Name);
+            var env = _mapper.Map<Environment>(environmentRequest);
            
             env.IsDeleted = false;
             env.IsSync = false;
@@ -43,7 +43,7 @@ public class EnvironmentService : IEnvironmentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating environment with name: {Name}", environmentDto.Name);
+            _logger.LogError(ex, "Error creating environment with name: {Name}", environmentRequest.Name);
             throw;
         }
     }
@@ -125,22 +125,22 @@ public class EnvironmentService : IEnvironmentService
 
     
     
-    public async Task UpdateEnvironmentAsync(int id, string name)
+    public async Task UpdateEnvironmentAsync(UpdateEnvironmentRequest request)
     {
         try
         {
-            _logger.LogInformation("Updating environment with ID: {Id}", id);
+            _logger.LogInformation("Updating environment with ID: {Id}", request.Id);
             
             var environment = await _context.Environments
-                .FirstOrDefaultAsync(e => e.Id == id );
+                .FirstOrDefaultAsync(e => e.Id == request.Id );
             
             if (environment == null)
             {
-                _logger.LogWarning("Environment with ID {Id} not found for update", id);
-                throw new KeyNotFoundException($"Environment with ID {id} not found");
+                _logger.LogWarning("Environment with ID {Id} not found for update", request.Id);
+                throw new KeyNotFoundException($"Environment with ID {request.Id} not found");
             }
             
-            environment.Name = name;
+            environment.Name = request.Name;
             environment.UpdatedAt = DateTime.UtcNow;
             environment.UpdatedBy = "admin"; 
             environment.IsSync = false; 
@@ -156,30 +156,30 @@ public class EnvironmentService : IEnvironmentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating environment with ID: {Id}", id);
+            _logger.LogError(ex, "Error updating environment with ID: {Id}", request.Id);
             throw;
         }
     }
 
     
     
-    public async Task<EnvironmentDto> AddVariablesToEnvironment(AddVariablesToEnvironmentDto addVariablesToEnvironmentDto)
+    public async Task<EnvironmentDto> AddVariablesToEnvironment(AddVariablesToEnvironmentRequest addVariablesToEnvironmentRequest)
     {
         try
         {
-            _logger.LogInformation("Adding variables to environment with ID: {Id}", addVariablesToEnvironmentDto.EnvironmentId);
+            _logger.LogInformation("Adding variables to environment with ID: {Id}", addVariablesToEnvironmentRequest.EnvironmentId);
             
             var environment = await _context.Environments
-                .FirstOrDefaultAsync(e => e.Id == addVariablesToEnvironmentDto.EnvironmentId);
+                .FirstOrDefaultAsync(e => e.Id == addVariablesToEnvironmentRequest.EnvironmentId);
             
             if (environment == null)
             {
-                _logger.LogWarning("Environment with ID {Id} not found for adding variables", addVariablesToEnvironmentDto.EnvironmentId);
-                throw new KeyNotFoundException($"Environment with ID {addVariablesToEnvironmentDto.EnvironmentId} not found");
+                _logger.LogWarning("Environment with ID {Id} not found for adding variables", addVariablesToEnvironmentRequest.EnvironmentId);
+                throw new KeyNotFoundException($"Environment with ID {addVariablesToEnvironmentRequest.EnvironmentId} not found");
             }
             
            
-            foreach (var variable in addVariablesToEnvironmentDto.Variables)
+            foreach (var variable in addVariablesToEnvironmentRequest.Variables)
             {
                 environment.Variables[variable.Key] = variable.Value;
             }
@@ -200,7 +200,7 @@ public class EnvironmentService : IEnvironmentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding variables to environment with ID: {Id}", addVariablesToEnvironmentDto.EnvironmentId);
+            _logger.LogError(ex, "Error adding variables to environment with ID: {Id}", addVariablesToEnvironmentRequest.EnvironmentId);
             throw;
         }
     }
@@ -243,23 +243,23 @@ public class EnvironmentService : IEnvironmentService
 
     
     
-    public async Task AddVariableToEnvironmentAsync(AddVariableToEnvironmentDto addVariableToEnvironmentDto)
+    public async Task AddVariableToEnvironmentAsync(AddVariableToEnvironmentRequest addVariableToEnvironmentRequest)
     {
         try
         {
-            _logger.LogInformation("Adding variable '{Key}' to environment with ID: {Id}", addVariableToEnvironmentDto.Key, addVariableToEnvironmentDto.EnvironmentId);
+            _logger.LogInformation("Adding variable '{Key}' to environment with ID: {Id}", addVariableToEnvironmentRequest.Key, addVariableToEnvironmentRequest.EnvironmentId);
             
             var environment = await _context.Environments
-                .FirstOrDefaultAsync(e => e.Id == addVariableToEnvironmentDto.EnvironmentId);
+                .FirstOrDefaultAsync(e => e.Id == addVariableToEnvironmentRequest.EnvironmentId);
             
             if (environment == null)
             {
-                _logger.LogWarning("Environment with ID {Id} not found for adding variable", addVariableToEnvironmentDto.EnvironmentId);
-                throw new KeyNotFoundException($"Environment with ID {addVariableToEnvironmentDto.EnvironmentId} not found");
+                _logger.LogWarning("Environment with ID {Id} not found for adding variable", addVariableToEnvironmentRequest.EnvironmentId);
+                throw new KeyNotFoundException($"Environment with ID {addVariableToEnvironmentRequest.EnvironmentId} not found");
             }
             
            
-            environment.Variables[addVariableToEnvironmentDto.Key] = addVariableToEnvironmentDto.Value;
+            environment.Variables[addVariableToEnvironmentRequest.Key] = addVariableToEnvironmentRequest.Value;
             
             environment.UpdatedAt = DateTime.UtcNow;
             environment.UpdatedBy = "admin"; 
@@ -268,7 +268,7 @@ public class EnvironmentService : IEnvironmentService
             _context.Environments.Update(environment);
             await _context.SaveChangesAsync();
             
-            _logger.LogInformation("Variable '{Key}' added to environment with ID: {Id} successfully", addVariableToEnvironmentDto.Key, environment.Id);
+            _logger.LogInformation("Variable '{Key}' added to environment with ID: {Id} successfully", addVariableToEnvironmentRequest.Key, environment.Id);
            
         }
         catch (KeyNotFoundException)
@@ -277,37 +277,37 @@ public class EnvironmentService : IEnvironmentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding variable '{Key}' to environment with ID: {Id}", addVariableToEnvironmentDto.Key, addVariableToEnvironmentDto.EnvironmentId);
+            _logger.LogError(ex, "Error adding variable '{Key}' to environment with ID: {Id}", addVariableToEnvironmentRequest.Key, addVariableToEnvironmentRequest.EnvironmentId);
             throw;
         }
     }
 
     
     
-    public async Task UpdateVariableInEnvironmentAsync(UpdateVariableInEnvironmentDto updateVariableInEnvironmentDto)
+    public async Task UpdateVariableInEnvironmentAsync(UpdateVariableInEnvironmentRequest updateVariableInEnvironmentRequest)
     {
         try
         {
-            _logger.LogInformation("Updating variable '{Key}' in environment with ID: {Id}", updateVariableInEnvironmentDto.Key, updateVariableInEnvironmentDto.EnvironmentId);
+            _logger.LogInformation("Updating variable '{Key}' in environment with ID: {Id}", updateVariableInEnvironmentRequest.Key, updateVariableInEnvironmentRequest.EnvironmentId);
             
             var environment = await _context.Environments
-                .FirstOrDefaultAsync(e => e.Id == updateVariableInEnvironmentDto.EnvironmentId);
+                .FirstOrDefaultAsync(e => e.Id == updateVariableInEnvironmentRequest.EnvironmentId);
             
             if (environment == null)
             {
-                _logger.LogWarning("Environment with ID {Id} not found for updating variable", updateVariableInEnvironmentDto.EnvironmentId);
-                throw new KeyNotFoundException($"Environment with ID {updateVariableInEnvironmentDto.EnvironmentId} not found");
+                _logger.LogWarning("Environment with ID {Id} not found for updating variable", updateVariableInEnvironmentRequest.EnvironmentId);
+                throw new KeyNotFoundException($"Environment with ID {updateVariableInEnvironmentRequest.EnvironmentId} not found");
             }
             
             
-            if (!environment.Variables.ContainsKey(updateVariableInEnvironmentDto.Key))
+            if (!environment.Variables.ContainsKey(updateVariableInEnvironmentRequest.Key))
             {
-                _logger.LogWarning("Variable '{Key}' not found in environment with ID: {Id}", updateVariableInEnvironmentDto.Key, updateVariableInEnvironmentDto.EnvironmentId);
-                throw new KeyNotFoundException($"Variable '{updateVariableInEnvironmentDto.Key}' not found in environment with ID {updateVariableInEnvironmentDto.EnvironmentId}");
+                _logger.LogWarning("Variable '{Key}' not found in environment with ID: {Id}", updateVariableInEnvironmentRequest.Key, updateVariableInEnvironmentRequest.EnvironmentId);
+                throw new KeyNotFoundException($"Variable '{updateVariableInEnvironmentRequest.Key}' not found in environment with ID {updateVariableInEnvironmentRequest.EnvironmentId}");
             }
             
             
-            environment.Variables[updateVariableInEnvironmentDto.Key] = updateVariableInEnvironmentDto.Value;
+            environment.Variables[updateVariableInEnvironmentRequest.Key] = updateVariableInEnvironmentRequest.Value;
             
             environment.UpdatedAt = DateTime.UtcNow;
             environment.UpdatedBy = "admin"; 
@@ -316,7 +316,7 @@ public class EnvironmentService : IEnvironmentService
             _context.Environments.Update(environment);
             await _context.SaveChangesAsync();
             
-            _logger.LogInformation("Variable '{Key}' updated in environment with ID: {Id} successfully", updateVariableInEnvironmentDto.Key, environment.Id);
+            _logger.LogInformation("Variable '{Key}' updated in environment with ID: {Id} successfully", updateVariableInEnvironmentRequest.Key, environment.Id);
         }
         catch (KeyNotFoundException)
         {
@@ -324,35 +324,35 @@ public class EnvironmentService : IEnvironmentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating variable '{Key}' in environment with ID: {Id}", updateVariableInEnvironmentDto.Key, updateVariableInEnvironmentDto.EnvironmentId);
+            _logger.LogError(ex, "Error updating variable '{Key}' in environment with ID: {Id}", updateVariableInEnvironmentRequest.Key, updateVariableInEnvironmentRequest.EnvironmentId);
             throw;
         }
     }
     
     
 
-    public async Task RemoveVariableFromEnvironmentAsync(int id, string key)
+    public async Task RemoveVariableFromEnvironmentAsync(RemoveVariableFromEnvironmentRequest request)
     {
         try
         {
-            _logger.LogInformation("Removing variable '{Key}' from environment with ID: {Id}", key, id);
+            _logger.LogInformation("Removing variable '{Key}' from environment with ID: {Id}", request.Key, request.EnvironmentId);
             
             var environment = await _context.Environments
-                .FirstOrDefaultAsync(e => e.Id == id);
+                .FirstOrDefaultAsync(e => e.Id == request.EnvironmentId);
             
             if (environment == null)
             {
-                _logger.LogWarning("Environment with ID {Id} not found for removing variable", id);
-                throw new KeyNotFoundException($"Environment with ID {id} not found");
+                _logger.LogWarning("Environment with ID {Id} not found for removing variable", request.EnvironmentId);
+                throw new KeyNotFoundException($"Environment with ID {request.EnvironmentId} not found");
             }
             
-            if (!environment.Variables.ContainsKey(key))
+            if (!environment.Variables.ContainsKey(request.Key))
             {
-                _logger.LogWarning("Variable '{Key}' not found in environment with ID: {Id}", key, id);
-                throw new KeyNotFoundException($"Variable '{key}' not found in environment with ID {id}");
+                _logger.LogWarning("Variable '{Key}' not found in environment with ID: {Id}", request.Key, request.EnvironmentId);
+                throw new KeyNotFoundException($"Variable '{request.Key}' not found in environment with ID {request.EnvironmentId}");
             }
             
-            environment.Variables.Remove(key);
+            environment.Variables.Remove(request.Key);
             
             environment.UpdatedAt = DateTime.UtcNow;
             environment.UpdatedBy = "admin"; 
@@ -361,7 +361,7 @@ public class EnvironmentService : IEnvironmentService
             _context.Environments.Update(environment);
             await _context.SaveChangesAsync();
             
-            _logger.LogInformation("Variable '{Key}' removed from environment with ID: {Id} successfully", key, environment.Id);
+            _logger.LogInformation("Variable '{Key}' removed from environment with ID: {Id} successfully", request.Key, environment.Id);
         }
         catch (KeyNotFoundException)
         {
@@ -369,7 +369,7 @@ public class EnvironmentService : IEnvironmentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing variable '{Key}' from environment with ID: {Id}", key, id);
+            _logger.LogError(ex, "Error removing variable '{Key}' from environment with ID: {Id}", request.Key, request.EnvironmentId);
             throw;
         }
     }

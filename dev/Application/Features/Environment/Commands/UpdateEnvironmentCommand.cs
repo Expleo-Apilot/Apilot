@@ -8,7 +8,7 @@ namespace dev.Application.Features.Environment.Commands;
 
 public record UpdateEnvironmentCommand :  IRequest<Result<Unit>>
 {
-public required UpdateEnvironmentDto EnvironmentDto { get; init; }
+public required UpdateEnvironmentRequest EnvironmentRequest { get; init; }
 }
 
 
@@ -26,7 +26,7 @@ public class UpdateEnvironmentCommandHandler : IRequestHandler<UpdateEnvironment
     {
         try
         {
-            await _environmentService.UpdateEnvironmentAsync(request.EnvironmentDto.Id , request.EnvironmentDto.Name);
+            await _environmentService.UpdateEnvironmentAsync(request.EnvironmentRequest);
             return Result<Unit>.Success(Unit.Value);
         }
         catch (KeyNotFoundException ex)

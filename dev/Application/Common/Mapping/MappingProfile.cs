@@ -21,8 +21,8 @@ public class MappingProfile : Profile
         CreateMap<UpdateWorkspaceDto, Workspace>().ReverseMap();
         
         CreateMap<Environment , EnvironmentDto>().ReverseMap();
-        CreateMap<CreateEnvironmentDto , Environment>().ReverseMap();
-        CreateMap<UpdateEnvironmentDto, Environment>().ReverseMap();
+        CreateMap<CreateEnvironmentRequest , Environment>().ReverseMap();
+        CreateMap<UpdateEnvironmentRequest, Environment>().ReverseMap();
         
         CreateMap<Collection , CollectionDto>().ReverseMap();
         CreateMap<CreateCollectionDto , Collection>().ReverseMap();

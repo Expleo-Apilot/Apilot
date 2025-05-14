@@ -5,10 +5,10 @@ using MediatR;
 
 namespace dev.Application.Features.Environment.Queries;
 
-public record GetAllEnvironmentsQuery : IRequest<Result<List<EnvironmentDto>>>;
+public record GetEnvironmentsQuery : IRequest<Result<List<EnvironmentDto>>>;
 
 
-public class GetEnvironmentsQueryHandler : IRequestHandler<GetAllEnvironmentsQuery, Result<List<EnvironmentDto>>>
+public class GetEnvironmentsQueryHandler : IRequestHandler<GetEnvironmentsQuery, Result<List<EnvironmentDto>>>
 {
     
     private readonly IEnvironmentService _environmentService;
@@ -18,7 +18,7 @@ public class GetEnvironmentsQueryHandler : IRequestHandler<GetAllEnvironmentsQue
         _environmentService = environmentService;
     }
 
-    public async Task<Result<List<EnvironmentDto>>> Handle(GetAllEnvironmentsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<List<EnvironmentDto>>> Handle(GetEnvironmentsQuery request, CancellationToken cancellationToken)
     {
         try
         {

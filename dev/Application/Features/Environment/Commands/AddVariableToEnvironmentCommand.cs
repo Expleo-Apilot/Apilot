@@ -7,7 +7,7 @@ namespace dev.Application.Features.Environment.Commands;
 
 public record AddVariableToEnvironmentCommand : IRequest<Result<Unit>>
 {
-    public required AddVariableToEnvironmentDto EnvironmentDto { get; init; }
+    public required AddVariableToEnvironmentRequest EnvironmentRequest { get; init; }
 }
 
 
@@ -25,7 +25,7 @@ public class AddVariableToEnvironmentCommandHandler : IRequestHandler<AddVariabl
     {
         try
         {
-             await _environmentService.AddVariableToEnvironmentAsync(request.EnvironmentDto);
+             await _environmentService.AddVariableToEnvironmentAsync(request.EnvironmentRequest);
              return Result<Unit>.Success(Unit.Value);
         }
         catch (Exception ex)

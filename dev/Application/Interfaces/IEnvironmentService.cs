@@ -4,17 +4,17 @@ namespace dev.Application.Interfaces;
 
 public interface IEnvironmentService
 {
-    Task<EnvironmentDto> CreateEnvironmentAsync(CreateEnvironmentDto environmentDto);
+    Task<EnvironmentDto> CreateEnvironmentAsync(CreateEnvironmentRequest request);
     Task<List<EnvironmentDto>> GetAllEnvironmentsAsync();
     Task<EnvironmentDto> GetEnvironmentByIdAsync(int id);
     Task<List<EnvironmentDto>> GetEnvironmentsByWorkspaceIdAsync(int workspaceId);
     
-    Task UpdateEnvironmentAsync(int id, string name);
-    Task<EnvironmentDto> AddVariablesToEnvironment(AddVariablesToEnvironmentDto addVariablesToEnvironmentDto);
+    Task UpdateEnvironmentAsync(UpdateEnvironmentRequest request);
+    Task<EnvironmentDto> AddVariablesToEnvironment(AddVariablesToEnvironmentRequest request);
     Task DeleteEnvironmentAsync(int id);
     
     
-    Task AddVariableToEnvironmentAsync(AddVariableToEnvironmentDto addVariableToEnvironmentDto);
-    Task UpdateVariableInEnvironmentAsync(UpdateVariableInEnvironmentDto updateVariableInEnvironmentDto);
-    Task RemoveVariableFromEnvironmentAsync(int id, string key);
+    Task AddVariableToEnvironmentAsync(AddVariableToEnvironmentRequest request);
+    Task UpdateVariableInEnvironmentAsync(UpdateVariableInEnvironmentRequest request);
+    Task RemoveVariableFromEnvironmentAsync(RemoveVariableFromEnvironmentRequest request);
 }

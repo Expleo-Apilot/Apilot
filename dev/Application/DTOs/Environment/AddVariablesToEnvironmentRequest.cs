@@ -1,6 +1,6 @@
 ﻿namespace dev.Application.DTOs.Environment;
 
-public class AddVariablesToEnvironmentDto
+public class AddVariablesToEnvironmentRequest
 {
     public required int EnvironmentId { get; set; }
     

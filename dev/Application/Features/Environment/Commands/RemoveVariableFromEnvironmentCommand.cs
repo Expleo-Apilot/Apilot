@@ -1,4 +1,5 @@
 ﻿using dev.Application.Common.Models;
+using dev.Application.DTOs.Environment;
 using dev.Application.Interfaces;
 using MediatR;
 
@@ -6,8 +7,7 @@ namespace dev.Application.Features.Environment.Commands;
 
 public record RemoveVariableFromEnvironmentCommand : IRequest<Result<Unit>>
 {
-    public required int EnvironmentId { get; init; }
-    public required string Key { get; init; }
+   public required RemoveVariableFromEnvironmentRequest Command { get; init; }
 }
 
 
@@ -25,7 +25,7 @@ public class RemoveVariableFromEnvironmentCommandHandler : IRequestHandler<Remov
     {
         try
         {
-            await _environmentService.RemoveVariableFromEnvironmentAsync(request.EnvironmentId, request.Key);
+            await _environmentService.RemoveVariableFromEnvironmentAsync(request.Command);
             return Result<Unit>.Success(Unit.Value);
         }
         catch (KeyNotFoundException ex)

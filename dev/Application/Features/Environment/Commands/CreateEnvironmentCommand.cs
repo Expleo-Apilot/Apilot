@@ -7,7 +7,7 @@ namespace dev.Application.Features.Environment.Commands;
 
 public record CreateEnvironmentCommand : IRequest<Result<EnvironmentDto>>
 {
-    public required CreateEnvironmentDto EnvironmentDto { get; init; }
+    public required CreateEnvironmentRequest EnvironmentRequest { get; init; }
 }
 
 
@@ -25,7 +25,7 @@ public class CreateEnvironmentCommandHandler : IRequestHandler<CreateEnvironment
     {
         try
         {
-            var environment = await _environmentService.CreateEnvironmentAsync(request.EnvironmentDto);
+            var environment = await _environmentService.CreateEnvironmentAsync(request.EnvironmentRequest);
             return Result<EnvironmentDto>.Success(environment);
         }
         catch (Exception ex)

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("")]
 [ApiController]
 public class SwaggerController : ControllerBase
 {
@@ -18,7 +18,7 @@ public class SwaggerController : ControllerBase
     }
 
 
-    [HttpPost("url")]
+    [HttpPost("/ImportFromUrl")]
     public async Task<IActionResult> ImportFromUrl([FromQuery] OpenApiImportRequest request)
     {
         var cmd = new ImportOpenApiCollectionCommand
@@ -30,7 +30,7 @@ public class SwaggerController : ControllerBase
         return Ok(result);
     }
     
-    [HttpPost("file")]
+    [HttpPost("/ImportFromFile")]
     public async Task<IActionResult> ImportFromFile([FromQuery] OpenApiFileUploadRequest request)
     {
         var cmd = new ImportOpenApiFromFileCommand

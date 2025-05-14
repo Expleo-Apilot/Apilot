@@ -1,4 +1,5 @@
 ﻿using Apilot.Domain.Enums;
+using dev.Application.DTOs.Response;
 
 namespace dev.Application.DTOs.Request;
 
@@ -20,4 +21,6 @@ public class RequestDto
     public DateTime? UpdatedAt { get; set; }
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
+    
+    public List<ResponseDto> Responses { get; set; } =  new ();
 }

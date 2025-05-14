@@ -1,4 +1,7 @@
-﻿using dev.Domain.Common;
+﻿using dev.Application.DTOs.Collection;
+using dev.Application.DTOs.Environment;
+using dev.Application.DTOs.History;
+using dev.Domain.Common;
 
 namespace dev.Domain.Entities;
 

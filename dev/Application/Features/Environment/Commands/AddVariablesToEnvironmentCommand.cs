@@ -7,7 +7,7 @@ namespace dev.Application.Features.Environment.Commands;
 
 public record AddVariablesToEnvironmentCommand : IRequest<Result<EnvironmentDto>>
 {
-    public required AddVariablesToEnvironmentDto Environment { get; init; }
+    public required AddVariablesToEnvironmentRequest Environment { get; init; }
 }
 
 

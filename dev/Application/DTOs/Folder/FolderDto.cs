@@ -1,4 +1,6 @@
-﻿namespace dev.Application.DTOs.Folder;
+﻿using dev.Application.DTOs.Request;
+
+namespace dev.Application.DTOs.Folder;
 
 public class FolderDto
 {
@@ -14,4 +16,6 @@ public class FolderDto
     
     public DateTime? LastSyncDate { get; set; }
     public Guid SyncId { get; set; }
+    
+    public List<RequestDto> Requests { get; set; } = new ();
 }

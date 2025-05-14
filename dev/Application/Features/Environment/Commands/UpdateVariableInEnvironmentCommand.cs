@@ -7,7 +7,7 @@ namespace dev.Application.Features.Environment.Commands;
 
 public record UpdateVariableInEnvironmentCommand : IRequest<Result<Unit>>
 {
-    public required UpdateVariableInEnvironmentDto EnvironmentDto { get; init; }
+    public required UpdateVariableInEnvironmentRequest EnvironmentRequest { get; init; }
 }
 
 
@@ -26,7 +26,7 @@ public class UpdateVariableInEnvironmentCommandHandler : IRequestHandler<UpdateV
     {
         try
         {
-            await _environmentService.UpdateVariableInEnvironmentAsync(request.EnvironmentDto);
+            await _environmentService.UpdateVariableInEnvironmentAsync(request.EnvironmentRequest);
             return Result<Unit>.Success(Unit.Value);
         }
         catch (Exception ex)

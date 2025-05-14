@@ -1,4 +1,8 @@
-﻿namespace dev.Application.DTOs.Workspace;
+﻿using dev.Application.DTOs.Collection;
+using dev.Application.DTOs.Environment;
+using dev.Application.DTOs.History;
+
+namespace dev.Application.DTOs.Workspace;
 
 public class WorkspaceDto
 {
@@ -13,4 +17,9 @@ public class WorkspaceDto
     
     public DateTime? LastSyncDate { get; set; }
     public Guid SyncId { get; set; }
+    
+    public List<CollectionDto> Collections { get; set; } = new();
+    public List<EnvironmentDto> Environments { get; set; } = new ();
+    public List<HistoryDto> Histories { get; set; } =  new ();
+   
 }

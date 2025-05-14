@@ -9,7 +9,7 @@ namespace dev.Application.Features.Folder.Queries;
 
 public record GetFoldersByCollectionIdQuery : IRequest<Result<List<FolderDto>>>
 {
-    public required int WorkspaceId { get; init; }
+    public required int Id { get; init; }
 }
 
 
@@ -28,7 +28,7 @@ public class GetFoldersByCollectionIdQueryHandler : IRequestHandler<GetFoldersBy
     {
         try
         {
-            var folders = await _folderService.GetFoldersByCollectionIdAsync(request.WorkspaceId);
+            var folders = await _folderService.GetFoldersByCollectionIdAsync(request.Id);
             return Result<List<FolderDto>>.Success(folders);
         }
         catch (Exception ex)

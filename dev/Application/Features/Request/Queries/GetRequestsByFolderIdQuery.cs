@@ -27,7 +27,7 @@ public class GetRequestsByFolderIdQueryHandler : IRequestHandler<GetRequestsByFo
     {
         try
         {
-            var requests = await _requestService.GetRequestsByCollectionIdAsync(request.FolderId);
+            var requests = await _requestService.GetRequestsByFolderIdAsync(request.FolderId);
             return Result<List<RequestDto>>.Success(requests);
         }
         catch (KeyNotFoundException ex)

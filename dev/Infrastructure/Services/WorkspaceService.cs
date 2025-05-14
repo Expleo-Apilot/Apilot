@@ -88,19 +88,14 @@ public class WorkspaceService : IWorkspaceService
                 .ThenInclude(c => c.Requests)
                 .FirstOrDefaultAsync(w => w.Id == id);
 
-
             if (workspace == null)
             {
-                _logger.LogWarning("Workspace with ID {Id} not found ", id);
+                _logger.LogWarning("Workspace with ID {Id} not found", id);
                 throw new KeyNotFoundException($"Workspace with ID {id} not found");
             }
 
             _logger.LogInformation("Workspace with ID {Id} found", id);
             return _mapper.Map<WorkspaceDto>(workspace);
-        }
-        catch (KeyNotFoundException)
-        {
-            throw;
         }
         catch (Exception ex)
         {
@@ -108,6 +103,7 @@ public class WorkspaceService : IWorkspaceService
             throw;
         }
     }
+
 
     
     
