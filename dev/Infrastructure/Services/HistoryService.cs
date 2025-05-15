@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
-using dev.Application.DTOs.Collection;
 using dev.Application.DTOs.History;
-using dev.Application.DTOs.Request;
 using dev.Application.Interfaces;
 using dev.Domain.Entities;
 using dev.Infrastructure.Data;

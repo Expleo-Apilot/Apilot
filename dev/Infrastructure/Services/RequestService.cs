@@ -188,37 +188,58 @@ public class RequestService : IRequestService
 
     
     
-    public async Task DeleteRequestAsync(int id)
+   public async Task DeleteRequestAsync(int id)
+{
+    _logger.LogInformation("Deleting request with ID: {Id} and all associated responses", id);
+
+    try
     {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
         try
         {
-            _logger.LogInformation("Attempting to delete request with ID: {Id}", id);
-            
-            var request = await _context.Requests.FindAsync(id);
-            
+            var request = await _context.Requests
+                .Include(r => r.Responses)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
             if (request == null)
             {
                 _logger.LogWarning("Request with ID {Id} not found for deletion", id);
                 throw new KeyNotFoundException($"Request with ID {id} not found");
             }
             
-            request.IsDeleted = true;
-            request.UpdatedAt = DateTime.UtcNow;
-            request.UpdatedBy = "admin"; 
-            request.IsSync = false;
+            
+            if (request.Responses != null && request.Responses.Any())
+            {
+                _logger.LogInformation("Removing {Count} responses for request {Id}", request.Responses.Count, request.Id);
+                _context.Responses.RemoveRange(request.Responses);
+            }
+            
+            _logger.LogInformation("Removing request {Id}", id);
+            _context.Requests.Remove(request);
             
             await _context.SaveChangesAsync();
             
-            _logger.LogInformation("Request with ID: {Id} deleted successfully", id);
-        }
-        catch (KeyNotFoundException)
-        {
-            throw;
+            await transaction.CommitAsync();
+            
+            _logger.LogInformation("Request with ID {Id} and all associated responses deleted successfully", id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting request with ID: {Id}", id);
+            
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Transaction rolled back. An error occurred while deleting the request {Id} and its associated responses", id);
             throw;
         }
     }
+    catch (KeyNotFoundException)
+    {
+        throw;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "An error occurred while deleting the request with ID {Id}", id);
+        throw;
+    }
+}
 }

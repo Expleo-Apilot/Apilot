@@ -144,14 +144,27 @@ public class WorkspaceService : IWorkspaceService
 
     
     
-    public async Task DeleteWorkspaceAsync(int id)
-    {
-        _logger.LogInformation("Soft deleting workspace with ID: {Id}", id);
+   public async Task DeleteWorkspaceAsync(int id)
+{
+    _logger.LogInformation("Deleting workspace with ID: {Id} and all associated entities", id);
 
+    try
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
         try
         {
             var workspace = await _context.Workspaces
-                .FirstOrDefaultAsync(w => w.Id == id );
+                .Include(w => w.Collections)
+                    .ThenInclude(c => c.Folders)
+                        .ThenInclude(f => f.Requests)
+                            .ThenInclude(r => r.Responses)
+                .Include(w => w.Collections)
+                    .ThenInclude(c => c.Requests)
+                        .ThenInclude(r => r.Responses)
+                .Include(w => w.Environments)
+                .Include(w => w.Histories)
+                .FirstOrDefaultAsync(w => w.Id == id);
                 
             if (workspace == null)
             {
@@ -159,24 +172,99 @@ public class WorkspaceService : IWorkspaceService
                 throw new KeyNotFoundException($"Workspace with ID {id} not found");
             }
             
-            workspace.IsDeleted = true;
-            workspace.UpdatedAt = DateTime.UtcNow;
-            workspace.UpdatedBy = "admin"; 
-            workspace.IsSync = false;
+            
+            if (workspace.Histories != null && workspace.Histories.Any())
+            {
+                _logger.LogInformation("Removing {Count} histories for workspace {Id}", workspace.Histories.Count, id);
+                _context.Histories.RemoveRange(workspace.Histories);
+            }
+            
+            
+            if (workspace.Environments != null && workspace.Environments.Any())
+            {
+                _logger.LogInformation("Removing {Count} environments for workspace {Id}", workspace.Environments.Count, id);
+                _context.Environments.RemoveRange(workspace.Environments);
+            }
+            
+           
+            if (workspace.Collections != null)
+            {
+                foreach (var collection in workspace.Collections)
+                {
+                    
+                    if (collection.Requests != null && collection.Requests.Any())
+                    {
+                        foreach (var request in collection.Requests)
+                        {
+                            if (request.Responses != null && request.Responses.Any())
+                            {
+                                _logger.LogInformation("Removing {Count} responses for request {Id}", request.Responses.Count, request.Id);
+                                _context.Responses.RemoveRange(request.Responses);
+                            }
+                        }
+                        
+                        _logger.LogInformation("Removing {Count} direct requests for collection {Id}", collection.Requests.Count, collection.Id);
+                        _context.Requests.RemoveRange(collection.Requests);
+                    }
+                    
+                    
+                    if (collection.Folders != null && collection.Folders.Any())
+                    {
+                        foreach (var folder in collection.Folders)
+                        {
+                            if (folder.Requests != null && folder.Requests.Any())
+                            {
+                                foreach (var request in folder.Requests)
+                                {
+                                    if (request.Responses != null && request.Responses.Any())
+                                    {
+                                        _logger.LogInformation("Removing {Count} responses for request {Id} in folder {FolderId}", request.Responses.Count, request.Id, folder.Id);
+                                        _context.Responses.RemoveRange(request.Responses);
+                                    }
+                                }
+                                
+                                _logger.LogInformation("Removing {Count} requests for folder {Id}", folder.Requests.Count, folder.Id);
+                                _context.Requests.RemoveRange(folder.Requests);
+                            }
+                        }
+                        
+                        _logger.LogInformation("Removing {Count} folders for collection {Id}", collection.Folders.Count, collection.Id);
+                        _context.Folders.RemoveRange(collection.Folders);
+                    }
+                }
+                
+                _logger.LogInformation("Removing {Count} collections for workspace {Id}", workspace.Collections.Count, id);
+                _context.Collections.RemoveRange(workspace.Collections);
+            }
+            
+            
+            _logger.LogInformation("Removing workspace {Id}", id);
+            _context.Workspaces.Remove(workspace);
+            
             
             await _context.SaveChangesAsync();
             
-            _logger.LogInformation("Workspace with ID {Id} deleted successfully", id);
-           
-        }
-        catch (KeyNotFoundException)
-        {
-            throw;
+            
+            await transaction.CommitAsync();
+            
+            _logger.LogInformation("Workspace with ID {Id} and all associated entities deleted successfully", id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while deleting the workspace with ID {Id}", id);
+            
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Transaction rolled back. An error occurred while deleting the workspace {Id} and its associated entities", id);
             throw;
         }
     }
+    catch (KeyNotFoundException)
+    {
+        throw;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "An error occurred while deleting the workspace with ID {Id}", id);
+        throw;
+    }
+}
 }

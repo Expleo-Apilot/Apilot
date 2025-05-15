@@ -172,38 +172,98 @@ public class CollectionService : ICollectionService
 
     
     
-    public async Task DeleteCollectionAsync(int id)
+   public async Task DeleteCollectionAsync(int id)
+{
+    _logger.LogInformation("Deleting collection with ID: {Id} and all associated entities", id);
+
+    try
     {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
         try
         {
-            _logger.LogInformation("Attempting to delete collection with ID: {Id}", id);
-
-            var collection = await _context.Collections.FindAsync(id);
+            var collection = await _context.Collections
+                .Include(c => c.Folders)
+                    .ThenInclude(f => f.Requests)
+                        .ThenInclude(r => r.Responses)
+                .Include(c => c.Requests)
+                    .ThenInclude(r => r.Responses)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (collection == null)
             {
                 _logger.LogWarning("Collection with ID {Id} not found for deletion", id);
                 throw new KeyNotFoundException($"Collection with ID {id} not found");
             }
-
             
-            collection.IsDeleted = true;
-            collection.UpdatedAt = DateTime.UtcNow;
-            collection.UpdatedBy = "admin"; 
-
+            
+            if (collection.Requests != null && collection.Requests.Any())
+            {
+                foreach (var request in collection.Requests)
+                {
+                    if (request.Responses != null && request.Responses.Any())
+                    {
+                        _logger.LogInformation("Removing {Count} responses for request {Id}", request.Responses.Count, request.Id);
+                        _context.Responses.RemoveRange(request.Responses);
+                    }
+                }
+                
+                _logger.LogInformation("Removing {Count} direct requests for collection {Id}", collection.Requests.Count, collection.Id);
+                _context.Requests.RemoveRange(collection.Requests);
+            }
+            
+           
+            if (collection.Folders != null && collection.Folders.Any())
+            {
+                foreach (var folder in collection.Folders)
+                {
+                    if (folder.Requests != null && folder.Requests.Any())
+                    {
+                        foreach (var request in folder.Requests)
+                        {
+                            if (request.Responses != null && request.Responses.Any())
+                            {
+                                _logger.LogInformation("Removing {Count} responses for request {Id} in folder {FolderId}", request.Responses.Count, request.Id, folder.Id);
+                                _context.Responses.RemoveRange(request.Responses);
+                            }
+                        }
+                        
+                        _logger.LogInformation("Removing {Count} requests for folder {Id}", folder.Requests.Count, folder.Id);
+                        _context.Requests.RemoveRange(folder.Requests);
+                    }
+                }
+                
+                _logger.LogInformation("Removing {Count} folders for collection {Id}", collection.Folders.Count, collection.Id);
+                _context.Folders.RemoveRange(collection.Folders);
+            }
+            
+           
+            _logger.LogInformation("Removing collection {Id}", id);
+            _context.Collections.Remove(collection);
+            
             
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Collection with ID: {Id} deleted successfully", id);
-        }
-        catch (KeyNotFoundException)
-        {
-            throw;
+            
+            
+            await transaction.CommitAsync();
+            
+            _logger.LogInformation("Collection with ID {Id} and all associated entities deleted successfully", id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting collection with ID: {Id}", id);
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Transaction rolled back. An error occurred while deleting the collection {Id} and its associated entities", id);
             throw;
         }
     }
+    catch (KeyNotFoundException)
+    {
+        throw;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "An error occurred while deleting the collection with ID {Id}", id);
+        throw;
+    }
+}
 }
