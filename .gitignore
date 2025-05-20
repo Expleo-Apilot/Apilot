@@ -3,3 +3,10 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+/node_modules
+/dev/appsettings.json
+package-lock.json
+package.jso
+global.json
+.idea/.idea.ApilotProject/.idea/.name
+.vs/
