@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@angular/animations": "^19.2.9",
+    "angular-split": "^19.0.0"
+  }
+}

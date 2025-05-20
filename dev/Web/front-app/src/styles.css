@@ -1,1 +1,94 @@
 /* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+:root {
+
+  /* comon */
+  --border-color:#e2e2e2;
+
+  /* header*/
+  --header-bg: #F8FAFC;
+  --header-color: #000000;
+  --background-color: #ffffff;
+  --invite-bg: #AA23FF;
+
+
+  /* sidebar*/
+  --sidebar-bg: #F8FAFC;
+  --sidebar-color: #000;
+  --sidebar-hover-bg: #AA23FF;
+  --sidebar-filter-bg: #bdbdbd;
+  /*text*/
+  --text-color: #000000;
+  --text-color-rgb: 0,0,0; /* For rgba() usage */
+
+  /* request editor */
+  --request-editor-bg: #f5f5f5;       /* Light mode background for the main bar */
+  --request-editor-border: #dcdcdc;   /* Light mode border for the bar and separators */
+  --request-editor-input-bg: #ffffff; /* Light mode background for the URL input area */
+
+  --method-get-color: #28a745;
+  --method-post-color: #ffc107;
+  --method-put-color: #007bff;
+  --method-delete-color: #dc3545;
+  --method-patch-color: #fd7e14; /* Orange for PATCH */
+  --method-options-color: #6f42c1; /* Indigo for OPTIONS */
+  --method-head-color: #6610f2; /* Purple for HEAD */
+
+
+  --send-button-bg: #007bff;          /* Blue for Send button, matches image */
+  --send-button-text-color: #ffffff;
+
+  --perple-color: #AA23FF; /* Your existing purple variable, not used in this component per image */
+}
+
+
+
+
+.dark-theme {
+
+  /* comon */
+  --border-color:#424242;
+
+  /* header*/
+  --header-bg: #2d2d2d;
+  --header-color: #ffffff;
+  --background-color: #1e1e1e;
+  --invite-bg: #D591FF;
+
+  /* sidebar*/
+  --sidebar-bg: #2d2d2d;
+  --sidebar-color: #ffffff;
+  --sidebar-hover-bg: #424242;
+  --sidebar-filter-bg: #2d2d2d;
+
+  /*text*/
+  --text-color: #ffffff;
+  --text-color-rgb: 255,255,255; /* For rgba() usage */
+
+  /* request editor */
+  --request-editor-bg: #252526;        /* Dark mode background for the main bar (VS Code like) */
+  --request-editor-border: #3c3c3c;    /* Dark mode border */
+  --request-editor-input-bg: #1e1e1e;  /* Dark mode background for URL input (VS Code editor like) */
+
+  --method-get-color: #4CAF50;    /* Slightly brighter green for dark mode */
+  --method-post-color: #FFD54F;   /* Slightly brighter yellow */
+  --method-put-color: #4FC3F7;    /* Slightly brighter blue */
+  --method-delete-color: #E57373; /* Slightly brighter red */
+  --method-patch-color: #FFB74D;
+  --method-options-color: #BA68C8;
+  --method-head-color: #9575CD;
+
+
+  --send-button-bg: #007bff;           /* Send button blue can remain similar */
+  --send-button-text-color: #ffffff;
+
+  --perple-color: #AA23FF;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background-color);
+  font-family: Roboto, sans-serif;
+}

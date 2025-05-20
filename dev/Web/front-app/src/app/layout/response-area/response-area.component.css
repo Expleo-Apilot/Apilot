@@ -1,0 +1,207 @@
+.response-container {
+
+  color: var(--text-color);
+
+  overflow: hidden;
+  font-family: 'Roboto Mono', monospace;
+  margin-top: 20px;
+}
+
+.no-response {
+  padding: 24px;
+  text-align: center;
+  color: #888;
+}
+
+.response-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--background-color);
+  padding: 2px 0px;
+  font-size: 14px;
+  height: 20px;
+}
+
+.status-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+}
+
+.status-code {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.status-text {
+  color: #bbb;
+}
+
+.status-container.success .status-code {
+  background-color: #1f8b4c;
+  color: var(--text-color);
+}
+
+.status-container.redirect .status-code {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.status-container.client-error .status-code {
+  background-color: #dc3545;
+  color: white;
+}
+
+.status-container.server-error .status-code {
+  background-color: #721c24;
+  color: white;
+}
+
+.response-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+mat-tab-group {
+  background-color: var(--background-color);
+  color: #ddd;
+}
+
+.mat-tab-label {
+  font-weight: bold;
+}
+
+.tab-content {
+  padding: 16px;
+  font-size: 13px;
+  background-color: var(--background-color);
+}
+
+.editor-container {
+
+  height: auto;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.key-value-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  color: #ccc;
+}
+
+
+.key-value-table th,
+.key-value-table td {
+  border: 1px solid #333;
+  padding: 8px;
+  text-align: left;
+}
+
+.key-value-table th {
+  background-color: var(--perple-color);
+}
+
+.no-data {
+  color: #888;
+  font-style: italic;
+  padding: 12px;
+}
+
+/* Notification styles */
+.notifications-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 300px;
+}
+
+.notification {
+  padding: 12px 16px;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification.success {
+  background-color: #2e7d32;
+}
+
+.notification.error {
+  background-color: #c62828;
+}
+
+.notification-close {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 8px;
+  opacity: 0.7;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background-color: var(--perple-color);
+  color: #fff;
+}
+
+.copy-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.copy-button mat-icon {
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+  margin-right: 4px;
+}
