@@ -1,16 +1,14 @@
 <mat-toolbar class="header">
   <div class="left-section">
-    <button mat-icon-button aria-label="Toggle menu">
-      <mat-icon>menu</mat-icon>
-    </button>
+    <span class="api-icon floating">
+      <mat-icon>api</mat-icon>
+    </span>
     <div class="brand-container">
       <span class="bracket">(</span>
-      <span class="brand">ApiLot</span>
+      <span class="brand">Expleo</span>
       <span class="bracket">)</span>
     </div>
-    <mat-button-toggle-group class="nav-toggle" appearance="legacy">
-      <button mat-button>Workspaces</button>
-    </mat-button-toggle-group>
+    <button class="workspace-tab" mat-button>Workspaces</button>
   </div>
 
   <div class="center-section">
@@ -23,9 +21,6 @@
       <mat-icon>person_add</mat-icon>
       Invite
     </button>
-
-
-
     <button mat-icon-button aria-label="User profile">
       <mat-icon>account_circle</mat-icon>
     </button>
@@ -40,3 +35,5 @@
     </button>
   </div>
 </mat-toolbar>
+
+<app-workspace-menu *ngIf="showWorkspaceMenu" (closeMenu)="showWorkspaceMenu=false"></app-workspace-menu>

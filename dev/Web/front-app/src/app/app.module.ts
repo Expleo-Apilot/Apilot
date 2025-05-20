@@ -5,6 +5,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import {LayoutModule} from './layout/layout.module';
 import {SplitAreaComponent, SplitComponent} from 'angular-split';
+import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
 
 @NgModule({
   declarations: [
@@ -16,6 +17,7 @@ import {SplitAreaComponent, SplitComponent} from 'angular-split';
     LayoutModule,
     SplitComponent,
     SplitAreaComponent
+
   ],
   providers: [
     provideClientHydration(withEventReplay())

@@ -9,6 +9,8 @@ import { Component, OnInit } from '@angular/core';
 export class HeaderComponent implements OnInit {
 
   isDarkMode = false;
+  showWorkspaceMenu = false;
+  apiIconHovered = false;
 
   ngOnInit() {
     // Load theme from localStorage
@@ -32,8 +34,10 @@ export class HeaderComponent implements OnInit {
     const body = document.body;
     if (this.isDarkMode) {
       body.classList.add('dark-theme');
+      window.dispatchEvent(new CustomEvent('themeChange', { detail: 'vs-dark' }));
     } else {
       body.classList.remove('dark-theme');
+      window.dispatchEvent(new CustomEvent('themeChange', { detail: 'vs-light' }));
     }
   }
 }
