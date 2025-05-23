@@ -1,4 +1,4 @@
-﻿using dev.Application.DTOs.Request;
+using dev.Application.DTOs.Request;
 
 namespace dev.Domain.Entities;
 

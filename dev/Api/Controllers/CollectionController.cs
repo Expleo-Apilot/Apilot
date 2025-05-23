@@ -1,4 +1,4 @@
-﻿using dev.Application.DTOs.Collection;
+using dev.Application.DTOs.Collection;
 using dev.Application.Features.Collection.Commands;
 using dev.Application.Features.Collection.Queries;
 using MediatR;
