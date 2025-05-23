@@ -1,0 +1,90 @@
+<!-- Workspace Menu Button -->
+<button mat-button (click)="openMenu()">
+  <mat-icon>workspaces</mat-icon>
+  Workspaces
+</button>
+
+<!-- Dropdown Menu -->
+<div class="dropdown-menu" *ngIf="showMenu">
+  <button mat-menu-item (click)="openCreateModal()">
+    <mat-icon>add</mat-icon>
+    Create Workspace
+  </button>
+  <mat-divider></mat-divider>
+  <div class="workspace-list">
+    <div *ngFor="let workspace of workspaces" class="workspace-item">
+      <button mat-menu-item (click)="selectWorkspace(workspace)">
+        <mat-icon>folder</mat-icon>
+        {{workspace.name}}
+      </button>
+      <button mat-icon-button (click)="deleteWorkspace(workspace.id)" class="delete-btn">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Workspace Modal -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+<div class="modal" *ngIf="showModal">
+  <form [formGroup]="workspaceForm" (ngSubmit)="submitWorkspace()" (click)="$event.stopPropagation()">
+    <h2>Create Workspace</h2>
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required>
+      <mat-error *ngIf="workspaceForm.get('name')?.hasError('required')">
+        Name is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" rows="3"></textarea>
+    </mat-form-field>
+
+    <div class="modal-actions">
+      <button mat-stroked-button type="button" (click)="closeModal()">Cancel</button>
+      <button mat-flat-button color="primary" type="submit" 
+              [disabled]="isSubmitting || workspaceForm.invalid">
+        {{ isSubmitting ? 'Creating...' : 'Create' }}
+      </button>
+    </div>
+
+    <div *ngIf="submitError" class="error-message">
+      {{ submitError }}
+    </div>
+  </form>
+</div>
+
+<!-- Selected Workspace Details -->
+<div class="workspace-details" *ngIf="selectedWorkspace">
+  <h3>{{selectedWorkspace.name}}</h3>
+  <p>{{selectedWorkspace.description}}</p>
+  <div class="workspace-meta">
+    <span>Created: {{selectedWorkspace.createdAt | date}}</span>
+    <span>By: {{selectedWorkspace.createdBy}}</span>
+  </div>
+  
+  <!-- Collections Section -->
+  <div class="section" *ngIf="selectedWorkspace.collections.length > 0">
+    <h4>Collections</h4>
+    <div class="collection-list">
+      <div *ngFor="let collection of selectedWorkspace.collections" class="collection-item">
+        <mat-icon>folder</mat-icon>
+        <span>{{collection.name}}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Environments Section -->
+  <div class="section" *ngIf="selectedWorkspace.environments.length > 0">
+    <h4>Environments</h4>
+    <div class="environment-list">
+      <div *ngFor="let env of selectedWorkspace.environments" class="environment-item">
+        <mat-icon>settings</mat-icon>
+        <span>{{env.name}}</span>
+      </div>
+    </div>
+  </div>
+</div>

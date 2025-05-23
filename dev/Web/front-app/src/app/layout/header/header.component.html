@@ -8,7 +8,7 @@
       <span class="brand">Expleo</span>
       <span class="bracket">)</span>
     </div>
-    <button class="workspace-tab" mat-button>Workspaces</button>
+    <button class="workspace-tab" mat-button (click)="toggleWorkspaceMenu($event)">Workspaces</button>
   </div>
 
   <div class="center-section">
@@ -36,4 +36,13 @@
   </div>
 </mat-toolbar>
 
-<app-workspace-menu *ngIf="showWorkspaceMenu" (closeMenu)="showWorkspaceMenu=false"></app-workspace-menu>
+<!-- Custom workspace menu overlay -->
+<div *ngIf="showWorkspaceMenu" class="workspace-menu-overlay">
+  <div #workspaceMenuContainer class="workspace-menu-wrapper" [style.top]="workspaceMenuPosition.top" [style.left]="workspaceMenuPosition.left">
+    <app-workspace-menu
+      [currentUser]="currentUser"
+      (workspaceSelected)="onWorkspaceSelected($event)"
+      (closeMenu)="closeWorkspaceMenu()"
+    ></app-workspace-menu>
+  </div>
+</div>

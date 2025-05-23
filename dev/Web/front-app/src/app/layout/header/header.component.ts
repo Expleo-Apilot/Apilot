@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Workspace } from '../../core/models/workspace.model';
+import { WorkspaceMenuComponent } from '../../features/workspace/workspace-menu/workspace-menu.component';
 
 @Component({
   selector: 'app-header',
@@ -11,6 +13,10 @@ export class HeaderComponent implements OnInit {
   isDarkMode = false;
   showWorkspaceMenu = false;
   apiIconHovered = false;
+  currentUser = { name: 'User', avatar: '' }; // Placeholder, replace with real user
+  workspaceMenuPosition: { top: string; left: string } = { top: '0px', left: '0px' };
+  
+  @ViewChild('workspaceMenuContainer') workspaceMenuContainer!: ElementRef;
 
   ngOnInit() {
     // Load theme from localStorage
@@ -27,7 +33,16 @@ export class HeaderComponent implements OnInit {
     // Save to localStorage
     localStorage.setItem('theme', newTheme);
 
+    // Add a transition class before changing the theme
+    document.body.classList.add('theme-transition');
+    
+    // Apply the theme
     this.applyTheme();
+    
+    // Remove the transition class after the transition completes
+    setTimeout(() => {
+      document.body.classList.remove('theme-transition');
+    }, 300);
   }
 
   private applyTheme() {
@@ -38,6 +53,49 @@ export class HeaderComponent implements OnInit {
     } else {
       body.classList.remove('dark-theme');
       window.dispatchEvent(new CustomEvent('themeChange', { detail: 'vs-light' }));
+    }
+  }
+
+  onWorkspaceSelected(ws: Workspace) {
+    // Handle workspace selection (update app state, etc.)
+    this.showWorkspaceMenu = false;
+    console.log('Selected workspace:', ws.name);
+    // Here you would typically update the application state with the selected workspace
+  }
+
+  toggleWorkspaceMenu(event: MouseEvent) {
+    // Calculate position based on the button that was clicked
+    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
+    if (buttonRect) {
+      this.workspaceMenuPosition = {
+        top: `${buttonRect.bottom}px`,
+        left: `${buttonRect.left}px`
+      };
+    }
+    
+    this.showWorkspaceMenu = !this.showWorkspaceMenu;
+    
+    // If opening the menu, add a click handler to close it when clicking outside
+    if (this.showWorkspaceMenu) {
+      setTimeout(() => {
+        document.addEventListener('click', this.closeWorkspaceMenuOnClickOutside);
+      }, 0);
+    }
+  }
+
+  closeWorkspaceMenu() {
+    this.showWorkspaceMenu = false;
+    document.removeEventListener('click', this.closeWorkspaceMenuOnClickOutside);
+  }
+
+  closeWorkspaceMenuOnClickOutside = (event: MouseEvent) => {
+    // Check if the click was outside the menu
+    if (
+      this.workspaceMenuContainer && 
+      !this.workspaceMenuContainer.nativeElement.contains(event.target) &&
+      !(event.target as HTMLElement).closest('button[mat-button]')
+    ) {
+      this.closeWorkspaceMenu();
     }
   }
 }

@@ -1,6 +1,7 @@
 .request-editor {
   display: flex;
   flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .request-editor, .request-editor * {
@@ -38,6 +39,10 @@
   width: 100%;
 }
 
+.dark-theme .method-select ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--request-editor-input-bg);
+}
+
 .method-select ::ng-deep .mat-mdc-text-field-wrapper {
   padding: 0px 23px !important;
 }
@@ -56,6 +61,16 @@
   min-height: unset !important;
   color: var(--text-color) !important;
 }
+
+.dark-theme .url-input ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--request-editor-input-bg);
+  border-color: var(--request-editor-border);
+}
+
+.dark-theme .url-input ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
+  border-color: var(--request-editor-focus-border);
+  box-shadow: 0 0 0 1px var(--request-editor-focus-border);
+}
 .full-width {
   width: 100%;
 }
@@ -66,9 +81,20 @@
 }
 
 .send-button button {
-  background-color: var(--perple-color);
+  background-color: var(--primary-color);
   height: 40px !important;
   border-radius: 5px !important;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-theme .send-button button {
+  background-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.3);
+}
+
+.dark-theme .send-button button:hover {
+  background-color: var(--primary-dark);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
 }
 
 
@@ -84,6 +110,11 @@
   border-radius: 4px 4px 0 0;
 }
 
+.dark-theme .request-tabs ::ng-deep .mat-mdc-tab-header {
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
 .request-tabs ::ng-deep .mat-mdc-tab {
   min-width: 80px;
   padding: 0 ;
@@ -93,8 +124,12 @@
   flex: 1;
   background-color: var(--background-color);
   border-radius: 0 0 4px 4px;
+}
 
-
+.dark-theme .request-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-top: none;
 }
 
 .tab-content {
@@ -127,6 +162,11 @@ th {
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+.dark-theme th {
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
 .enable-column {
   width: 60px;
 }
@@ -154,9 +194,10 @@ td ::ng-deep .mat-mdc-form-field-wrapper {
 /* Editor styling */
 .editor-container {
   height: 300px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   margin-top: 12px;
+  transition: border-color 0.3s ease;
 }
 
 .get-body-message {
@@ -164,11 +205,12 @@ td ::ng-deep .mat-mdc-form-field-wrapper {
   align-items: center;
   justify-content: center;
   height: 300px;
-  background-color: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--request-editor-input-bg);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   margin-top: 12px;
-  color: #666;
+  color: var(--text-secondary);
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 .add-row {
@@ -179,7 +221,8 @@ td ::ng-deep .mat-mdc-form-field-wrapper {
 
 .add-row button {
   font-size: 14px;
-  color: var(--perple-color); /* Postman orange */
+  color: var(--primary-color);
+  transition: color 0.3s ease;
 }
 
 /* Make sure the form takes up the full height */
@@ -213,12 +256,14 @@ form {
 
 .body-type-selector ::ng-deep .mat-button-toggle {
   background-color: var(--background-color);
-  color: var(--perple-color) ;
+  color: var(--primary-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .body-type-selector ::ng-deep .mat-button-toggle-checked {
-  background-color: #e0e0e0;
-  /*color: #000;*/
+  background-color: var(--sidebar-hover-bg);
+  color: var(--primary-dark);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Auth styling */
@@ -229,9 +274,10 @@ form {
 
 .auth-content {
   padding: 16px;
-  background-color: rgba(0, 0, 0, 0.03);
+  background-color: var(--request-editor-input-bg);
   border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Loading spinner */
@@ -242,39 +288,45 @@ mat-spinner {
 .processed-url {
   margin-top: 8px;
   padding: 8px;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--request-editor-input-bg);
   border-radius: 4px;
   font-size: 12px;
   word-break: break-all;
+  transition: background-color 0.3s ease;
 }
 
 .url-label {
-  color: #666;
+  color: var(--text-secondary);
   margin-right: 8px;
+  transition: color 0.3s ease;
 }
 
 .url-value {
-  color: #2196f3;
+  color: var(--method-put-color);
   font-family: monospace;
+  transition: color 0.3s ease;
 }
 
 .display-url {
   margin-top: 8px;
   padding: 8px;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--request-editor-input-bg);
   border-radius: 4px;
   font-size: 12px;
   word-break: break-all;
+  transition: background-color 0.3s ease;
 }
 
 .url-label {
-  color: #666;
+  color: var(--text-secondary);
   margin-right: 8px;
+  transition: color 0.3s ease;
 }
 
 .url-value {
-  color: #2196f3;
+  color: var(--method-put-color);
   font-family: monospace;
+  transition: color 0.3s ease;
 }
 
 

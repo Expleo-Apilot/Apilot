@@ -1,0 +1,149 @@
+.dropdown-menu {
+  position: absolute;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+  min-width: 280px;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border-radius: 8px;
+  padding: 8px 0;
+}
+
+.workspace-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.workspace-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+}
+
+.workspace-item button[mat-menu-item] {
+  flex: 1;
+  text-align: left;
+}
+
+.delete-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.workspace-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--background-color);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  z-index: 1001;
+  width: 90%;
+  max-width: 500px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.error-message {
+  color: #d32f2f;
+  margin-top: 16px;
+  padding: 8px;
+  background: rgba(211, 47, 47, 0.1);
+  border-radius: 4px;
+}
+
+.workspace-details {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.workspace-meta {
+  display: flex;
+  gap: 16px;
+  color: #666;
+  font-size: 0.9em;
+  margin: 8px 0 16px;
+}
+
+.section {
+  margin-top: 24px;
+}
+
+.section h4 {
+  margin-bottom: 12px;
+  color: #666;
+}
+
+.collection-list,
+.environment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.collection-item,
+.environment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 4px;
+}
+
+.collection-item mat-icon,
+.environment-item mat-icon {
+  color: #666;
+}
+
+/* Dark theme adjustments */
+:host-context(.dark-theme) {
+  .collection-item,
+  .environment-item {
+    background: rgba(255,255,255,0.05);
+  }
+  
+  .workspace-meta {
+    color: #999;
+  }
+  
+  .section h4 {
+    color: #999;
+  }
+  
+  .collection-item mat-icon,
+  .environment-item mat-icon {
+    color: #999;
+  }
+}

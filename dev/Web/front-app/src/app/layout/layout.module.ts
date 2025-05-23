@@ -2,11 +2,11 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from './header/header.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
+import { WorkspaceMenuComponent } from '../features/workspace/workspace-menu/workspace-menu.component';
 import { MainContentComponent } from './main-content/main-content.component';
 import { TabsAreaComponent } from './tabs-area/tabs-area.component';
 import { ResponseAreaComponent } from './response-area/response-area.component';
 import { ToolsPanelComponent } from './tools-panel/tools-panel.component';
-import { WorkspaceMenuComponent } from './workspace-menu/workspace-menu.component';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -20,8 +20,7 @@ import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
 import {MatTabsModule} from '@angular/material/tabs';
 import {FormsModule} from '@angular/forms';
 import {DragDropModule} from '@angular/cdk/drag-drop';
-
-
+import {MatMenuModule} from '@angular/material/menu';
 
 @NgModule({
   declarations: [
@@ -51,6 +50,7 @@ import {DragDropModule} from '@angular/cdk/drag-drop';
     MatListModule,
     DragDropModule,
     MonacoEditorModule,
+    MatMenuModule,
     WorkspaceMenuComponent,
   ],
   exports: [

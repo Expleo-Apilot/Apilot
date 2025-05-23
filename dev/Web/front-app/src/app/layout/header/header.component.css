@@ -10,6 +10,7 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   border-bottom: 1px solid var(--border-color);
   z-index: 10;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* style for left section */
@@ -40,21 +41,24 @@
   font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
   font-size: 1.08rem;
   font-weight: 500;
-  color: #6b3fbb;
+  color: var(--primary-color);
+  transition: color 0.3s ease;
 }
 
 .bracket {
-  color: #6b3fbb;
+  color: var(--primary-color);
   font-size: 1.15rem;
   font-weight: bold;
+  transition: color 0.3s ease;
 }
 
 .brand {
   font-weight: 500;
   font-size: 1.08rem;
-  color: #6b3fbb;
+  color: var(--primary-color);
   margin: 0 4px;
   letter-spacing: 0.5px;
+  transition: color 0.3s ease;
 }
 
 /* style for bare search */
@@ -65,15 +69,17 @@
   margin: 0 18px;
   padding: 0 10px;
   border-radius: 20px;
-  background: #f5f5f7;
+  background: var(--sidebar-filter-bg);
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   height: 36px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .search-icon {
   margin-right: 7px;
   font-size: 18px;
-  color: #888;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
 }
 
 .search-input {
@@ -100,11 +106,12 @@
   font-weight: 500;
   font-size: 0.97rem;
   gap: 4px;
-  background: linear-gradient(90deg, #AA23FF 60%, #D591FF 100%) !important;
+  background: linear-gradient(90deg, var(--primary-dark) 60%, var(--primary-light) 100%) !important;
   color: #fff !important;
-  box-shadow: 0 2px 8px #AA23FF22;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.2);
   min-width: 0;
   padding: 0 16px;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .invite-button mat-icon {
@@ -131,8 +138,8 @@
 
 .api-icon mat-icon {
   font-size: 22px;
-  color: #6b3fbb;
-  transition: color 0.3s;
+  color: var(--primary-color);
+  transition: color 0.3s ease, transform 0.3s ease;
 }
 
 .api-icon.floating mat-icon {
@@ -149,7 +156,28 @@ button[aria-label="Toggle workspace menu"] {
   margin-right: 8px;
 }
 
-/* Workspace menu overlay styles will be added in the workspace menu component */
+/* Workspace menu overlay styles */
+.workspace-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.workspace-menu-wrapper {
+  position: absolute;
+  z-index: 1001;
+  pointer-events: auto;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @media (max-width: 700px) {
   .center-section {
