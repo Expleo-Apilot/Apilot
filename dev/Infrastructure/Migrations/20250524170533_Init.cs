@@ -106,14 +106,7 @@ namespace dev.Infrastructure.Migrations
                     Requests_Body = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Requests_Parameters = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     WorkSpaceId = table.Column<int>(type: "int", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    IsSync = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastSyncDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    SyncId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
