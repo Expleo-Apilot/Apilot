@@ -1,0 +1,35 @@
+<div class="main-content">
+  <as-split direction="horizontal" unit="percent" class="main-content" (dragEnd)="onHorizontalDragEnd($event)">
+    <!-- Left sidebar section -->
+    <as-split-area [size]="sidebarSize" [minSize]="15" [maxSize]="65" class="sidebar-container">
+      <app-sidebar></app-sidebar>
+    </as-split-area>
+
+    <!-- Main center section -->
+    <as-split-area [size]="mainContentSize" [minSize]="panelMinSize">
+      <as-split direction="vertical" unit="percent" [gutterSize]="6" (dragEnd)="onVerticalDragEnd($event)">
+        <!-- Request Pane -->
+        <as-split-area [size]="requestPaneSize" [minSize]="15">
+          <div class="request-editor">
+            <app-request-editor></app-request-editor>
+          </div>
+        </as-split-area>
+
+        <!-- Response Pane -->
+        <as-split-area [size]="responsePaneSize">
+          <div class="response-pane">
+            <app-response></app-response>
+          </div>
+        </as-split-area>
+      </as-split>
+    </as-split-area>
+
+    <!-- Right tools panel section -->
+
+    <as-split-area [size]="toolsPanelSize" [minSize]="10" [maxSize]="35">
+      <div class="tools-pane">
+        <app-tools-panel></app-tools-panel>
+      </div>
+    </as-split-area>
+  </as-split>
+</div>

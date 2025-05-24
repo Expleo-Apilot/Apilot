@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RequestModule } from './features/request/request.module';
 import { ResponseModule } from './features/response/response.module';
+import { WorkspaceModule } from './features/workspace/workspace.module';
 
 @NgModule({
   declarations: [
@@ -23,11 +24,10 @@ import { ResponseModule } from './features/response/response.module';
     BrowserModule,
     AppRoutingModule,
     LayoutModule,
-    SplitAreaComponent,
+    AngularSplitModule,
     BrowserAnimationsModule,
     MatSidenavContainer,
     MatSidenavContent,
-    AngularSplitModule,
     HttpClientModule,
     CommonModule,
     FormsModule,
@@ -36,8 +36,8 @@ import { ResponseModule } from './features/response/response.module';
     SplitComponent,
     SplitAreaComponent,
     RequestModule,
-    ResponseModule
-
+    ResponseModule,
+    WorkspaceModule
   ],
   providers: [
     provideClientHydration(withEventReplay())

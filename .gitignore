@@ -10,4 +10,4 @@ package.jso
 global.json
 .idea/.idea.ApilotProject/.idea/.name
 .vs/
-/dev/Web/front-app/tets
+/dev/Web\front-app/src/tets
