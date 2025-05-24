@@ -1,0 +1,320 @@
+Request test:
+
+1) -post 
+
+http://localhost:5051/SaveRequest
+
+request body:
+
+{
+  "name": "requestTest",
+  "httpMethod": "GET",
+  "url": "https://simple-books-api.glitch.me/status",
+  "headers": {
+    "additionalProp1": "string",
+    "additionalProp2": "string",
+    "additionalProp3": "string"
+  },
+  "authentication": {
+    "authType": "NoAuth",
+    "authData": {
+      "additionalProp1": "string",
+      "additionalProp2": "string",
+      "additionalProp3": "string"
+    }
+  },
+  "parameters": {
+    "additionalProp1": "string",
+    "additionalProp2": "string",
+    "additionalProp3": "string"
+  },
+  "folderId": 1,
+  "collectionId": 1
+}
+
+
+
+response body:
+
+{
+  "isSuccess": true,
+  "data": {
+    "id": 1,
+    "name": "requestTest",
+    "httpMethod": "GET",
+    "url": "https://simple-books-api.glitch.me/status",
+    "headers": {
+      "additionalProp1": "string",
+      "additionalProp2": "string",
+      "additionalProp3": "string"
+    },
+    "authentication": {
+      "authType": "NoAuth",
+      "authData": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      }
+    },
+    "body": null,
+    "parameters": {
+      "additionalProp1": "string",
+      "additionalProp2": "string",
+      "additionalProp3": "string"
+    },
+    "folderId": 1,
+    "collectionId": 1,
+    "createdAt": "2025-05-24T16:39:48.8490503+01:00",
+    "updatedAt": null,
+    "createdBy": "Admin",
+    "updatedBy": null,
+    "responses": []
+  },
+  "error": null
+}
+
+
+2)- get 
+
+2.1) get requests 
+http://localhost:5051/GetRequests
+
+response :
+
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "requestTest",
+      "httpMethod": "GET",
+      "url": "https://simple-books-api.glitch.me/status",
+      "headers": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      },
+      "authentication": {
+        "authType": "NoAuth",
+        "authData": {
+          "additionalProp1": "string",
+          "additionalProp2": "string",
+          "additionalProp3": "string"
+        }
+      },
+      "body": null,
+      "parameters": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      },
+      "folderId": 1,
+      "collectionId": 1,
+      "createdAt": "2025-05-24T16:39:48.8490503",
+      "updatedAt": null,
+      "createdBy": "Admin",
+      "updatedBy": null,
+      "responses": []
+    }
+  ],
+  "error": null
+}
+
+2.2) get request :
+http://localhost:5051/GetRequest?id=1
+response :
+{
+  "isSuccess": true,
+  "data": {
+    "id": 1,
+    "name": "requestTest",
+    "httpMethod": "GET",
+    "url": "https://simple-books-api.glitch.me/status",
+    "headers": {
+      "additionalProp1": "string",
+      "additionalProp2": "string",
+      "additionalProp3": "string"
+    },
+    "authentication": {
+      "authType": "NoAuth",
+      "authData": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      }
+    },
+    "body": null,
+    "parameters": {
+      "additionalProp1": "string",
+      "additionalProp2": "string",
+      "additionalProp3": "string"
+    },
+    "folderId": 1,
+    "collectionId": 1,
+    "createdAt": "2025-05-24T16:39:48.8490503",
+    "updatedAt": null,
+    "createdBy": "Admin",
+    "updatedBy": null,
+    "responses": []
+  },
+  "error": null
+}
+
+2.3) get request by collectionId :
+
+http://localhost:5051/GetRequestsByCollectionId?id=1
+
+response :
+
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "requestTest",
+      "httpMethod": "GET",
+      "url": "https://simple-books-api.glitch.me/status",
+      "headers": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      },
+      "authentication": {
+        "authType": "NoAuth",
+        "authData": {
+          "additionalProp1": "string",
+          "additionalProp2": "string",
+          "additionalProp3": "string"
+        }
+      },
+      "body": null,
+      "parameters": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      },
+      "folderId": 1,
+      "collectionId": 1,
+      "createdAt": "2025-05-24T16:39:48.8490503",
+      "updatedAt": null,
+      "createdBy": "Admin",
+      "updatedBy": null,
+      "responses": []
+    }
+  ],
+  "error": null
+}
+
+
+2.4) - get request by folder id :
+http://localhost:5051/GetRequestsByFolderId?id=1
+
+response :
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "requestTest",
+      "httpMethod": "GET",
+      "url": "https://simple-books-api.glitch.me/status",
+      "headers": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      },
+      "authentication": {
+        "authType": "NoAuth",
+        "authData": {
+          "additionalProp1": "string",
+          "additionalProp2": "string",
+          "additionalProp3": "string"
+        }
+      },
+      "body": null,
+      "parameters": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      },
+      "folderId": 1,
+      "collectionId": 1,
+      "createdAt": "2025-05-24T16:39:48.8490503",
+      "updatedAt": null,
+      "createdBy": "Admin",
+      "updatedBy": null,
+      "responses": []
+    }
+  ],
+  "error": null
+}
+
+3)- put 
+http://localhost:5051/UpdateRequest
+request body:
+{
+  "id": 1,
+  "name": "TestRequestUpdated",
+  "httpMethod": "GET",
+  "url": "https://simple-books-api.glitch.me",
+  "headers": {
+    "additionalProp1": "string",
+    "additionalProp2": "string",
+    "additionalProp3": "string"
+  },
+  "authentication": {
+    "authType": "NoAuth",
+    "authData": {
+      "additionalProp1": "string",
+      "additionalProp2": "string",
+      "additionalProp3": "string"
+    }
+  },
+  "parameters": {
+    "additionalProp1": "string",
+    "additionalProp2": "string",
+    "additionalProp3": "string"
+  },
+  "folderId": 1,
+  "collectionId": 1
+}
+
+response body:
+
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+
+4) delete
+http://localhost:5051/DeleteRequest?id=1
+response :
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

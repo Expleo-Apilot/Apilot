@@ -1,0 +1,168 @@
+Folder Test:
+
+1)-post:
+
+http://localhost:5051/CreateFolder
+requestBody
+
+{
+  "name": "FolderTest2",
+  "collectionId": 1
+}
+
+
+response Body :
+
+{
+  "isSuccess": true,
+  "data": {
+    "id": 2,
+    "name": "FolderTest2",
+    "collectionId": 1,
+    "createdAt": "2025-05-24T10:26:27.774675+01:00",
+    "updatedAt": null,
+    "createdBy": "Admin",
+    "updatedBy": null,
+    "lastSyncDate": null,
+    "syncId": "66e12b08-dfd5-4bba-93df-d5ea7e7c4f05",
+    "requests": []
+  },
+  "error": null
+}
+
+
+2) get:
+
+2.1) get folders
+http://localhost:5051/GetFolders
+
+reponse body:
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "FolderTest",
+      "collectionId": 1,
+      "createdAt": "2025-05-24T10:26:16.9398584",
+      "updatedAt": null,
+      "createdBy": "Admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "3fe00730-64a2-440d-b2b2-c8d1a38ca83f",
+      "requests": []
+    },
+    {
+      "id": 2,
+      "name": "FolderTest2",
+      "collectionId": 1,
+      "createdAt": "2025-05-24T10:26:27.774675",
+      "updatedAt": null,
+      "createdBy": "Admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "66e12b08-dfd5-4bba-93df-d5ea7e7c4f05",
+      "requests": []
+    }
+  ],
+  "error": null
+
+2.2) get folder
+http://localhost:5051/GetFolder?id=1
+
+response body:
+{
+  "isSuccess": true,
+  "data": {
+    "id": 1,
+    "name": "FolderTest",
+    "collectionId": 1,
+    "createdAt": "2025-05-24T10:26:16.9398584",
+    "updatedAt": null,
+    "createdBy": "Admin",
+    "updatedBy": null,
+    "lastSyncDate": null,
+    "syncId": "3fe00730-64a2-440d-b2b2-c8d1a38ca83f",
+    "requests": []
+  },
+  "error": null
+}
+
+2.3) GetFolders By CollectionId
+
+http://localhost:5051/GetFoldersByCollectionId?id=1
+
+response:
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "FolderTest",
+      "collectionId": 1,
+      "createdAt": "2025-05-24T10:26:16.9398584",
+      "updatedAt": null,
+      "createdBy": "Admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "3fe00730-64a2-440d-b2b2-c8d1a38ca83f",
+      "requests": []
+    },
+    {
+      "id": 2,
+      "name": "FolderTest2",
+      "collectionId": 1,
+      "createdAt": "2025-05-24T10:26:27.774675",
+      "updatedAt": null,
+      "createdBy": "Admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "66e12b08-dfd5-4bba-93df-d5ea7e7c4f05",
+      "requests": []
+    }
+  ],
+  "error": null
+}
+
+3)-put
+
+http://localhost:5051/UpdateFolder
+
+request body:
+{
+  "id": 1,
+  "name": "FolderUpdated",
+  "collectionId": 1
+}
+
+response Body:
+
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+4) delete 
+
+http://localhost:5051/DeleteFolder?id=2
+
+
+	
+Response body
+
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+
+
+
+
+
+
+
+
+

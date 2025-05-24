@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { WorkspaceComponent } from './workspace.component';
+import { ResponseComponent } from './response.component';
 
-describe('WorkspaceComponent', () => {
-  let component: WorkspaceComponent;
-  let fixture: ComponentFixture<WorkspaceComponent>;
+describe('ResponseComponent', () => {
+  let component: ResponseComponent;
+  let fixture: ComponentFixture<ResponseComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [WorkspaceComponent]
+      declarations: [ResponseComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(WorkspaceComponent);
+    fixture = TestBed.createComponent(ResponseComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -1,0 +1,215 @@
+Collection test :
+
+1)- post:
+http://localhost:5051/CreateCollection
+
+
+- request body:
+{
+  "name": "collectinTest",
+  "description": "for test",
+  "workSpaceId": 1
+}
+
+-response body:
+{
+  "isSuccess": true,
+  "data": {
+    "id": 3,
+    "name": "collectinTest",
+    "description": "for test",
+    "workSpaceId": 1,
+    "createdAt": "2025-05-24T09:43:32.3084427+01:00",
+    "updatedAt": null,
+    "createdBy": "admin",
+    "updatedBy": null,
+    "lastSyncDate": null,
+    "syncId": "96f8a6e2-0d53-4348-b1ed-5b69aa90770a",
+    "folders": [],
+    "requests": []
+  },
+  "error": null
+}
+
+
+2)- get:
+
+2.1)- get collections
+http://localhost:5051/GetCollections
+response body:
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "samirColection",
+      "description": "for test",
+      "workSpaceId": 1,
+      "createdAt": "2025-05-19T15:30:55.2879757",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "c48d2bd1-a408-4efc-83d3-c9ccf7d68776",
+      "folders": [],
+      "requests": []
+    },
+    {
+      "id": 2,
+      "name": "samirColeection",
+      "description": "collection Test",
+      "workSpaceId": 1,
+      "createdAt": "2025-05-22T17:18:37.6544807",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "1f2753bc-8e5c-4b92-b805-61a2938c1a3c",
+      "folders": [],
+      "requests": []
+    },
+    {
+      "id": 3,
+      "name": "collectinTest",
+      "description": "for test",
+      "workSpaceId": 1,
+      "createdAt": "2025-05-24T09:43:32.3084427",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "96f8a6e2-0d53-4348-b1ed-5b69aa90770a",
+      "folders": [],
+      "requests": []
+    }
+  ],
+  "error": null
+}
+
+2.2)- get collection
+http://localhost:5051/GetCollection?id=2
+
+response:
+
+{
+  "isSuccess": true,
+  "data": {
+    "id": 2,
+    "name": "samirColeection",
+    "description": "collection Test",
+    "workSpaceId": 1,
+    "createdAt": "2025-05-22T17:18:37.6544807",
+    "updatedAt": null,
+    "createdBy": "admin",
+    "updatedBy": null,
+    "lastSyncDate": null,
+    "syncId": "1f2753bc-8e5c-4b92-b805-61a2938c1a3c",
+    "folders": [],
+    "requests": []
+  },
+  "error": null
+}
+
+2.3) get Collections By WorkspaceId
+
+http://localhost:5051/GetCollectionsByWorkspaceId?id=1
+
+response body:
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "samirColection",
+      "description": "for test",
+      "workSpaceId": 1,
+      "createdAt": "2025-05-19T15:30:55.2879757",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "c48d2bd1-a408-4efc-83d3-c9ccf7d68776",
+      "folders": [],
+      "requests": []
+    },
+    {
+      "id": 2,
+      "name": "samirColeection",
+      "description": "collection Test",
+      "workSpaceId": 1,
+      "createdAt": "2025-05-22T17:18:37.6544807",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "1f2753bc-8e5c-4b92-b805-61a2938c1a3c",
+      "folders": [],
+      "requests": []
+    },
+    {
+      "id": 3,
+      "name": "collectinTest",
+      "description": "for test",
+      "workSpaceId": 1,
+      "createdAt": "2025-05-24T09:43:32.3084427",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "96f8a6e2-0d53-4348-b1ed-5b69aa90770a",
+      "folders": [],
+      "requests": []
+    }
+  ],
+  "error": null
+}
+
+3) put
+http://localhost:5051/UpdateCollection
+request body:
+{
+  "id": 1,
+  "name": "colectioUpdated",
+  "description": "string",
+  "workSpaceId": 1
+}
+
+response body:
+
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+4)- delete 
+http://localhost:5051/DeleteCollection?id=3
+
+response body:
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

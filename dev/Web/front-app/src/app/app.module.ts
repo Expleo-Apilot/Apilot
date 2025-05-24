@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RequestModule } from './features/request/request.module';
+import { ResponseModule } from './features/response/response.module';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { RequestModule } from './features/request/request.module';
     MonacoEditorModule.forRoot(),
     SplitComponent,
     SplitAreaComponent,
-    RequestModule
+    RequestModule,
+    ResponseModule
 
   ],
   providers: [
