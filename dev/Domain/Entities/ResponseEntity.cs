@@ -1,4 +1,4 @@
-﻿using dev.Application.DTOs.Response;
+using dev.Application.DTOs.Response;
 using dev.Domain.Common;
 
 namespace dev.Domain.Entities;
@@ -13,5 +13,5 @@ public class ResponseEntity : BaseEntity
     public object? Body { get; set; }
     
     public int RequestId { get; set; }
-    public RequestEntity Request { get; set; }
+    public RequestEntity Request { get; set; } = null!;
 }

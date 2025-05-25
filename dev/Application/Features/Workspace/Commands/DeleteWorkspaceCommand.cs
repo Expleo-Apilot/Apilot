@@ -1,4 +1,4 @@
-﻿using dev.Application.Common.Models;
+using dev.Application.Common.Models;
 using dev.Application.Interfaces;
 using MediatR;
 
@@ -7,6 +7,7 @@ namespace dev.Application.Features.Workspace.Commands;
 public record DeleteWorkspaceCommand : IRequest<Result<Unit>>
 {
     public required int Id { get; init; }
+    public string UserId { get; init; } = string.Empty;
 }
 
 
@@ -25,10 +26,14 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
     {
         try
         {
-            await _workspaceService.DeleteWorkspaceAsync(request.Id);
+            await _workspaceService.DeleteWorkspaceAsync(request.Id, request.UserId);
             return Result<Unit>.Success(Unit.Value);
         }
         catch (KeyNotFoundException ex)
+        {
+            return Result<Unit>.Failure(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
         {
             return Result<Unit>.Failure(ex.Message);
         }

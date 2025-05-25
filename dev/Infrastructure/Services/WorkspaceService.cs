@@ -4,6 +4,7 @@ using dev.Application.Interfaces;
 using dev.Domain.Entities;
 using dev.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace dev.Infrastructure.Services;
 
@@ -26,20 +27,27 @@ public class WorkspaceService : IWorkspaceService
     {
         try
         {
-            _logger.LogInformation("Creating workspace with name: {Name}", workspaceDto.Name);
+            _logger.LogInformation("Creating workspace with name: {Name} for user: {UserId}", workspaceDto.Name, workspaceDto.UserId);
             
             var workspace = _mapper.Map<Workspace>(workspaceDto);
             
             workspace.CreatedAt = DateTime.Now;
             workspace.IsDeleted = false;
             workspace.IsSync = false;
-            workspace.CreatedBy = "admin";
+            workspace.CreatedBy = workspaceDto.UserId;
+            workspace.UpdatedBy = workspaceDto.UserId; // Set the updater to the current user ID
             workspace.SyncId = Guid.NewGuid();
+            
+
+            if (string.IsNullOrEmpty(workspace.UserId))
+            {
+                throw new ArgumentException("User ID is required to create a workspace");
+            }
             
             await _context.Workspaces.AddAsync(workspace);
             await _context.SaveChangesAsync();
             
-            _logger.LogInformation("Workspace created successfully with ID: {Id}", workspace.Id);
+            _logger.LogInformation("Workspace created successfully with ID: {Id} for user: {UserId}", workspace.Id, workspace.UserId);
             return _mapper.Map<WorkspaceDto>(workspace);
         }
         catch (Exception ex)
@@ -66,6 +74,26 @@ public class WorkspaceService : IWorkspaceService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching all workspaces");
+            throw;
+        }
+    }
+    
+    public async Task<List<WorkspaceDto>> GetWorkspacesByUserIdAsync(string userId)
+    {
+        try
+        {
+            _logger.LogInformation("Fetching workspaces for user: {UserId}", userId);
+            
+            var workspaces = await _context.Workspaces
+                .Where(w => w.UserId == userId && !w.IsDeleted)
+                .ToListAsync();
+            
+            _logger.LogInformation("Retrieved {Count} workspaces for user {UserId}", workspaces.Count, userId);
+            return _mapper.Map<List<WorkspaceDto>>(workspaces);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching workspaces for user {UserId}", userId);
             throw;
         }
     }
@@ -109,12 +137,12 @@ public class WorkspaceService : IWorkspaceService
     
     public async Task UpdateWorkspaceAsync(UpdateWorkspaceDto workspaceDto)
     {
-        _logger.LogInformation("Updating workspace with ID: {Id}", workspaceDto.Id);
+        _logger.LogInformation("Updating workspace with ID: {Id} for user: {UserId}", workspaceDto.Id, workspaceDto.UserId);
 
         try
         {
             var workspace = await _context.Workspaces
-                .FirstOrDefaultAsync(w => w.Id == workspaceDto.Id );
+                .FirstOrDefaultAsync(w => w.Id == workspaceDto.Id);
                 
             if (workspace == null)
             {
@@ -122,16 +150,28 @@ public class WorkspaceService : IWorkspaceService
                 throw new KeyNotFoundException($"Workspace with ID {workspaceDto.Id} not found");
             }
             
+            // Verify that the user owns this workspace
+            if (workspace.UserId != workspaceDto.UserId)
+            {
+                _logger.LogWarning("User {UserId} attempted to update workspace {Id} owned by {OwnerId}", 
+                    workspaceDto.UserId, workspaceDto.Id, workspace.UserId);
+                throw new UnauthorizedAccessException("You do not have permission to update this workspace");
+            }
+            
             _mapper.Map(workspaceDto, workspace);
             workspace.UpdatedAt = DateTime.UtcNow;
-            workspace.UpdatedBy = "admin";
+            workspace.UpdatedBy = workspaceDto.UserId; // Set the updater to the current user ID
             workspace.IsSync = false;
             await _context.SaveChangesAsync();
             
-            _logger.LogInformation("Workspace with ID {Id} updated successfully", workspaceDto.Id);
+            _logger.LogInformation("Workspace with ID {Id} updated successfully by user {UserId}", workspaceDto.Id, workspaceDto.UserId);
            
         }
         catch (KeyNotFoundException)
+        {
+            throw;
+        }
+        catch (UnauthorizedAccessException)
         {
             throw;
         }
@@ -144,9 +184,9 @@ public class WorkspaceService : IWorkspaceService
 
     
     
-   public async Task DeleteWorkspaceAsync(int id)
+   public async Task DeleteWorkspaceAsync(int id, string userId)
 {
-    _logger.LogInformation("Deleting workspace with ID: {Id} and all associated entities", id);
+    _logger.LogInformation("Deleting workspace with ID: {Id} and all associated entities for user: {UserId}", id, userId);
 
     try
     {
@@ -170,6 +210,14 @@ public class WorkspaceService : IWorkspaceService
             {
                 _logger.LogWarning("Workspace with ID {Id} not found for delete", id);
                 throw new KeyNotFoundException($"Workspace with ID {id} not found");
+            }
+            
+            // Verify that the user owns this workspace
+            if (workspace.UserId != userId)
+            {
+                _logger.LogWarning("User {UserId} attempted to delete workspace {Id} owned by {OwnerId}", 
+                    userId, id, workspace.UserId);
+                throw new UnauthorizedAccessException("You do not have permission to delete this workspace");
             }
             
             

@@ -1,4 +1,4 @@
-﻿using Apilot.Domain.Enums;
+using Apilot.Domain.Enums;
 using dev.Application.DTOs.AuthenticationDto;
 using dev.Domain.Common;
 
@@ -16,9 +16,9 @@ public class RequestEntity : BaseEntity
     
     
     public int? FolderId { get; set; }
-    public Folder Folder { get; set; }
+    public Folder Folder { get; set; } = null!;
     public int? CollectionId { get; set; }
-    public Collection Collection { get; set; }
+    public Collection Collection { get; set; } = null!;
     
-    public List<ResponseEntity> Responses { get; set; }
+    public List<ResponseEntity> Responses { get; set; } = new List<ResponseEntity>();
 }
