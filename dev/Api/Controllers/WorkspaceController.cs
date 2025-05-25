@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
 
+
 [ApiController]
 [Route("")]
 [Authorize]
@@ -23,7 +24,9 @@ public class WorkspaceController : ControllerBase
     }
 
 
+
     [HttpPost("/CreateWorkspace")]
+
     public async Task<IActionResult> CreateWorkspace([FromBody] CreateWorkspaceDto request)
     {
 
@@ -44,6 +47,7 @@ public class WorkspaceController : ControllerBase
     }
     
     
+
     [HttpPut("/UpdateWorkspace")]
     public async Task<IActionResult> UpdateWorkspace([FromBody] UpdateWorkspaceDto request)
     {
@@ -77,7 +81,9 @@ public class WorkspaceController : ControllerBase
     }
 
     
+
     [HttpDelete("/DeleteWorkspace")]
+
     public async Task<IActionResult> DeleteWorkspace([FromQuery] int id)
     {
 
@@ -107,7 +113,9 @@ public class WorkspaceController : ControllerBase
     }
 
 
+
     [HttpGet("/GetWorkspaces")]
+
     public async Task<IActionResult> GetWorkspaces()
     {
 
@@ -123,6 +131,7 @@ public class WorkspaceController : ControllerBase
     }
 
     
+
     [HttpGet("/GetWorkspace")]
     public async Task<IActionResult> GetWorkspace([FromQuery] int id)
     {
