@@ -1,21 +1,26 @@
-﻿using dev.Application.DTOs.Environment;
+using dev.Application.DTOs.Environment;
 using dev.Application.Features.Environment.Commands;
 using dev.Application.Features.Environment.Queries;
+using dev.Application.Services.CurrentUser;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
 
 [ApiController]
 [Route("")]
+[Authorize]
 public class EnvironmentController : ControllerBase
 {
     
     private readonly IMediator _mediator;
+    private readonly ICurrentUserService _currentUserService;
 
-    public EnvironmentController(IMediator mediator)
+    public EnvironmentController(IMediator mediator, ICurrentUserService currentUserService)
     {
         _mediator = mediator;
+        _currentUserService = currentUserService;
     }
 
     [HttpPost("/CreateEnvironment")]

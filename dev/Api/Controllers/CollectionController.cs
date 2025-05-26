@@ -1,7 +1,9 @@
 using dev.Application.DTOs.Collection;
 using dev.Application.Features.Collection.Commands;
 using dev.Application.Features.Collection.Queries;
+using dev.Application.Services.CurrentUser;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
@@ -9,14 +11,17 @@ namespace dev.Api.Controllers;
 
 [ApiController]
 [Route("")]
+[Authorize]
 public class CollectionController : ControllerBase
 {
     
     private readonly IMediator _mediator;
+    private readonly ICurrentUserService _currentUserService;
 
-    public CollectionController(IMediator mediator)
+    public CollectionController(IMediator mediator, ICurrentUserService currentUserService)
     {
         _mediator = mediator;
+        _currentUserService = currentUserService;
     }
     
     
