@@ -1,20 +1,25 @@
-﻿using dev.Application.DTOs.Request;
+using dev.Application.DTOs.Request;
 using dev.Application.Features.Request.Commands;
 using dev.Application.Features.Request.Queries;
+using dev.Application.Services.CurrentUser;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
 
 [ApiController]
 [Route("")]
+[Authorize]
 public class RequestController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ICurrentUserService _currentUserService;
 
-    public RequestController(IMediator mediator)
+    public RequestController(IMediator mediator, ICurrentUserService currentUserService)
     {
         _mediator = mediator;
+        _currentUserService = currentUserService;
     }
     
     [HttpPost("/SaveRequest")]

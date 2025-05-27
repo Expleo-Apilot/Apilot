@@ -2,6 +2,7 @@
 using dev.Application.Features.Response.Commands;
 using dev.Application.Features.Response.Queries;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
@@ -9,6 +10,7 @@ namespace dev.Api.Controllers;
 
 [ApiController]
 [Route("")]
+[Authorize]
 public class ResponseController : ControllerBase
 {
     private readonly IMediator _mediator;

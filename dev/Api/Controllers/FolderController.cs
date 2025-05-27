@@ -2,12 +2,14 @@
 using dev.Application.Features.Folder.Commands;
 using dev.Application.Features.Folder.Queries;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
 
 [ApiController]
 [Route("")]
+[Authorize]
 public class FolderController : ControllerBase
 {
  

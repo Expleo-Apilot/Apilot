@@ -4,12 +4,16 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <InvariantGlobalization>false</InvariantGlobalization>
+
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="14.0.0" />
         <PackageReference Include="MediatR" Version="12.5.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.4" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.4" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.4">
           <PrivateAssets>all</PrivateAssets>
@@ -24,6 +28,7 @@
         <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.24" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.0" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
         <PackageReference Include="YamlDotNet" Version="16.3.0" />
     </ItemGroup>
 

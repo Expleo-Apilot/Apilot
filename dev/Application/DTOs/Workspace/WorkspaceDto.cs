@@ -1,4 +1,4 @@
-﻿using dev.Application.DTOs.Collection;
+using dev.Application.DTOs.Collection;
 using dev.Application.DTOs.Environment;
 using dev.Application.DTOs.History;
 
@@ -9,6 +9,10 @@ public class WorkspaceDto
     public int Id { get; set; }
     public required string Name { get; set; } 
     public required string Description { get; set; }
+
+
+    public string UserId { get; set; } = string.Empty;
+    public string? UserName { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

@@ -1,11 +1,13 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using dev.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Environment = dev.Domain.Entities.Environment;
 
 namespace dev.Infrastructure.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
@@ -23,6 +25,13 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasMany(u => u.Workspaces)
+            .WithOne(w => w.User)
+            .HasForeignKey(w => w.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
         
         
         

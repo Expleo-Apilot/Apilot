@@ -1,12 +1,14 @@
 ﻿using dev.Application.DTOs.Swagger;
 using dev.Application.Features.SwaggerImport.Commands;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dev.Api.Controllers;
 
 [Route("")]
 [ApiController]
+[Authorize]
 public class SwaggerController : ControllerBase
 {
     
