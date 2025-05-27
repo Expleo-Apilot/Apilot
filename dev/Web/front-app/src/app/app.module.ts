@@ -7,7 +7,7 @@ import {LayoutModule} from './layout/layout.module';
 import {AngularSplitModule, SplitAreaComponent, SplitComponent} from 'angular-split';
 import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
 import { MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RequestModule } from './features/request/request.module';
 import { ResponseModule } from './features/response/response.module';
 import { WorkspaceModule } from './features/workspace/workspace.module';
+import { AuthInterceptor } from './auth/auth.interceptor';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { WorkspaceModule } from './features/workspace/workspace.module';
     WorkspaceModule
   ],
   providers: [
-    provideClientHydration(withEventReplay())
+    provideClientHydration(withEventReplay()),
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]
 })

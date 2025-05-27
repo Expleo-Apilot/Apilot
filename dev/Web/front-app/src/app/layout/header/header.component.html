@@ -8,7 +8,7 @@
       <span class="brand">Expleo</span>
       <span class="bracket">)</span>
     </div>
-    <button class="workspace-tab" mat-button (click)="toggleWorkspaceMenu($event)">Workspaces</button>
+    <button class="workspace-tab" mat-button [disabled]="!isLoggedIn" (click)="toggleWorkspaceMenu($event)">Workspaces</button>
   </div>
 
   <div class="center-section">
@@ -17,13 +17,24 @@
   </div>
 
   <div class="right-section">
-    <button mat-flat-button color="accent" class="invite-button">
+    <!-- Sign in button when not authenticated -->
+    <button *ngIf="!isLoggedIn" mat-flat-button color="primary" class="signin-button" routerLink="/auth/signin">
+      <mat-icon>login</mat-icon>
+      Sign In
+    </button>
+    <!-- Invite button when authenticated -->
+    <button *ngIf="isLoggedIn" mat-flat-button color="accent" class="invite-button">
       <mat-icon>person_add</mat-icon>
       Invite
     </button>
-    <button mat-icon-button aria-label="User profile">
-      <mat-icon>account_circle</mat-icon>
-    </button>
+    <div class="user-section" *ngIf="isLoggedIn">
+      <span class="username" *ngIf="currentUser">
+        {{ currentUser.firstName || currentUser.username || 'User' }}
+      </span>
+      <button mat-icon-button aria-label="User profile">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+    </div>
     <button mat-icon-button aria-label="Settings">
       <mat-icon>settings</mat-icon>
     </button>
@@ -32,6 +43,9 @@
     </button>
     <button mat-icon-button aria-label="Notifications">
       <mat-icon>notifications</mat-icon>
+    </button>
+    <button mat-icon-button *ngIf="isLoggedIn" (click)="logout()" aria-label="Logout" class="logout-button">
+      <mat-icon>exit_to_app</mat-icon>
     </button>
   </div>
 </mat-toolbar>

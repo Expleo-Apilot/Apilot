@@ -1,8 +1,10 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
 import { LoginComponent } from './login/login.component';
 import { SinginComponent } from './singin/singin.component';
 import { SingupComponent } from './singup/singup.component';
+import { AuthRoutingModule } from './auth-routing.module';
 
 
 
@@ -13,7 +15,9 @@ import { SingupComponent } from './singup/singup.component';
     SingupComponent
   ],
   imports: [
-    CommonModule
+    CommonModule,
+    ReactiveFormsModule,
+    AuthRoutingModule
   ]
 })
 export class AuthModule { }

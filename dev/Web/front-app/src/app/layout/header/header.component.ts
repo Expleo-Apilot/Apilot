@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Workspace } from '../../core/models/workspace.model';
 import { WorkspaceMenuComponent } from '../../features/workspace/workspace-menu/workspace-menu.component';
+import { AuthService } from '../../auth.service';
 
 @Component({
   selector: 'app-header',
@@ -13,10 +14,13 @@ export class HeaderComponent implements OnInit {
   isDarkMode = false;
   showWorkspaceMenu = false;
   apiIconHovered = false;
-  currentUser = { name: 'User', avatar: '' }; // Placeholder, replace with real user
+  currentUser: any;
+  isLoggedIn = false;
   workspaceMenuPosition: { top: string; left: string } = { top: '0px', left: '0px' };
   
   @ViewChild('workspaceMenuContainer') workspaceMenuContainer!: ElementRef;
+  
+  constructor(private authService: AuthService) {}
 
   ngOnInit() {
     // Load theme from localStorage
@@ -24,6 +28,16 @@ export class HeaderComponent implements OnInit {
     this.isDarkMode = savedTheme === 'dark';
 
     this.applyTheme();
+    
+    // Subscribe to auth state changes
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+      this.isLoggedIn = !!user;
+    });
+    
+    // Check initial auth state
+    this.isLoggedIn = this.authService.isLoggedIn();
+    this.currentUser = this.authService.getCurrentUser();
   }
 
   toggleTheme() {
@@ -97,5 +111,9 @@ export class HeaderComponent implements OnInit {
     ) {
       this.closeWorkspaceMenu();
     }
+  }
+  
+  logout() {
+    this.authService.logout();
   }
 }
