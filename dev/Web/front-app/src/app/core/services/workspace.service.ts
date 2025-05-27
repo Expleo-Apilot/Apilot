@@ -1,30 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Workspace } from '../models/workspace.model';
+/*import { Workspace } from '../models/workspace.model';*/
+import {WorkspaceCreateRequest} from '../models/workspace.model';
+import {WorkspaceUpdateRequest} from '../models/workspace.model';
+import {WorkspaceResponse} from '../models/workspace.model';
+import {WorkspacesResponse} from '../models/workspace.model';
 
-export interface WorkspaceCreateRequest {
-  name: string;
-  description: string;
-}
 
-export interface WorkspaceUpdateRequest {
-  id: number;
-  name?: string;
-  description?: string;
-}
-
-export interface WorkspaceResponse {
-  isSuccess: boolean;
-  data: Workspace;
-  error: string | null;
-}
-
-export interface WorkspacesResponse {
-  isSuccess: boolean;
-  data: Workspace[];
-  error: string | null;
-}
 
 @Injectable({
   providedIn: 'root'

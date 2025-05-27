@@ -1,3 +1,4 @@
+import {Collection} from './collection.model';
 export interface Workspace {
   id: number;
   name: string;
@@ -13,20 +14,30 @@ export interface Workspace {
   histories: any[];
 }
 
-export interface Collection {
-  id: number;
+
+export interface WorkspaceCreateRequest {
   name: string;
   description: string;
-  workSpaceId: number;
-  createdAt: string;
-  updatedAt: string | null;
-  createdBy: string;
-  updatedBy: string | null;
-  lastSyncDate: string | null;
-  syncId: string;
-  folders: any[];
-  requests: any[];
 }
+
+export interface WorkspaceUpdateRequest {
+  id: number;
+  name?: string;
+  description?: string;
+}
+
+export interface WorkspaceResponse {
+  isSuccess: boolean;
+  data: Workspace;
+  error: string | null;
+}
+
+export interface WorkspacesResponse {
+  isSuccess: boolean;
+  data: Workspace[];
+  error: string | null;
+}
+
 
 export interface Environment {
   id: number;

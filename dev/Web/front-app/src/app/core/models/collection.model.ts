@@ -16,6 +16,7 @@ export interface Collection {
   requests: Request[];
 }
 
+
 export interface CreateCollectionRequest {
   name: string;
   description?: string;
