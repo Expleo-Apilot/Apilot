@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiResponse, Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../models/collection.model';
 
@@ -10,6 +10,18 @@ export class CollectionService {
   private baseUrl = 'http://localhost:5051';
 
   constructor(private http: HttpClient) { }
+  
+  private getAuthHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+  }
+
+  private getHttpOptions() {
+    return {
+      headers: this.getAuthHeaders()
+    };
+  }
 
   /**
    * Create a new collection
@@ -17,7 +29,7 @@ export class CollectionService {
    * @returns Observable of the created collection
    */
   createCollection(request: CreateCollectionRequest): Observable<ApiResponse<Collection>> {
-    return this.http.post<ApiResponse<Collection>>(`${this.baseUrl}/CreateCollection`, request);
+    return this.http.post<ApiResponse<Collection>>(`${this.baseUrl}/CreateCollection`, request, this.getHttpOptions());
   }
 
   /**
@@ -25,7 +37,7 @@ export class CollectionService {
    * @returns Observable of all collections
    */
   getCollections(): Observable<ApiResponse<Collection[]>> {
-    return this.http.get<ApiResponse<Collection[]>>(`${this.baseUrl}/GetCollections`);
+    return this.http.get<ApiResponse<Collection[]>>(`${this.baseUrl}/GetCollections`, this.getHttpOptions());
   }
 
   /**
@@ -35,7 +47,8 @@ export class CollectionService {
    */
   getCollection(id: number): Observable<ApiResponse<Collection>> {
     return this.http.get<ApiResponse<Collection>>(`${this.baseUrl}/GetCollection`, {
-      params: { id: id.toString() }
+      params: { id: id.toString() },
+      headers: this.getAuthHeaders()
     });
   }
 
@@ -46,7 +59,8 @@ export class CollectionService {
    */
   getCollectionsByWorkspaceId(workspaceId: number): Observable<ApiResponse<Collection[]>> {
     return this.http.get<ApiResponse<Collection[]>>(`${this.baseUrl}/GetCollectionsByWorkspaceId`, {
-      params: { id: workspaceId.toString() }
+      params: { id: workspaceId.toString() },
+      headers: this.getAuthHeaders()
     });
   }
 
@@ -56,7 +70,7 @@ export class CollectionService {
    * @returns Observable of the update operation result
    */
   updateCollection(request: UpdateCollectionRequest): Observable<ApiResponse<any>> {
-    return this.http.put<ApiResponse<any>>(`${this.baseUrl}/UpdateCollection`, request);
+    return this.http.put<ApiResponse<any>>(`${this.baseUrl}/UpdateCollection`, request, this.getHttpOptions());
   }
 
   /**
@@ -66,7 +80,8 @@ export class CollectionService {
    */
   deleteCollection(id: number): Observable<ApiResponse<any>> {
     return this.http.delete<ApiResponse<any>>(`${this.baseUrl}/DeleteCollection`, {
-      params: { id: id.toString() }
+      params: { id: id.toString() },
+      headers: this.getAuthHeaders()
     });
   }
 }

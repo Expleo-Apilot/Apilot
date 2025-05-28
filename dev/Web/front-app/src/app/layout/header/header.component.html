@@ -50,13 +50,69 @@
   </div>
 </mat-toolbar>
 
-<!-- Custom workspace menu overlay -->
-<div *ngIf="showWorkspaceMenu" class="workspace-menu-overlay">
-  <div #workspaceMenuContainer class="workspace-menu-wrapper" [style.top]="workspaceMenuPosition.top" [style.left]="workspaceMenuPosition.left">
-    <app-workspace-menu
-      [currentUser]="currentUser"
-      (workspaceSelected)="onWorkspaceSelected($event)"
-      (closeMenu)="closeWorkspaceMenu()"
-    ></app-workspace-menu>
+<!-- Workspace Tabs Overlay -->
+<div *ngIf="showWorkspaceMenu" class="workspace-tabs-overlay">
+  <div #workspaceMenuContainer class="workspace-tabs-wrapper" [style.top]="workspaceMenuPosition.top" [style.left]="workspaceMenuPosition.left">
+    <div class="workspace-tabs-header">
+      <h3>Workspaces</h3>
+      <button mat-icon-button (click)="closeWorkspaceMenu()" aria-label="Close tabs">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div class="workspace-tabs-content">
+      <div class="workspace-tabs-list">
+        <div class="workspace-tab-item" *ngFor="let ws of workspaces" 
+             [class.active]="selectedWorkspaceId === ws.id"
+             (click)="selectWorkspace(ws)">
+          <div class="tab-icon">
+            <mat-icon>{{getWorkspaceIcon(ws)}}</mat-icon>
+          </div>
+          <div class="tab-details">
+            <div class="tab-name">{{ws.name}}</div>
+            <div class="tab-description">{{ws.description || 'No description'}}</div>
+          </div>
+        </div>
+        
+        <div class="workspace-tab-item add-tab" (click)="openCreateWorkspaceModal()">
+          <div class="tab-icon">
+            <mat-icon>add</mat-icon>
+          </div>
+          <div class="tab-details">
+            <div class="tab-name">Create New Workspace</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Workspace Modal -->
+<div *ngIf="showCreateWorkspaceModal" class="workspace-modal-overlay">
+  <div class="workspace-modal">
+    <div class="modal-header">
+      <h3>Create New Workspace</h3>
+      <button mat-icon-button (click)="closeCreateWorkspaceModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="createWorkspace()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="newWorkspace.name" name="name" required>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput [(ngModel)]="newWorkspace.description" name="description" rows="3"></textarea>
+        </mat-form-field>
+        
+        <div class="modal-actions">
+          <button mat-button type="button" (click)="closeCreateWorkspaceModal()">Cancel</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="!newWorkspace.name">Create</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>

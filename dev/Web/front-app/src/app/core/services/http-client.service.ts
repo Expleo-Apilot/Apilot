@@ -10,6 +10,18 @@ export class HttpClientService {
   private apiUrl = 'http://localhost:5051/PerformRequest'; // API endpoint from your
 
   constructor(private http: HttpClient) { }
+  
+  private getAuthHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+  }
+
+  private getHttpOptions() {
+    return {
+      headers: this.getAuthHeaders()
+    };
+  }
 
   /**
    * Send an HTTP request based on the provided parameters
@@ -42,8 +54,8 @@ export class HttpClientService {
       authentication: auth
     };
 
-    // Send the HTTP request
-    return this.http.post<any>(this.apiUrl, requestPayload);
+    // Send the HTTP request with authorization header
+    return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions());
   }
 
   /**

@@ -18,12 +18,14 @@ export interface Workspace {
 export interface WorkspaceCreateRequest {
   name: string;
   description: string;
+  userId : string;
 }
 
 export interface WorkspaceUpdateRequest {
   id: number;
   name?: string;
   description?: string;
+  userId : string;
 }
 
 export interface WorkspaceResponse {

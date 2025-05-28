@@ -9,14 +9,14 @@
     <as-split-area [size]="mainContentSize" [minSize]="panelMinSize">
       <as-split direction="vertical" unit="percent" [gutterSize]="6" (dragEnd)="onVerticalDragEnd($event)">
         <!-- Request Pane -->
-        <as-split-area [size]="requestPaneSize" [minSize]="15">
+        <as-split-area [size]="requestPaneSize" [minSize]="0">
           <div class="request-editor">
             <app-request-editor></app-request-editor>
           </div>
         </as-split-area>
 
         <!-- Response Pane -->
-        <as-split-area [size]="responsePaneSize">
+        <as-split-area [size]="responsePaneSize" [minSize]="0">
           <div class="response-pane">
             <app-response></app-response>
           </div>

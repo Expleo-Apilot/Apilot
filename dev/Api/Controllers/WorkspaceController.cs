@@ -83,7 +83,6 @@ public class WorkspaceController : ControllerBase
     
 
     [HttpDelete("/DeleteWorkspace")]
-
     public async Task<IActionResult> DeleteWorkspace([FromQuery] int id)
     {
 
@@ -115,7 +114,6 @@ public class WorkspaceController : ControllerBase
 
 
     [HttpGet("/GetWorkspaces")]
-
     public async Task<IActionResult> GetWorkspaces()
     {
 

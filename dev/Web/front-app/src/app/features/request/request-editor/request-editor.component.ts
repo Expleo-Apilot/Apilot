@@ -2,6 +2,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpMethod } from '../../../core/models/http-method.enum';
+import { AuthType } from '../../../core/models/auth-type.enum';
 import { HttpClientService } from '../../../core/services/http-client.service';
 import { KeyValuePair } from '../../../core/models/request.model';
 import { ResponseService } from '../../../core/services/response.service';
@@ -15,6 +16,7 @@ import { ResponseService } from '../../../core/services/response.service';
 export class RequestEditorComponent implements OnInit {
   requestForm!: FormGroup;
   httpMethods = Object.values(HttpMethod);
+  authTypes = Object.values(AuthType);
 
   headers: KeyValuePair[] = [{ key: '', value: '', enabled: true }];
   params: KeyValuePair[] = [{ key: '', value: '', enabled: true }];
@@ -24,6 +26,12 @@ export class RequestEditorComponent implements OnInit {
 
   // Declare bodyType property
   bodyType: 'none' | 'json' | 'text' | 'form' = 'json'; // Default to JSON
+  
+  // Authentication properties
+  selectedAuthType: AuthType = AuthType.NONE;
+  basicAuthUsername: string = '';
+  basicAuthPassword: string = '';
+  bearerToken: string = '';
 
   // Monaco editor options with improved configuration
   bodyEditorOptions = {
@@ -76,7 +84,11 @@ export class RequestEditorComponent implements OnInit {
     this.requestForm = this.fb.group({
       url: ['https://simple-books-api.glitch.me', [Validators.required]],
       method: [HttpMethod.GET, [Validators.required]],
-      body: ['{\n  "key": "value"\n}']
+      body: ['{\n  "key": "value"\n}'],
+      authType: [AuthType.NONE],
+      basicAuthUsername: [''],
+      basicAuthPassword: [''],
+      bearerToken: ['']
     });
 
     // React to method changes to update body validation
@@ -86,6 +98,12 @@ export class RequestEditorComponent implements OnInit {
       } else {
         this.requestForm.get('body')?.enable();
       }
+    });
+    
+    // React to auth type changes
+    this.requestForm.get('authType')?.valueChanges.subscribe(authType => {
+      this.selectedAuthType = authType;
+      this.updateAuthHeaders();
     });
   }
 
@@ -118,10 +136,88 @@ export class RequestEditorComponent implements OnInit {
     };
   }
 
+  /**
+   * Updates authentication headers based on selected auth type and credentials
+   * Preserves manually added headers while ensuring proper formatting
+   */
+  updateAuthHeaders(): void {
+    // Find any manually added Authorization header
+    const manualAuthHeader = this.headers.find(h => 
+      h.key.toLowerCase() === 'authorization' && 
+      this.selectedAuthType === AuthType.NONE
+    );
+    
+    // Remove existing auth headers only if we're using auth types
+    if (this.selectedAuthType !== AuthType.NONE) {
+      this.headers = this.headers.filter(h => 
+        h.key.toLowerCase() !== 'authorization' && 
+        h.key.toLowerCase() !== 'x-api-key'
+      );
+    }
+    
+    // Add appropriate auth header based on selected type
+    switch (this.selectedAuthType) {
+      case AuthType.BASIC:
+        if (this.basicAuthUsername) {
+          const credentials = btoa(`${this.basicAuthUsername}:${this.basicAuthPassword}`);
+          this.headers.unshift({
+            key: 'Authorization',
+            value: `Basic ${credentials}`,
+            enabled: true
+          });
+        }
+        break;
+        
+      case AuthType.BEARER:
+        if (this.bearerToken) {
+          // Ensure the token doesn't already have the Bearer prefix
+          const tokenValue = this.bearerToken.startsWith('Bearer ') ? 
+            this.bearerToken : 
+            `Bearer ${this.bearerToken}`;
+            
+          this.headers.unshift({
+            key: 'Authorization',
+            value: tokenValue,
+            enabled: true
+          });
+        }
+        break;
+        
+      case AuthType.API_KEY:
+        // Implement API key auth if needed
+        break;
+        
+      case AuthType.OAUTH2:
+        // Implement OAuth2 if needed
+        break;
+        
+      case AuthType.NONE:
+      default:
+        // Restore manually added Authorization header if it exists
+        if (manualAuthHeader) {
+          // Ensure we don't have duplicate Authorization headers
+          this.headers = this.headers.filter(h => h.key.toLowerCase() !== 'authorization');
+          this.headers.unshift(manualAuthHeader);
+        }
+        break;
+    }
+  }
+  
+  /**
+   * Update auth credentials and refresh headers
+   */
+  updateAuthCredentials(): void {
+    this.basicAuthUsername = this.requestForm.get('basicAuthUsername')?.value || '';
+    this.basicAuthPassword = this.requestForm.get('basicAuthPassword')?.value || '';
+    this.bearerToken = this.requestForm.get('bearerToken')?.value || '';
+    this.updateAuthHeaders();
+  }
+  
   setupDefaultHeaders(): void {
     this.headers = [
       { key: 'Content-Type', value: 'application/json', enabled: true },
       { key: 'Accept', value: 'application/json', enabled: true },
+
       { key: '', value: '', enabled: true }
     ];
   }
@@ -132,14 +228,41 @@ export class RequestEditorComponent implements OnInit {
     ];
   }
 
+  /**
+   * Adds a new header to the headers list
+   */
   addHeader(): void {
     this.headers.push({ key: '', value: '', enabled: true });
   }
 
+  /**
+   * Removes a header at the specified index
+   */
   removeHeader(index: number): void {
-    this.headers.splice(index, 1);
-    if (this.headers.length === 0) {
-      this.addHeader();
+    if (index >= 0 && index < this.headers.length) {
+      this.headers.splice(index, 1);
+      // If all headers are removed, add an empty one
+      if (this.headers.length === 0) {
+        this.addHeader();
+      }
+    }
+  }
+
+  /**
+   * Handles changes to header key/value pairs
+   * Ensures proper formatting of Authorization headers
+   */
+  onHeaderChange(header: KeyValuePair): void {
+    // If this is an Authorization header, ensure proper formatting
+    if (header.key.toLowerCase() === 'authorization') {
+      // If we're not using auth type and the header doesn't start with Bearer/Basic
+      if (this.selectedAuthType === AuthType.NONE) {
+        // Check if it's a token without the Bearer prefix
+        if (header.value && !header.value.startsWith('Bearer ') && !header.value.startsWith('Basic ')) {
+          // Auto-format as Bearer token
+          header.value = `Bearer ${header.value}`;
+        }
+      }
     }
   }
 
@@ -288,9 +411,44 @@ export class RequestEditorComponent implements OnInit {
 
     // Clear any previous response data
     this.responseService.clearResponseData();
+    
+    // Update auth credentials and headers before sending
+    this.updateAuthCredentials();
 
     const formValue = this.requestForm.value;
     let body = null;
+    
+    // Prepare authentication data for the request
+    let authData = null;
+    if (this.selectedAuthType !== AuthType.NONE) {
+      authData = {
+        authType: this.selectedAuthType,
+        authData: {}
+      };
+      
+      switch (this.selectedAuthType) {
+        case AuthType.BASIC:
+          authData.authData = {
+            username: this.basicAuthUsername,
+            password: this.basicAuthPassword
+          };
+          break;
+          
+        case AuthType.BEARER:
+          authData.authData = {
+            token: this.bearerToken
+          };
+          break;
+          
+        case AuthType.API_KEY:
+          // Will be implemented in the future
+          break;
+          
+        case AuthType.OAUTH2:
+          // Will be implemented in the future
+          break;
+      }
+    }
 
     // Process the URL with query parameters
     const processedUrl = this.processUrl(formValue.url);
@@ -317,7 +475,8 @@ export class RequestEditorComponent implements OnInit {
       formValue.method,
       validHeaders,
       this.params.filter(p => p.key.trim() !== '' && p.enabled),
-      body
+      body,
+      authData // Include authentication data in the request
     ).subscribe({
       next: (response) => {
         this.responseData = response;

@@ -1,4 +1,5 @@
 using AutoMapper;
+using dev.Application.Common.Models;
 using dev.Application.DTOs.Workspace;
 using dev.Application.Interfaces;
 using dev.Domain.Entities;
@@ -78,7 +79,7 @@ public class WorkspaceService : IWorkspaceService
         }
     }
     
-    public async Task<List<WorkspaceDto>> GetWorkspacesByUserIdAsync(string userId)
+    public async Task<Result<List<WorkspaceDto>>> GetWorkspacesByUserIdAsync(string userId)
     {
         try
         {
@@ -89,12 +90,13 @@ public class WorkspaceService : IWorkspaceService
                 .ToListAsync();
             
             _logger.LogInformation("Retrieved {Count} workspaces for user {UserId}", workspaces.Count, userId);
-            return _mapper.Map<List<WorkspaceDto>>(workspaces);
+            var workspaceDtos = _mapper.Map<List<WorkspaceDto>>(workspaces);
+            return Result<List<WorkspaceDto>>.Success(workspaceDtos);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching workspaces for user {UserId}", userId);
-            throw;
+            return Result<List<WorkspaceDto>>.Failure($"Error retrieving workspaces: {ex.Message}");
         }
     }
 

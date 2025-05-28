@@ -42,8 +42,8 @@
           <span class="custom-colored-tab">Params</span>
         </ng-template>
         <div class="tab-content">
-          <div class="key-value-table">
-            <table>
+          <div class="key-value-table custom-scrollbar">
+            <table class="fixed-table">
               <thead>
               <tr>
                 <th class="enable-column">Enabled</th>
@@ -91,8 +91,8 @@
           <span class="custom-colored-tab">Headers</span>
         </ng-template>
         <div class="tab-content">
-          <div class="key-value-table">
-            <table>
+          <div class="key-value-table custom-scrollbar">
+            <table class="fixed-table">
               <thead>
               <tr>
                 <th class="enable-column">Enabled</th>
@@ -104,16 +104,18 @@
               <tbody>
               <tr *ngFor="let header of headers; let i = index">
                 <td>
-                  <mat-checkbox [(ngModel)]="header.enabled" [ngModelOptions]="{standalone: true}"></mat-checkbox>
+                  <mat-checkbox [(ngModel)]="header.enabled" [ngModelOptions]="{standalone: true}" (ngModelChange)="cdr.detectChanges()"></mat-checkbox>
                 </td>
                 <td>
                   <mat-form-field appearance="outline" class="full-width">
-                    <input matInput [(ngModel)]="header.key" [ngModelOptions]="{standalone: true}" placeholder="Header name">
+                    <input matInput [(ngModel)]="header.key" [ngModelOptions]="{standalone: true}" placeholder="Header name"
+                           (ngModelChange)="onHeaderChange(header); cdr.detectChanges()">
                   </mat-form-field>
                 </td>
                 <td>
                   <mat-form-field appearance="outline" class="full-width">
-                    <input matInput [(ngModel)]="header.value" [ngModelOptions]="{standalone: true}" placeholder="Header value">
+                    <input matInput [(ngModel)]="header.value" [ngModelOptions]="{standalone: true}" placeholder="Header value"
+                           (ngModelChange)="onHeaderChange(header); cdr.detectChanges()">
                   </mat-form-field>
                 </td>
                 <td>
@@ -176,18 +178,53 @@
           <div class="auth-type-selector">
             <mat-form-field appearance="outline">
               <mat-label>Auth Type</mat-label>
-              <mat-select value="none">
-                <mat-option value="none">No Auth</mat-option>
-                <mat-option value="basic">Basic Auth</mat-option>
-                <mat-option value="bearer">Bearer Token</mat-option>
-                <mat-option value="oauth2">OAuth 2.0</mat-option>
-                <mat-option value="apikey">API Key</mat-option>
+              <mat-select formControlName="authType">
+                <mat-option *ngFor="let type of authTypes" [value]="type">{{ type | titlecase }}</mat-option>
               </mat-select>
             </mat-form-field>
           </div>
 
           <div class="auth-content">
-            <p>Select an authentication type to configure it</p>
+            <!-- No Auth -->
+            <div *ngIf="selectedAuthType === 'none'" class="auth-none">
+              <p>No authentication will be sent with this request.</p>
+            </div>
+
+            <!-- Basic Auth -->
+            <div *ngIf="selectedAuthType === 'basic'" class="auth-basic">
+              <div class="auth-field">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Username</mat-label>
+                  <input matInput formControlName="basicAuthUsername" placeholder="Enter username" (input)="updateAuthCredentials()">
+                </mat-form-field>
+              </div>
+              <div class="auth-field">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Password</mat-label>
+                  <input matInput type="password" formControlName="basicAuthPassword" placeholder="Enter password" (input)="updateAuthCredentials()">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Bearer Token -->
+            <div *ngIf="selectedAuthType === 'bearer'" class="auth-bearer">
+              <div class="auth-field">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Token</mat-label>
+                  <input matInput formControlName="bearerToken" placeholder="Enter token" (input)="updateAuthCredentials()">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- OAuth 2.0 -->
+            <div *ngIf="selectedAuthType === 'oauth2'" class="auth-oauth">
+              <p>OAuth 2.0 authentication will be implemented in a future update.</p>
+            </div>
+
+            <!-- API Key -->
+            <div *ngIf="selectedAuthType === 'apikey'" class="auth-apikey">
+              <p>API Key authentication will be implemented in a future update.</p>
+            </div>
           </div>
         </div>
       </mat-tab>
