@@ -38,6 +38,7 @@ export class WorkspaceMenuComponent implements OnInit {
   selectedWorkspace!: Workspace;
   showCreateModal = false;
   showEditModal = false;
+  showWorkspacesModal = false;
   modalWorkspace: Partial<Workspace> = {};
   isSubmitting = false;
   errorMsg = '';
@@ -156,6 +157,20 @@ export class WorkspaceMenuComponent implements OnInit {
     this.modalWorkspace = {};
     this.errorMsg = '';
   }
+  
+  openWorkspacesModal() {
+    this.showWorkspacesModal = true;
+    this.loadWorkspaces(); // Refresh the workspaces list
+  }
+  
+  closeWorkspacesModal() {
+    this.showWorkspacesModal = false;
+  }
+  
+  selectWorkspaceAndClose(ws: Workspace) {
+    this.selectWorkspace(ws);
+    this.closeWorkspacesModal();
+  }
 
   createWorkspace() {
     if (!this.modalWorkspace.name) return;
@@ -220,8 +235,24 @@ export class WorkspaceMenuComponent implements OnInit {
     this.selectedWorkspaceId = ws.id;
     this.saveRecent(ws.id);
     this.workspaceSelected.emit(ws);
-    this.closeMenu.emit();
-    this.loadWorkspaceById(ws.id)
+    
+    // Load the workspace data and then open the edit modal
+    this.workspaceService.getWorkspace(ws.id).subscribe({
+      next: (res) => {
+        if (res.isSuccess) {
+          this.selectedWorkspace = res.data;
+          this.saveSelectedWorkspaceToLocalStorage(res.data);
+          
+          // Open the edit modal with the loaded workspace data
+          this.openEditModal(res.data);
+        } else {
+          console.error('Error loading workspace:', res.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading workspace:', error);
+      }
+    });
   }
 
   getWorkspaceIcon(ws: Workspace) {

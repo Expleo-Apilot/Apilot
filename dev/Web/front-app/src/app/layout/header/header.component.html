@@ -50,6 +50,7 @@
   </div>
 </mat-toolbar>
 
+
 <!-- Workspace Tabs Overlay -->
 <div *ngIf="showWorkspaceMenu" class="workspace-tabs-overlay">
   <div #workspaceMenuContainer class="workspace-tabs-wrapper" [style.top]="workspaceMenuPosition.top" [style.left]="workspaceMenuPosition.left">
@@ -59,21 +60,30 @@
         <mat-icon>close</mat-icon>
       </button>
     </div>
-    
+
     <div class="workspace-tabs-content">
       <div class="workspace-tabs-list">
-        <div class="workspace-tab-item" *ngFor="let ws of workspaces" 
-             [class.active]="selectedWorkspaceId === ws.id"
-             (click)="selectWorkspace(ws)">
-          <div class="tab-icon">
-            <mat-icon>{{getWorkspaceIcon(ws)}}</mat-icon>
+        <div class="workspace-tab-item" *ngFor="let ws of workspaces"
+             [class.active]="selectedWorkspaceId === ws.id">
+          <div class="workspace-item-content" (click)="selectWorkspace(ws)">
+            <div class="tab-icon">
+              <mat-icon>{{getWorkspaceIcon(ws)}}</mat-icon>
+            </div>
+            <div class="tab-details">
+              <div class="tab-name">{{ws.name}}</div>
+              <div class="tab-description">{{ws.description || 'No description'}}</div>
+            </div>
           </div>
-          <div class="tab-details">
-            <div class="tab-name">{{ws.name}}</div>
-            <div class="tab-description">{{ws.description || 'No description'}}</div>
+          <div class="workspace-actions">
+            <button mat-icon-button color="primary" (click)="editWorkspace(ws, $event)" aria-label="Edit workspace">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteWorkspace(ws, $event)" aria-label="Delete workspace">
+              <mat-icon>delete</mat-icon>
+            </button>
           </div>
         </div>
-        
+
         <div class="workspace-tab-item add-tab" (click)="openCreateWorkspaceModal()">
           <div class="tab-icon">
             <mat-icon>add</mat-icon>
@@ -102,15 +112,45 @@
           <mat-label>Name</mat-label>
           <input matInput [(ngModel)]="newWorkspace.name" name="name" required>
         </mat-form-field>
-        
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Description</mat-label>
           <textarea matInput [(ngModel)]="newWorkspace.description" name="description" rows="3"></textarea>
         </mat-form-field>
-        
+
         <div class="modal-actions">
           <button mat-button type="button" (click)="closeCreateWorkspaceModal()">Cancel</button>
           <button mat-flat-button color="primary" type="submit" [disabled]="!newWorkspace.name">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Workspace Modal -->
+<div *ngIf="showEditWorkspaceModal && editingWorkspace" class="workspace-modal-overlay">
+  <div class="workspace-modal">
+    <div class="modal-header">
+      <h3>Edit Workspace</h3>
+      <button mat-icon-button (click)="closeEditWorkspaceModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="updateWorkspace()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="editingWorkspace.name" name="editName" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput [(ngModel)]="editingWorkspace.description" name="editDescription" rows="3"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button mat-button type="button" (click)="closeEditWorkspaceModal()">Cancel</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="!editingWorkspace.name">Update</button>
         </div>
       </form>
     </div>

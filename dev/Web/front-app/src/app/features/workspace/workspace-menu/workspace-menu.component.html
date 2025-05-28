@@ -28,8 +28,8 @@
   </div>
 
   <mat-divider></mat-divider>
-  
-  <!-- Scrollable Content Area -->  
+
+  <!-- Scrollable Content Area -->
   <div class="workspace-content-scrollable">
 
   <!-- Recent Workspaces Section -->
@@ -100,19 +100,11 @@
   </div>
   </div> <!-- Close the scrollable content area -->
 
-  <!-- Fixed Footer with User Profile -->
+  <!-- Workspace Selection Button -->
   <div class="workspace-menu-footer">
-    <div class="user-info">
-      <div class="user-avatar">
-        <mat-icon>account_circle</mat-icon>
-      </div>
-      <div class="user-details">
-        <div class="user-name">{{ currentUser?.name }}</div>
-        <div class="user-email">user&#64;example.com</div>
-      </div>
-    </div>
-    <button mat-icon-button aria-label="User settings">
-      <mat-icon>settings</mat-icon>
+    <button mat-flat-button color="primary" class="select-workspace-btn" (click)="openWorkspacesModal()">
+      <mat-icon>list</mat-icon>
+      Show All Workspaces
     </button>
   </div>
 </div>
@@ -167,4 +159,48 @@
       </button>
     </div>
   </form>
+</div>
+
+<!-- Show Workspaces Modal -->
+<div class="modal-backdrop" *ngIf="showWorkspacesModal" (click)="closeWorkspacesModal()"></div>
+<div class="modal workspaces-modal" *ngIf="showWorkspacesModal" tabindex="0" (keydown.escape)="closeWorkspacesModal()">
+  <div class="modal-header">
+    <h2>Select Workspace</h2>
+    <button mat-icon-button (click)="closeWorkspacesModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-content">
+    <div class="workspaces-list">
+      <div *ngFor="let ws of filteredWorkspaces" class="workspace-item"
+           [class.active]="ws.id === selectedWorkspaceId"
+           (click)="selectWorkspaceAndClose(ws)">
+        <div class="workspace-icon" [ngClass]="{'personal': getWorkspaceIcon(ws) === 'lock', 'team': getWorkspaceIcon(ws) === 'groups'}">
+          <mat-icon>{{getWorkspaceIcon(ws)}}</mat-icon>
+        </div>
+        <div class="workspace-details">
+          <div class="workspace-name">{{ws.name}}</div>
+          <div class="workspace-meta">{{ws.description || 'No description'}}</div>
+        </div>
+        <div class="workspace-actions">
+          <button mat-icon-button (click)="openEditModal(ws); $event.stopPropagation()" aria-label="Edit workspace">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button (click)="deleteWorkspace(ws, $event)" aria-label="Delete workspace">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+      
+      <div class="workspace-item create-new" (click)="openCreateModal()">
+        <div class="workspace-icon add">
+          <mat-icon>add</mat-icon>
+        </div>
+        <div class="workspace-details">
+          <div class="workspace-name">Create New Workspace</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

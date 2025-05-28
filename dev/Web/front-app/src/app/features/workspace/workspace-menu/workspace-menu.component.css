@@ -357,11 +357,30 @@
 .workspace-menu-footer {
   padding: 16px 20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   border-top: 1px solid var(--border-color);
   background-color: var(--background-color);
   transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.select-workspace-btn {
+  width: 100%;
+  background: linear-gradient(90deg, var(--primary-dark) 60%, var(--primary-light) 100%) !important;
+  color: white !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.2);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-theme .select-workspace-btn {
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .dark-theme .workspace-menu-footer {
@@ -411,6 +430,54 @@
   background-color: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(2px);
   z-index: 1000;
+}
+
+/* Workspaces Modal Specific Styles */
+.workspaces-modal {
+  width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspaces-modal .modal-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.workspaces-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) transparent;
+}
+
+.workspaces-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.workspaces-list::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 4px;
+}
+
+.workspace-item.create-new {
+  border: 1px dashed var(--border-color);
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+  transition: all 0.2s ease;
+}
+
+.workspace-item.create-new:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  border-color: var(--primary-color);
+}
+
+.workspace-icon.add {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.workspace-icon.add mat-icon {
+  color: var(--primary-color);
 }
 
 .modal {

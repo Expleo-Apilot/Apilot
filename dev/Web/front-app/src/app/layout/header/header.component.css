@@ -255,11 +255,60 @@ button[aria-label="Toggle workspace menu"] {
 .workspace-tab-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
   border-radius: 6px;
   margin-bottom: 8px;
-  cursor: pointer;
   transition: background-color 0.2s;
+}
+
+.workspace-item-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  cursor: pointer;
+}
+
+.workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.workspace-tab-item:hover .workspace-actions {
+  opacity: 1;
+}
+
+.workspace-actions button {
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  padding: 0;
+}
+
+.workspace-actions button mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+
+.workspace-actions button[color="primary"] {
+  color: #2196f3;
+}
+
+.workspace-actions button[color="primary"]:hover {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.workspace-actions button[color="warn"] {
+  color: #f44336;
+}
+
+.workspace-actions button[color="warn"]:hover {
+  background-color: rgba(244, 67, 54, 0.1);
 }
 
 .workspace-tab-item:hover {
