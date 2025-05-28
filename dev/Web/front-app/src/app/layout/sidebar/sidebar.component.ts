@@ -3,8 +3,9 @@ import {Component, OnInit} from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import {ActivatedRoute} from '@angular/router';
 import {CollectionService} from '../../core/services/collection.service';
+import {FolderService} from '../../core/services/folder.service';
 import {ApiResponse, Collection, CreateCollectionRequest} from '../../core/models/collection.model';
-import {Folder} from '../../core/models/folder.model';
+import {Folder, CreateFolderRequest} from '../../core/models/folder.model';
 
 
 
@@ -25,14 +26,19 @@ export class SidebarComponent implements OnInit{
   activeItemType: 'collection' | 'folder' | 'request' | null = null;
   activeItemId: number | null = null;
 
-  // Collection modal states
+  // Modal states
   showNewCollectionModal = false;
   showEditCollectionModal = false;
   showDeleteConfirmModal = false;
+  showNewFolderModal = false;
   currentCollection: Collection | null = null;
+  currentCollectionId: number | null = null;
   newCollection = {
     name: '',
     description: ''
+  };
+  newFolder = {
+    name: ''
   };
   editCollection = {
     id: 0,
@@ -48,7 +54,8 @@ export class SidebarComponent implements OnInit{
 
 
   constructor(private route: ActivatedRoute,
-              private collectionService : CollectionService) {}
+              private collectionService: CollectionService,
+              private folderService: FolderService) {}
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -178,9 +185,62 @@ export class SidebarComponent implements OnInit{
 
   // Create a new folder in a collection
   createNewFolder(collectionId: number) {
+    console.log('Creating new folder in collection:', collectionId);
+    this.currentCollectionId = collectionId;
+    this.newFolder.name = ''; // Reset the form
+    this.showNewFolderModal = true;
     this.closeItemMenu();
-    console.log(`Create new folder in collection with ID: ${collectionId}`);
-    // TODO: Implement folder creation modal
+  }
+  
+  // Close the new folder modal
+  closeNewFolderModal() {
+    this.showNewFolderModal = false;
+    this.currentCollectionId = null;
+  }
+  
+  // Submit the new folder form
+  submitNewFolder() {
+    if (!this.newFolder.name.trim() || !this.currentCollectionId) {
+      return; // Don't submit if name is empty or no collection is selected
+    }
+    
+    // Prepare the folder creation request
+    const folderRequest: CreateFolderRequest = {
+      name: this.newFolder.name.trim(),
+      collectionId: this.currentCollectionId
+    };
+    
+    // Call the API to create the folder
+    this.folderService.createFolder(folderRequest).subscribe({
+      next: (response: ApiResponse<Folder>) => {
+        if (response.isSuccess && response.data) {
+          console.log('Folder created successfully:', response.data);
+          
+          // Find the collection and add the new folder to it
+          const collection = this.collections.find(c => c.id === this.currentCollectionId);
+          if (collection) {
+            if (!collection.folders) {
+              collection.folders = [];
+            }
+            collection.folders.push(response.data);
+            
+            // Ensure the collection is expanded to show the new folder
+            if (this.currentCollectionId) {
+              this.expandedItems.add(this.currentCollectionId);
+            }
+          }
+        } else {
+          console.error('Failed to create folder:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error creating folder:', error);
+      },
+      complete: () => {
+        // Close the modal
+        this.closeNewFolderModal();
+      }
+    });
   }
 
   // Edit an item (collection, folder, or request)
