@@ -50,20 +50,22 @@
       <!-- Headers Tab -->
       <mat-tab label="Headers" [disabled]="responseHeaders.length === 0">
         <div class="tab-content">
-          <table class="key-value-table" *ngIf="responseHeaders.length > 0">
-            <thead>
-            <tr>
-              <th>Header</th>
-              <th>Value</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr *ngFor="let header of responseHeaders">
-              <td>{{ header.key }}</td>
-              <td>{{ header.value }}</td>
-            </tr>
-            </tbody>
-          </table>
+          <div class="table-container">
+            <table class="key-value-table" *ngIf="responseHeaders.length > 0">
+              <thead>
+              <tr>
+                <th>Header</th>
+                <th>Value</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let header of responseHeaders">
+                <td>{{ header.key }}</td>
+                <td>{{ header.value }}</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
           <div *ngIf="responseHeaders.length === 0" class="no-data">No headers found.</div>
         </div>
       </mat-tab>
@@ -71,30 +73,32 @@
       <!-- Cookies Tab -->
       <mat-tab label="Cookies" [disabled]="cookies.length === 0">
         <div class="tab-content">
-          <table class="key-value-table" *ngIf="cookies.length > 0">
-            <thead>
-            <tr>
-              <th>Name</th>
-              <th>Value</th>
-              <th>Properties</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr *ngFor="let cookie of cookies">
-              <td>{{ cookie.name }}</td>
-              <td>{{ cookie.value }}</td>
-              <td>
-                <ng-container *ngIf="cookie.properties && ((cookie.properties | keyvalue) ?? []).length > 0">
-                  <div *ngFor="let prop of cookie.properties | keyvalue" class="cookie-property">
-                    <span class="cookie-prop-key">{{ prop.key }}:</span>
-                    <span class="cookie-prop-value">{{ prop.value }}</span>
-                  </div>
-                </ng-container>
-                <span *ngIf="!cookie.properties || ((cookie.properties | keyvalue) ?? []).length === 0">-</span>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+          <div class="table-container">
+            <table class="key-value-table" *ngIf="cookies.length > 0">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Value</th>
+                <th>Properties</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let cookie of cookies">
+                <td>{{ cookie.name }}</td>
+                <td>{{ cookie.value }}</td>
+                <td>
+                  <ng-container *ngIf="cookie.properties && ((cookie.properties | keyvalue) ?? []).length > 0">
+                    <div *ngFor="let prop of cookie.properties | keyvalue" class="cookie-property">
+                      <span class="cookie-prop-key">{{ prop.key }}:</span>
+                      <span class="cookie-prop-value">{{ prop.value }}</span>
+                    </div>
+                  </ng-container>
+                  <span *ngIf="!cookie.properties || ((cookie.properties | keyvalue) ?? []).length === 0">-</span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
           <div *ngIf="cookies.length === 0" class="no-data">No cookies found.</div>
         </div>
       </mat-tab>

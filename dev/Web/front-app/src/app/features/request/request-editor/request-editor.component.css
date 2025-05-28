@@ -378,6 +378,39 @@ form {
   border-radius: 4px;
   border: 1px solid var(--border-color);
   transition: background-color 0.3s ease, border-color 0.3s ease;
+  height: 230px;
+  overflow-y: auto;
+}
+
+/* Auth form fields styling */
+.auth-field {
+  margin-bottom: 16px;
+}
+
+.auth-basic, .auth-bearer, .auth-oauth, .auth-apikey {
+  padding: 8px 0;
+}
+
+.auth-none p {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Custom scrollbar for auth content */
+.auth-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.auth-content::-webkit-scrollbar-track {
+  background: var(--background-color);
+  border-radius: 4px;
+}
+
+.auth-content::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 4px;
+  border: 1px solid var(--background-color);
 }
 
 /* Loading spinner */
