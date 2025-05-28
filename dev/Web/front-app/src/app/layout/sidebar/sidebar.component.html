@@ -41,12 +41,74 @@
           </div>
         </div>
       </div>
+      
+      <!-- Item Context Menu Dropdown -->
+      <div *ngIf="showItemMenu" class="item-menu-overlay">
+        <div class="item-menu-wrapper" [style.top]="itemMenuPosition.top" [style.left]="itemMenuPosition.left">
+          <!-- Collection-specific options -->
+          <ng-container *ngIf="activeItemType === 'collection'">
+            <div class="menu-item" (click)="createNewRequest('collection', activeItemId!)">
+              <mat-icon>add</mat-icon>
+              <span>New Request</span>
+            </div>
+            <div class="menu-item" (click)="createNewFolder(activeItemId!)">
+              <mat-icon>create_new_folder</mat-icon>
+              <span>New Folder</span>
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" (click)="editItem('collection', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('collection', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+          
+          <!-- Folder-specific options -->
+          <ng-container *ngIf="activeItemType === 'folder'">
+            <div class="menu-item" (click)="createNewRequest('folder', activeItemId!)">
+              <mat-icon>add</mat-icon>
+              <span>New Request</span>
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" (click)="editItem('folder', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('folder', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+          
+          <!-- Request-specific options -->
+          <ng-container *ngIf="activeItemType === 'request'">
+            <div class="menu-item" (click)="editItem('request', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('request', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
 
       <div class="collections-list">
         <div *ngFor="let collection of collections" class="collection-item">
           <div class="collection-header" (click)="toggleExpand(collection.id)">
-            <mat-icon>{{ isExpanded(collection.id) ? 'collections_bookmark' : 'collections' }}</mat-icon>
-            <span>{{ collection.name }}</span>
+            <div class="collection-icon">
+              <mat-icon>{{ isExpanded(collection.id) ? 'inventory_2' : 'inventory' }}</mat-icon>
+            </div>
+            <span class="collection-name">{{ collection.name }}</span>
+            <div class="collection-actions">
+              <button mat-icon-button class="action-button" (click)="toggleItemMenu($event, 'collection', collection.id)">
+                <mat-icon>more_horiz</mat-icon>
+              </button>
+            </div>
           </div>
 
           <div *ngIf="isExpanded(collection.id)" class="collection-content">
@@ -85,8 +147,15 @@
                    (cdkDragStarted)="onDragStarted(folder)"
                    (cdkDragEnded)="onDragEnded()">
                 <div class="folder-header" (click)="toggleExpand(folder.id)">
-                  <mat-icon>{{ isExpanded(folder.id) ? 'folder_open' : 'folder' }}</mat-icon>
-                  <span>{{ folder.name }}</span>
+                  <div class="folder-icon">
+                    <mat-icon>{{ isExpanded(folder.id) ? 'folder_open' : 'folder' }}</mat-icon>
+                  </div>
+                  <span class="folder-name">{{ folder.name }}</span>
+                  <div class="folder-actions">
+                    <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'folder', folder.id)">
+                      <mat-icon class="small-icon">more_horiz</mat-icon>
+                    </button>
+                  </div>
                 </div>
 
                 <div *ngIf="isExpanded(folder.id)" class="folder-content">
@@ -104,9 +173,15 @@
                          (cdkDragStarted)="onDragStarted(request)"
                          (cdkDragEnded)="onDragEnded()">
                       <div class="request-header">
-                        <mat-icon>subdirectory_arrow_right</mat-icon>
-                        <span class="request-method" [ngClass]="request.method.toLowerCase()">{{ request.method }}</span>
-                        <span>{{ request.name }}</span>
+                        <div class="request-icon">
+                          <span class="request-method" [ngClass]="request.method.toLowerCase()">{{ request.method }}</span>
+                        </div>
+                        <span class="request-name">{{ request.name }}</span>
+                        <div class="request-actions">
+                          <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id)">
+                            <mat-icon class="small-icon">more_horiz</mat-icon>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -222,6 +297,158 @@
           <button type="submit" class="btn-primary" [disabled]="!newCollection.name">Create</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Collection Modal -->
+<div *ngIf="showEditCollectionModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Edit Collection</h2>
+      <button mat-icon-button (click)="closeEditCollectionModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitEditCollection()">
+        <div class="form-group">
+          <label for="editCollectionName">Name</label>
+          <input
+            type="text"
+            id="editCollectionName"
+            name="editCollectionName"
+            [(ngModel)]="editCollection.name"
+            placeholder="Enter collection name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="form-group">
+          <label for="editCollectionDescription">Description</label>
+          <textarea
+            id="editCollectionDescription"
+            name="editCollectionDescription"
+            [(ngModel)]="editCollection.description"
+            placeholder="Enter collection description"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeEditCollectionModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!editCollection.name">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteConfirmModal" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Collection</h2>
+      <button mat-icon-button (click)="closeDeleteConfirmModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the collection <strong>"{{ currentCollection?.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone. All requests and folders within this collection will be permanently deleted.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteConfirmModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteCollection()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Folder Modal -->
+<div *ngIf="showNewFolderModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Create New Folder</h2>
+      <button mat-icon-button (click)="closeNewFolderModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitNewFolder()">
+        <div class="form-group">
+          <label for="folderName">Name</label>
+          <input
+            type="text"
+            id="folderName"
+            name="folderName"
+            [(ngModel)]="newFolder.name"
+            placeholder="Enter folder name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeNewFolderModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!newFolder.name">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Folder Modal -->
+<div *ngIf="showEditFolderModal && currentFolder" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Edit Folder</h2>
+      <button mat-icon-button (click)="closeEditFolderModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitEditFolder()">
+        <div class="form-group">
+          <label for="editFolderName">Name</label>
+          <input
+            type="text"
+            id="editFolderName"
+            name="editFolderName"
+            [(ngModel)]="editFolder.name"
+            placeholder="Enter folder name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeEditFolderModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!editFolder.name">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Folder Confirmation Modal -->
+<div *ngIf="showDeleteFolderModal && currentFolder" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Folder</h2>
+      <button mat-icon-button (click)="closeDeleteFolderModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the folder <strong>"{{ currentFolder?.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone. All requests within this folder will be permanently deleted.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteFolderModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteFolder()">Delete</button>
+      </div>
     </div>
   </div>
 </div>

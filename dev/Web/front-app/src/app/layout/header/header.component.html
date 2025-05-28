@@ -127,6 +127,28 @@
   </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteConfirmModal && workspaceToDelete" class="workspace-modal-overlay">
+  <div class="delete-confirm-modal">
+    <div class="modal-header warning">
+      <mat-icon class="warning-icon">warning</mat-icon>
+      <h3>Delete Workspace</h3>
+      <button mat-icon-button (click)="closeDeleteConfirmModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <p class="delete-message">Are you sure you want to delete the workspace <strong>"{{workspaceToDelete.name}}"</strong>?</p>
+      <p class="delete-warning">This action cannot be undone. All data associated with this workspace will be permanently deleted.</p>
+      
+      <div class="modal-actions">
+        <button mat-button type="button" (click)="closeDeleteConfirmModal()">Cancel</button>
+        <button mat-flat-button color="warn" (click)="confirmDeleteWorkspace()" class="delete-button">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Edit Workspace Modal -->
 <div *ngIf="showEditWorkspaceModal && editingWorkspace" class="workspace-modal-overlay">
   <div class="workspace-modal">

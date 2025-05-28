@@ -13,7 +13,7 @@ export interface RequestBody {
 }
 
 export interface Request {
-  id: string;
+  id: number;
   name: string;
   url: string;
   method: HttpMethod;

@@ -3,17 +3,9 @@ import {Component, OnInit} from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import {ActivatedRoute} from '@angular/router';
 import {CollectionService} from '../../core/services/collection.service';
+import {FolderService} from '../../core/services/folder.service';
 import {ApiResponse, Collection, CreateCollectionRequest} from '../../core/models/collection.model';
-import {Folder} from '../../core/models/folder.model';
-import {Request} from '../../core/models/request.model';
-
-// Local interface for temporary requests if needed
-interface SimpleRequest {
-  id: string;
-  name: string;
-  method: string;
-  url: string;
-}
+import {Folder, CreateFolderRequest} from '../../core/models/folder.model';
 
 
 
@@ -28,9 +20,36 @@ export class SidebarComponent implements OnInit{
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
 
-  // New collection modal state
+  // Item context menu properties
+  showItemMenu = false;
+  itemMenuPosition = { top: '0px', left: '0px' };
+  activeItemType: 'collection' | 'folder' | 'request' | null = null;
+  activeItemId: number | null = null;
+
+  // Modal states
   showNewCollectionModal = false;
+  showEditCollectionModal = false;
+  showDeleteConfirmModal = false;
+  showNewFolderModal = false;
+  showEditFolderModal = false;
+  showDeleteFolderModal = false;
+  currentCollection: Collection | null = null;
+  currentCollectionId: number | null = null;
+  currentFolder: Folder | null = null;
   newCollection = {
+    name: '',
+    description: ''
+  };
+  newFolder = {
+    name: ''
+  };
+  editFolder = {
+    id: 0,
+    name: '',
+    collectionId: 0
+  };
+  editCollection = {
+    id: 0,
     name: '',
     description: ''
   };
@@ -43,7 +62,8 @@ export class SidebarComponent implements OnInit{
 
 
   constructor(private route: ActivatedRoute,
-              private collectionService : CollectionService) {}
+              private collectionService: CollectionService,
+              private folderService: FolderService) {}
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -97,6 +117,55 @@ export class SidebarComponent implements OnInit{
     document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
   }
 
+  // Toggle item menu (for collection, folder, or request)
+  toggleItemMenu(event: MouseEvent, itemType: 'collection' | 'folder' | 'request', itemId: number) {
+    event.stopPropagation(); // Prevent event bubbling
+
+    // Calculate position based on the button that was clicked
+    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
+    if (buttonRect) {
+      this.itemMenuPosition = {
+        top: `${buttonRect.bottom + 5}px`,
+        left: `${buttonRect.left}px`
+      };
+    }
+
+    // If the same item menu is already open, close it
+    if (this.showItemMenu && this.activeItemType === itemType && this.activeItemId === itemId) {
+      this.closeItemMenu();
+      return;
+    }
+
+    // Close any other open menu
+    this.closeCollectionsMenu();
+
+    // Set active item and show menu
+    this.activeItemType = itemType;
+    this.activeItemId = itemId;
+    this.showItemMenu = true;
+
+    // Add a click listener to close the menu when clicking outside
+    setTimeout(() => {
+      document.addEventListener('click', this.closeItemMenuOnClickOutside);
+    }, 10);
+  }
+
+  // Close the item menu
+  closeItemMenu() {
+    this.showItemMenu = false;
+    this.activeItemType = null;
+    this.activeItemId = null;
+    document.removeEventListener('click', this.closeItemMenuOnClickOutside);
+  }
+
+  // Event handler to close item menu when clicking outside
+  closeItemMenuOnClickOutside = (event: MouseEvent) => {
+    if (!(event.target as HTMLElement).closest('.item-menu-wrapper') &&
+        !(event.target as HTMLElement).closest('button[mat-icon-button]')) {
+      this.closeItemMenu();
+    }
+  }
+
   // Event handler to close menu when clicking outside
   closeCollectionsMenuOnClickOutside = (event: MouseEvent) => {
     if (!(event.target as HTMLElement).closest('.collections-menu-wrapper') &&
@@ -113,6 +182,226 @@ export class SidebarComponent implements OnInit{
       name: '',
       description: ''
     };
+  }
+
+  // Create a new request in a collection or folder
+  createNewRequest(parentType: 'collection' | 'folder', parentId: number) {
+    this.closeItemMenu();
+    console.log(`Create new request in ${parentType} with ID: ${parentId}`);
+    // TODO: Implement request creation modal
+  }
+
+  // Create a new folder in a collection
+  createNewFolder(collectionId: number) {
+    console.log('Creating new folder in collection:', collectionId);
+    this.currentCollectionId = collectionId;
+    this.newFolder.name = ''; // Reset the form
+    this.showNewFolderModal = true;
+    this.closeItemMenu();
+  }
+  
+  // Close the new folder modal
+  closeNewFolderModal() {
+    this.showNewFolderModal = false;
+    this.currentCollectionId = null;
+  }
+  
+  // Close the edit folder modal
+  closeEditFolderModal() {
+    this.showEditFolderModal = false;
+    this.currentFolder = null;
+  }
+  
+  // Close the delete folder modal
+  closeDeleteFolderModal() {
+    this.showDeleteFolderModal = false;
+    this.currentFolder = null;
+  }
+  
+  // Submit the edit folder form
+  submitEditFolder() {
+    if (!this.editFolder.name.trim() || !this.currentFolder) {
+      return; // Don't submit if name is empty or no folder is selected
+    }
+    
+    // Prepare the update request
+    const updateRequest = {
+      id: this.editFolder.id,
+      name: this.editFolder.name.trim(),
+      collectionId: this.editFolder.collectionId
+    };
+    
+    // Call the API to update the folder
+    this.folderService.updateFolder(updateRequest).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.isSuccess) {
+          console.log('Folder updated successfully');
+          
+          // Update the folder in the UI
+          if (this.currentFolder) {
+            this.currentFolder.name = this.editFolder.name.trim();
+          }
+        } else {
+          console.error('Failed to update folder:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error updating folder:', error);
+      },
+      complete: () => {
+        // Close the modal
+        this.closeEditFolderModal();
+      }
+    });
+  }
+  
+  // Confirm and delete the folder
+  confirmDeleteFolder() {
+    if (!this.currentFolder) {
+      return; // Don't proceed if no folder is selected
+    }
+    
+    // Call the API to delete the folder
+    this.folderService.deleteFolder(this.currentFolder.id).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.isSuccess) {
+          console.log('Folder deleted successfully');
+          
+          // Remove the folder from the UI
+          for (const collection of this.collections) {
+            if (collection.folders && collection.id === this.currentFolder?.collectionId) {
+              const index = collection.folders.findIndex(f => f.id === this.currentFolder?.id);
+              if (index !== -1) {
+                collection.folders.splice(index, 1);
+                break;
+              }
+            }
+          }
+        } else {
+          console.error('Failed to delete folder:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting folder:', error);
+      },
+      complete: () => {
+        // Close the modal
+        this.closeDeleteFolderModal();
+      }
+    });
+  }
+  
+  // Submit the new folder form
+  submitNewFolder() {
+    if (!this.newFolder.name.trim() || !this.currentCollectionId) {
+      return; // Don't submit if name is empty or no collection is selected
+    }
+    
+    // Prepare the folder creation request
+    const folderRequest: CreateFolderRequest = {
+      name: this.newFolder.name.trim(),
+      collectionId: this.currentCollectionId
+    };
+    
+    // Call the API to create the folder
+    this.folderService.createFolder(folderRequest).subscribe({
+      next: (response: ApiResponse<Folder>) => {
+        if (response.isSuccess && response.data) {
+          console.log('Folder created successfully:', response.data);
+          
+          // Find the collection and add the new folder to it
+          const collection = this.collections.find(c => c.id === this.currentCollectionId);
+          if (collection) {
+            if (!collection.folders) {
+              collection.folders = [];
+            }
+            collection.folders.push(response.data);
+            
+            // Ensure the collection is expanded to show the new folder
+            if (this.currentCollectionId) {
+              this.expandedItems.add(this.currentCollectionId);
+            }
+          }
+        } else {
+          console.error('Failed to create folder:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error creating folder:', error);
+      },
+      complete: () => {
+        // Close the modal
+        this.closeNewFolderModal();
+      }
+    });
+  }
+
+  // Edit an item (collection, folder, or request)
+  editItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
+    this.closeItemMenu();
+    
+    if (itemType === 'collection') {
+      // Find the collection to edit
+      const collection = this.findCollectionById(itemId.toString());
+      if (collection) {
+        this.currentCollection = collection;
+        this.editCollection = {
+          id: collection.id,
+          name: collection.name,
+          description: collection.description || ''
+        };
+        this.showEditCollectionModal = true;
+      }
+    } else if (itemType === 'folder') {
+      // Find the folder to edit
+      for (const collection of this.collections) {
+        if (collection.folders) {
+          const folder = collection.folders.find(f => f.id === itemId);
+          if (folder) {
+            this.currentFolder = folder;
+            this.editFolder = {
+              id: folder.id,
+              name: folder.name,
+              collectionId: folder.collectionId
+            };
+            this.showEditFolderModal = true;
+            break;
+          }
+        }
+      }
+    } else if (itemType === 'request') {
+      console.log(`Edit request with ID: ${itemId}`);
+      // TODO: Implement request edit functionality
+    }
+  }
+
+  // Delete an item (collection, folder, or request)
+  deleteItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
+    this.closeItemMenu();
+    
+    if (itemType === 'collection') {
+      // Find the collection to delete
+      const collection = this.findCollectionById(itemId.toString());
+      if (collection) {
+        this.currentCollection = collection;
+        this.showDeleteConfirmModal = true;
+      }
+    } else if (itemType === 'folder') {
+      // Find the folder to delete
+      for (const collection of this.collections) {
+        if (collection.folders) {
+          const folder = collection.folders.find(f => f.id === itemId);
+          if (folder) {
+            this.currentFolder = folder;
+            this.showDeleteFolderModal = true;
+            break;
+          }
+        }
+      }
+    } else if (itemType === 'request') {
+      console.log(`Delete request with ID: ${itemId}`);
+      // TODO: Implement request delete functionality
+    }
   }
 
   // Handle importing a collection
@@ -231,6 +520,18 @@ export class SidebarComponent implements OnInit{
   closeNewCollectionModal() {
     this.showNewCollectionModal = false;
   }
+  
+  // Close the edit collection modal
+  closeEditCollectionModal() {
+    this.showEditCollectionModal = false;
+    this.currentCollection = null;
+  }
+  
+  // Close the delete confirmation modal
+  closeDeleteConfirmModal() {
+    this.showDeleteConfirmModal = false;
+    this.currentCollection = null;
+  }
 
   // Submit the new collection form
   submitNewCollection() {
@@ -263,6 +564,66 @@ export class SidebarComponent implements OnInit{
 
     // Close the modal
     this.closeNewCollectionModal();
+  }
+  
+  // Submit the edit collection form
+  submitEditCollection() {
+    if (!this.editCollection.name.trim() || !this.currentCollection) {
+      return; // Don't submit if name is empty or no collection is selected
+    }
+    
+    // Prepare the update request
+    const updateRequest = {
+      id: this.editCollection.id,
+      name: this.editCollection.name.trim(),
+      description: this.editCollection.description.trim(),
+      workSpaceId: this.workspaceId
+    };
+    
+    // Call the API to update the collection
+    this.collectionService.updateCollection(updateRequest).subscribe({
+      next: (response: ApiResponse<Collection>) => {
+        if (response.isSuccess) {
+          console.log('Collection updated successfully:', response.data);
+          // Reload collections to get the updated list
+          this.loadCollections();
+        } else {
+          console.error('Failed to update collection:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error updating collection:', error);
+      }
+    });
+    
+    // Close the modal
+    this.closeEditCollectionModal();
+  }
+  
+  // Confirm and delete the collection
+  confirmDeleteCollection() {
+    if (!this.currentCollection) {
+      return; // Don't proceed if no collection is selected
+    }
+    
+    // Call the API to delete the collection
+    this.collectionService.deleteCollection(this.currentCollection.id).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.isSuccess) {
+          console.log('Collection deleted successfully');
+          // Reload collections to get the updated list
+          this.loadCollections();
+        } else {
+          console.error('Failed to delete collection:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting collection:', error);
+      }
+    });
+    
+    // Close the modal
+    this.closeDeleteConfirmModal();
   }
 
 
