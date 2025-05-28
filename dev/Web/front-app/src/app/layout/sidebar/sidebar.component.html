@@ -112,46 +112,7 @@
                   </div>
 
                   <!-- Nested folders -->
-                  <div cdkDropList
-                       [id]="'folder-folders-' + folder.id"
-                       [cdkDropListConnectedTo]="getFolderConnectedLists(folder)"
-                       (cdkDropListDropped)="onDrop($event)"
-                       class="folder-list"
-                       [cdkDropListData]="folder.folders">
-                    <div *ngFor="let nestedFolder of folder.folders"
-                         class="folder-item"
-                         cdkDrag
-                         [cdkDragData]="nestedFolder"
-                         (cdkDragStarted)="onDragStarted(nestedFolder)"
-                         (cdkDragEnded)="onDragEnded()">
-                      <div class="folder-header" (click)="toggleExpand(nestedFolder.id)">
-                        <mat-icon>{{ isExpanded(nestedFolder.id) ? 'folder_open' : 'folder' }}</mat-icon>
-                        <span>{{ nestedFolder.name }}</span>
-                      </div>
 
-                      <div *ngIf="isExpanded(nestedFolder.id)" class="folder-content">
-                        <div cdkDropList
-                             [id]="'folder-' + nestedFolder.id"
-                             [cdkDropListConnectedTo]="getFolderConnectedLists(nestedFolder)"
-                             (cdkDropListDropped)="onDrop($event)"
-                             class="request-list"
-                             [cdkDropListData]="nestedFolder.requests">
-                          <div *ngFor="let request of nestedFolder.requests"
-                               class="request-item"
-                               cdkDrag
-                               [cdkDragData]="request"
-                               (cdkDragStarted)="onDragStarted(request)"
-                               (cdkDragEnded)="onDragEnded()">
-                            <div class="request-header">
-                              <mat-icon>subdirectory_arrow_right</mat-icon>
-                              <span class="request-method" [ngClass]="request.method.toLowerCase()">{{ request.method }}</span>
-                              <span>{{ request.name }}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -222,4 +183,46 @@
       </div>
     </div>
   </div>
+
+<!-- New Collection Modal -->
+<div *ngIf="showNewCollectionModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Create New Collection</h2>
+      <button mat-icon-button (click)="closeNewCollectionModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitNewCollection()">
+        <div class="form-group">
+          <label for="collectionName">Name</label>
+          <input
+            type="text"
+            id="collectionName"
+            name="collectionName"
+            [(ngModel)]="newCollection.name"
+            placeholder="Enter collection name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="form-group">
+          <label for="collectionDescription">Description</label>
+          <textarea
+            id="collectionDescription"
+            name="collectionDescription"
+            [(ngModel)]="newCollection.description"
+            placeholder="Enter collection description"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeNewCollectionModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!newCollection.name">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 </div>

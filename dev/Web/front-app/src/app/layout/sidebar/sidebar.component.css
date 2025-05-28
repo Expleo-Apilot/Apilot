@@ -662,3 +662,243 @@
 :host-context(.dark-theme) .request-header mat-icon {
   color: #90caf9;
 }
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-container {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  width: 450px;
+  max-width: 95%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(0);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eee;
+  background-color: #f9f9f9;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: 0.2px;
+}
+
+.close-button {
+  margin-right: -8px;
+}
+
+.modal-header button {
+  transition: background-color 0.2s;
+}
+
+.modal-header button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.modal-content {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  letter-spacing: 0.2px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: white;
+  color: #333;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) inset;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #7b68ee;
+  box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.15);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.modal-divider {
+  height: 1px;
+  background-color: #eee;
+  margin: 24px 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.btn-secondary,
+.btn-primary {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  min-width: 90px;
+  text-align: center;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background-color: #7b68ee;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #6a5acd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:disabled {
+  background-color: #b3a9f7;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-secondary {
+  background-color: #f5f5f5;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background-color: #e9e9e9;
+  transform: translateY(-1px);
+}
+
+/* Dark theme modal adjustments */
+:host-context(.dark-theme) .modal-container {
+  background-color: #2d2d2d;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+:host-context(.dark-theme) .modal-header {
+  border-bottom-color: #444;
+  background-color: #252525;
+}
+
+:host-context(.dark-theme) .modal-header h2 {
+  color: #eee;
+}
+
+:host-context(.dark-theme) .form-group label {
+  color: #ddd;
+}
+
+:host-context(.dark-theme) .form-group input,
+:host-context(.dark-theme) .form-group textarea {
+  background-color: #3d3d3d;
+  border-color: #555;
+  color: #eee;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) inset;
+}
+
+:host-context(.dark-theme) .modal-divider {
+  background-color: #444;
+}
+
+:host-context(.dark-theme) .btn-secondary {
+  color: #bbb;
+  background-color: #3d3d3d;
+  border-color: #555;
+}
+
+:host-context(.dark-theme) .btn-secondary:hover {
+  background-color: #4a4a4a;
+}
+
+:host-context(.dark-theme) .form-group input:focus,
+:host-context(.dark-theme) .form-group textarea:focus {
+  border-color: #9d8df2;
+  box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.25);
+}
+
+:host-context(.dark-theme) .modal-header button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Add a nice placeholder style */
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #aaa;
+  opacity: 0.7;
+}
+
+:host-context(.dark-theme) .form-group input::placeholder,
+:host-context(.dark-theme) .form-group textarea::placeholder {
+  color: #777;
+}

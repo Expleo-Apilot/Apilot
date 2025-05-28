@@ -10,7 +10,7 @@ export class CollectionService {
   private baseUrl = 'http://localhost:5051';
 
   constructor(private http: HttpClient) { }
-  
+
   private getAuthHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
