@@ -18,11 +18,27 @@
     <div *ngIf="activeNavItem === 'collections'" class="content-area collections-area">
       <div class="content-header">
         <div class="action-buttons">
-          <button mat-icon-button><mat-icon>add</mat-icon></button>
+          <button mat-icon-button (click)="toggleCollectionsMenu($event)">
+            <mat-icon>more_vert</mat-icon>
+          </button>
         </div>
         <div class="search-area">
           <mat-icon class="filter-icon">filter_list</mat-icon>
           <input type="text" placeholder="Filter" class="search-input">
+        </div>
+      </div>
+
+      <!-- Collections Menu Dropdown -->
+      <div *ngIf="showCollectionsMenu" class="collections-menu-overlay">
+        <div class="collections-menu-wrapper" [style.top]="menuPosition.top" [style.left]="menuPosition.left">
+          <div class="menu-item" (click)="createNewCollection()">
+            <mat-icon>add</mat-icon>
+            <span>New Collection</span>
+          </div>
+          <div class="menu-item" (click)="importCollection()">
+            <mat-icon>upload_file</mat-icon>
+            <span>Import Collection</span>
+          </div>
         </div>
       </div>
 

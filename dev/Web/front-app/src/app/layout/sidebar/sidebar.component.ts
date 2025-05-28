@@ -31,6 +31,8 @@ interface Collection {
 })
 export class SidebarComponent {
   activeNavItem: string = 'collections';
+  showCollectionsMenu = false;
+  menuPosition = { top: '0px', left: '0px' };
   collections: Collection[] = [
     {
       id: '1',
@@ -75,6 +77,61 @@ export class SidebarComponent {
 
   expandedItems: Set<string> = new Set();
   draggedItem: any = null;
+
+  // Toggle the collections dropdown menu
+  toggleCollectionsMenu(event: MouseEvent) {
+    event.stopPropagation(); // Prevent event bubbling
+    
+    // Calculate position based on the button that was clicked
+    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
+    if (buttonRect) {
+      this.menuPosition = {
+        top: `${buttonRect.bottom + 5}px`,
+        left: `${buttonRect.left}px`
+      };
+    }
+    
+    this.showCollectionsMenu = !this.showCollectionsMenu;
+    
+    // Add a click listener to close the menu when clicking outside
+    if (this.showCollectionsMenu) {
+      setTimeout(() => {
+        document.addEventListener('click', this.closeCollectionsMenuOnClickOutside);
+      }, 10);
+    } else {
+      document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+    }
+  }
+  
+  // Close the collections menu
+  closeCollectionsMenu() {
+    this.showCollectionsMenu = false;
+    document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+  }
+  
+  // Event handler to close menu when clicking outside
+  closeCollectionsMenuOnClickOutside = (event: MouseEvent) => {
+    if (!(event.target as HTMLElement).closest('.collections-menu-wrapper') && 
+        !(event.target as HTMLElement).closest('button[mat-icon-button]')) {
+      this.closeCollectionsMenu();
+    }
+  }
+  
+  // Handle creating a new collection
+  createNewCollection() {
+    // Implement the creation of a new collection
+    console.log('Create new collection');
+    this.closeCollectionsMenu();
+    // You would typically open a modal or form here
+  }
+  
+  // Handle importing a collection
+  importCollection() {
+    // Implement the import functionality
+    console.log('Import collection');
+    this.closeCollectionsMenu();
+    // You would typically open a file picker or import dialog here
+  }
 
   setActiveNavItem(item: string) {
     this.activeNavItem = item;

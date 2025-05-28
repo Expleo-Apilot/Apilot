@@ -1,5 +1,8 @@
 import {Component, Inject, OnInit, PLATFORM_ID} from '@angular/core';
 import {isPlatformBrowser} from '@angular/common';
+import {ActivatedRoute} from '@angular/router';
+import {WorkspaceService} from '../../core/services/workspace.service';
+import {Workspace} from '../../core/models/workspace.model';
 
 @Component({
   selector: 'app-workspace',
@@ -21,14 +24,33 @@ export class WorkspaceComponent implements OnInit{
 
   // Flag to check if we're in browser
   private isBrowser: boolean;
+  
+  // Current workspace
+  currentWorkspace: Workspace | null = null;
 
-  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+  constructor(
+    @Inject(PLATFORM_ID) platformId: Object,
+    private route: ActivatedRoute,
+    private workspaceService: WorkspaceService
+  ) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
   ngOnInit() {
     if (this.isBrowser) {
       this.loadSplitSizes();
+      
+      // Extract workspace ID from route parameters
+      this.route.paramMap.subscribe(params => {
+        const workspaceId = params.get('id');
+        if (workspaceId) {
+          // Load workspace data by ID
+          this.loadWorkspaceById(Number(workspaceId));
+        } else {
+          // If no ID in URL, try to load from localStorage
+          this.loadWorkspaceFromLocalStorage();
+        }
+      });
     }
   }
 
@@ -49,6 +71,58 @@ export class WorkspaceComponent implements OnInit{
     localStorage.setItem('verticalSplitSizes', JSON.stringify(event.sizes));
   }
 
+  /**
+   * Load workspace by ID from the API
+   */
+  private loadWorkspaceById(id: number) {
+    this.workspaceService.getWorkspace(id).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          this.currentWorkspace = response.data;
+          // Save to localStorage for persistence
+          this.saveWorkspaceToLocalStorage(response.data);
+        } else {
+          console.error('Failed to load workspace:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading workspace:', error);
+      }
+    });
+  }
+
+  /**
+   * Load workspace from localStorage if available
+   */
+  private loadWorkspaceFromLocalStorage() {
+    if (!this.isBrowser) return;
+    
+    try {
+      const savedWorkspace = localStorage.getItem('selectedWorkspace');
+      if (savedWorkspace) {
+        this.currentWorkspace = JSON.parse(savedWorkspace);
+      }
+    } catch (error) {
+      console.error('Error loading workspace from localStorage:', error);
+    }
+  }
+
+  /**
+   * Save workspace to localStorage
+   */
+  private saveWorkspaceToLocalStorage(workspace: Workspace) {
+    if (!this.isBrowser) return;
+    
+    try {
+      localStorage.setItem('selectedWorkspace', JSON.stringify(workspace));
+    } catch (error) {
+      console.error('Error saving workspace to localStorage:', error);
+    }
+  }
+
+  /**
+   * Load split sizes from localStorage
+   */
   private loadSplitSizes() {
     if (!this.isBrowser) return;
 

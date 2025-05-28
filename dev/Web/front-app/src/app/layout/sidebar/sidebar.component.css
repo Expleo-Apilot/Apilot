@@ -597,6 +597,52 @@
   z-index: 1000;
 }
 
+/* Collections Menu Styles */
+.collections-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.collections-menu-wrapper {
+  position: absolute;
+  background-color: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  overflow: hidden;
+  pointer-events: auto;
+  z-index: 1001;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.menu-item:hover {
+  background-color: var(--sidebar-hover-bg);
+}
+
+.menu-item mat-icon {
+  margin-right: 12px;
+  font-size: 18px;
+  color: var(--primary-color);
+}
+
+.menu-item span {
+  font-size: 14px;
+  font-weight: 400;
+}
+
 /* Improve drop zone visibility */
 .cdk-drop-list {
   min-height: 20px;

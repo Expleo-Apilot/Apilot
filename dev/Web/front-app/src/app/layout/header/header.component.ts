@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { Workspace } from '../../core/models/workspace.model';
 import { WorkspaceMenuComponent } from '../../features/workspace/workspace-menu/workspace-menu.component';
 import { AuthService } from '../../auth.service';
@@ -34,7 +35,8 @@ export class HeaderComponent implements OnInit {
     private authService: AuthService,
     private workspaceService: WorkspaceService,
     private ngZone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -249,19 +251,23 @@ export class HeaderComponent implements OnInit {
     return typeof window !== 'undefined' && !!window.localStorage;
   }
 
-  loadWorkspaceById(id : number){
+  loadWorkspaceById(id: number) {
     this.workspaceService.getWorkspace(id).subscribe({
-      next : (res) => {
+      next: (res) => {
         if (res.isSuccess) {
           this.selectedWorkspace = res.data;
           // Save the selected workspace to local storage
           this.saveSelectedWorkspaceToLocalStorage(res.data);
+
+          // Navigate to the workspace with ID in the URL path
+          this.router.navigate(['/workspace', id]);
+
           console.log('Workspace loaded and saved to local storage:', this.selectedWorkspace);
         } else {
           console.error('Error loading workspace:', res.error);
         }
       },
-      error : (error) =>{
+      error: (error) => {
         console.error('Error loading workspace:', error);
       }
     });
