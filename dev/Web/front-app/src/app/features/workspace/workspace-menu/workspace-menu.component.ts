@@ -35,18 +35,44 @@ export class WorkspaceMenuComponent implements OnInit {
   workspaces: Workspace[] = [];
   recentWorkspaceIds: number[] = [];
   selectedWorkspaceId: number | null = null;
+  selectedWorkspace!: Workspace;
   showCreateModal = false;
   showEditModal = false;
   modalWorkspace: Partial<Workspace> = {};
   isSubmitting = false;
   errorMsg = '';
   activeTab = 'all'; // 'all', 'personal', 'team', 'public'
+  user: any
 
   constructor(private workspaceService: WorkspaceService) {}
 
   ngOnInit() {
     this.loadWorkspaces();
     this.loadRecent();
+    this.user = localStorage.getItem("currentUser");
+    this.loadSelectedWorkspaceFromLocalStorage();
+  }
+
+  /**
+   * Loads the previously selected workspace from local storage
+   */
+  private loadSelectedWorkspaceFromLocalStorage(): void {
+    if (!this.isBrowser()) return;
+
+    try {
+      const savedWorkspace = localStorage.getItem('selectedWorkspace');
+      if (savedWorkspace) {
+        const workspace = JSON.parse(savedWorkspace) as Workspace;
+        this.selectedWorkspace = workspace;
+        this.selectedWorkspaceId = workspace.id;
+        console.log('Loaded previously selected workspace from local storage:', workspace);
+
+        // Emit the selected workspace to notify parent components
+        this.workspaceSelected.emit(workspace);
+      }
+    } catch (e) {
+      console.error('Error loading workspace from local storage:', e);
+    }
   }
 
   private isBrowser(): boolean {
@@ -58,40 +84,8 @@ export class WorkspaceMenuComponent implements OnInit {
       next: (res) => {
         if (res.isSuccess) {
           this.workspaces = res.data || [];
-          
-          // If no workspaces exist, create some sample ones for demo
-          if (this.workspaces.length === 0) {
-            this.workspaces = [
-              {
-                id: 1,
-                name: 'My Personal Workspace',
-                description: 'Private workspace for personal API testing',
-                createdAt: new Date().toISOString(),
-                updatedAt: null,
-                createdBy: 'User',
-                updatedBy: null,
-                lastSyncDate: null,
-                syncId: '1',
-                collections: [],
-                environments: [],
-                histories: []
-              },
-              {
-                id: 2,
-                name: 'Team Project',
-                description: 'Shared workspace for the development team',
-                createdAt: new Date().toISOString(),
-                updatedAt: null,
-                createdBy: 'User',
-                updatedBy: null,
-                lastSyncDate: null,
-                syncId: '2',
-                collections: [],
-                environments: [],
-                histories: []
-              }
-            ];
-          }
+        }else {
+          console.error('Error fetching all the workspaces')
         }
       }
     });
@@ -120,11 +114,11 @@ export class WorkspaceMenuComponent implements OnInit {
   }
 
   get filteredWorkspaces() {
-    let filtered = this.workspaces.filter(ws => 
+    let filtered = this.workspaces.filter(ws =>
       ws.name.toLowerCase().includes(this.search.toLowerCase()) ||
       (ws.description && ws.description.toLowerCase().includes(this.search.toLowerCase()))
     );
-    
+
     if (this.activeTab !== 'all') {
       if (this.activeTab === 'personal') {
         filtered = filtered.filter(ws => this.getWorkspaceIcon(ws) === 'lock');
@@ -132,7 +126,7 @@ export class WorkspaceMenuComponent implements OnInit {
         filtered = filtered.filter(ws => this.getWorkspaceIcon(ws) === 'groups');
       }
     }
-    
+
     return filtered;
   }
 
@@ -168,7 +162,8 @@ export class WorkspaceMenuComponent implements OnInit {
     this.isSubmitting = true;
     this.workspaceService.createWorkspace({
       name: this.modalWorkspace.name!,
-      description: this.modalWorkspace.description || ''
+      description: this.modalWorkspace.description || '',
+      userId: this.user?.id || ''
     }).subscribe({
       next: (res) => {
         this.isSubmitting = false;
@@ -192,7 +187,8 @@ export class WorkspaceMenuComponent implements OnInit {
     this.workspaceService.updateWorkspace({
       id: this.modalWorkspace.id,
       name: this.modalWorkspace.name,
-      description: this.modalWorkspace.description || ''
+      description: this.modalWorkspace.description || '',
+      userId: this.user?.id || ''
     }).subscribe({
       next: (res) => {
         this.isSubmitting = false;
@@ -225,11 +221,41 @@ export class WorkspaceMenuComponent implements OnInit {
     this.saveRecent(ws.id);
     this.workspaceSelected.emit(ws);
     this.closeMenu.emit();
+    this.loadWorkspaceById(ws.id)
   }
 
   getWorkspaceIcon(ws: Workspace) {
-    return ws.name.toLowerCase().includes('team') || 
-           ws.name.toLowerCase().includes('shared') ? 
+    return ws.name.toLowerCase().includes('team') ||
+           ws.name.toLowerCase().includes('shared') ?
            'groups' : 'lock';
+  }
+
+  loadWorkspaceById(id : number){
+    this.workspaceService.getWorkspace(id).subscribe({
+      next : (res) => {
+        if (res.isSuccess) {
+          this.selectedWorkspace = res.data;
+          // Save the selected workspace to local storage
+          this.saveSelectedWorkspaceToLocalStorage(res.data);
+          console.log('Workspace loaded and saved to local storage:', this.selectedWorkspace);
+        } else {
+          console.error('Error loading workspace:', res.error);
+        }
+      },
+      error : (error) =>{
+        console.error('Error loading workspace:', error);
+      }
+    });
+  }
+
+
+  private saveSelectedWorkspaceToLocalStorage(workspace: Workspace): void {
+    if (!this.isBrowser()) return;
+
+    try {
+      localStorage.setItem('selectedWorkspace', JSON.stringify(workspace));
+    } catch (e) {
+      console.error('Error saving workspace to local storage:', e);
+    }
   }
 }

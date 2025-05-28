@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { Observable } from 'rxjs';
 /*import { Workspace } from '../models/workspace.model';*/
 import {WorkspaceCreateRequest} from '../models/workspace.model';
@@ -15,27 +15,38 @@ import {WorkspacesResponse} from '../models/workspace.model';
 export class WorkspaceService {
   private baseUrl = 'http://localhost:5051';
 
+
+  private getAuthHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+  }
+
+  private getHttpOptions() {
+    return {
+      headers: this.getAuthHeaders()
+    };
+  }
+
   constructor(private http: HttpClient) {}
 
   createWorkspace(data: WorkspaceCreateRequest): Observable<WorkspaceResponse> {
-    return this.http.post<WorkspaceResponse>(`${this.baseUrl}/CreateWorkspace`, data);
+    return this.http.post<WorkspaceResponse>(`${this.baseUrl}/CreateWorkspace`, data, this.getHttpOptions());
   }
 
   updateWorkspace(data: WorkspaceUpdateRequest): Observable<WorkspaceResponse> {
-    return this.http.put<WorkspaceResponse>(`${this.baseUrl}/UpdateWorkspace`, data);
+    return this.http.put<WorkspaceResponse>(`${this.baseUrl}/UpdateWorkspace`, data, this.getHttpOptions());
   }
 
   deleteWorkspace(id: number): Observable<WorkspaceResponse> {
-    return this.http.delete<WorkspaceResponse>(`${this.baseUrl}/DeleteWorkspace?id=${id}`);
+    return this.http.delete<WorkspaceResponse>(`${this.baseUrl}/DeleteWorkspace?id=${id}`, this.getHttpOptions());
   }
 
   getWorkspace(id: number): Observable<WorkspaceResponse> {
-    return this.http.get<WorkspaceResponse>(`${this.baseUrl}/GetWorkspace?id=${id}`);
+    return this.http.get<WorkspaceResponse>(`${this.baseUrl}/GetWorkspace?id=${id}`, this.getHttpOptions());
   }
 
   getWorkspaces(): Observable<WorkspacesResponse> {
-    return this.http.get<WorkspacesResponse>(`${this.baseUrl}/GetWorkspaces`);
+    return this.http.get<WorkspacesResponse>(`${this.baseUrl}/GetWorkspaces`, this.getHttpOptions());
   }
-
-  // Add methods for filter/list as needed
 }

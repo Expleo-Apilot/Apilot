@@ -1,7 +1,7 @@
 /* Workspace Menu Container */
 .workspace-menu-container {
   width: 360px;
-  max-height: 80vh;
+  height: 80vh; /* Fixed height instead of max-height */
   background-color: var(--background-color);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -327,9 +327,34 @@
   opacity: 0.5;
 }
 
+/* Scrollable Content Area */
+.workspace-content-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.workspace-content-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workspace-content-scrollable::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, transparent);
+}
+
+.workspace-content-scrollable::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb, rgba(0, 0, 0, 0.2));
+  border-radius: 3px;
+}
+
+.dark-theme .workspace-content-scrollable::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Footer */
 .workspace-menu-footer {
-  margin-top: auto;
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;

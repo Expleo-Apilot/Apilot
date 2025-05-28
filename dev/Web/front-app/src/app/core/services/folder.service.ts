@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Folder, CreateFolderRequest, UpdateFolderRequest } from '../models/folder.model';
 import { ApiResponse } from '../models/collection.model';
@@ -11,6 +11,18 @@ export class FolderService {
   private baseUrl = 'http://localhost:5051';
 
   constructor(private http: HttpClient) { }
+  
+  private getAuthHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+  }
+
+  private getHttpOptions() {
+    return {
+      headers: this.getAuthHeaders()
+    };
+  }
 
   /**
    * Create a new folder
@@ -18,7 +30,7 @@ export class FolderService {
    * @returns Observable of the created folder
    */
   createFolder(request: CreateFolderRequest): Observable<ApiResponse<Folder>> {
-    return this.http.post<ApiResponse<Folder>>(`${this.baseUrl}/CreateFolder`, request);
+    return this.http.post<ApiResponse<Folder>>(`${this.baseUrl}/CreateFolder`, request, this.getHttpOptions());
   }
 
   /**
@@ -26,7 +38,7 @@ export class FolderService {
    * @returns Observable of all folders
    */
   getFolders(): Observable<ApiResponse<Folder[]>> {
-    return this.http.get<ApiResponse<Folder[]>>(`${this.baseUrl}/GetFolders`);
+    return this.http.get<ApiResponse<Folder[]>>(`${this.baseUrl}/GetFolders`, this.getHttpOptions());
   }
 
   /**
@@ -36,7 +48,8 @@ export class FolderService {
    */
   getFolder(id: number): Observable<ApiResponse<Folder>> {
     return this.http.get<ApiResponse<Folder>>(`${this.baseUrl}/GetFolder`, {
-      params: { id: id.toString() }
+      params: { id: id.toString() },
+      headers: this.getAuthHeaders()
     });
   }
 
@@ -47,7 +60,8 @@ export class FolderService {
    */
   getFoldersByCollectionId(collectionId: number): Observable<ApiResponse<Folder[]>> {
     return this.http.get<ApiResponse<Folder[]>>(`${this.baseUrl}/GetFoldersByCollectionId`, {
-      params: { id: collectionId.toString() }
+      params: { id: collectionId.toString() },
+      headers: this.getAuthHeaders()
     });
   }
 
@@ -57,7 +71,7 @@ export class FolderService {
    * @returns Observable of the update operation result
    */
   updateFolder(request: UpdateFolderRequest): Observable<ApiResponse<any>> {
-    return this.http.put<ApiResponse<any>>(`${this.baseUrl}/UpdateFolder`, request);
+    return this.http.put<ApiResponse<any>>(`${this.baseUrl}/UpdateFolder`, request, this.getHttpOptions());
   }
 
   /**
@@ -67,7 +81,8 @@ export class FolderService {
    */
   deleteFolder(id: number): Observable<ApiResponse<any>> {
     return this.http.delete<ApiResponse<any>>(`${this.baseUrl}/DeleteFolder`, {
-      params: { id: id.toString() }
+      params: { id: id.toString() },
+      headers: this.getAuthHeaders()
     });
   }
 }
