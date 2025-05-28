@@ -5,15 +5,6 @@ import {ActivatedRoute} from '@angular/router';
 import {CollectionService} from '../../core/services/collection.service';
 import {ApiResponse, Collection, CreateCollectionRequest} from '../../core/models/collection.model';
 import {Folder} from '../../core/models/folder.model';
-import {Request} from '../../core/models/request.model';
-
-// Local interface for temporary requests if needed
-interface SimpleRequest {
-  id: string;
-  name: string;
-  method: string;
-  url: string;
-}
 
 
 
@@ -27,6 +18,12 @@ export class SidebarComponent implements OnInit{
   activeNavItem: string = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
+
+  // Item context menu properties
+  showItemMenu = false;
+  itemMenuPosition = { top: '0px', left: '0px' };
+  activeItemType: 'collection' | 'folder' | 'request' | null = null;
+  activeItemId: number | null = null;
 
   // New collection modal state
   showNewCollectionModal = false;
@@ -97,6 +94,55 @@ export class SidebarComponent implements OnInit{
     document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
   }
 
+  // Toggle item menu (for collection, folder, or request)
+  toggleItemMenu(event: MouseEvent, itemType: 'collection' | 'folder' | 'request', itemId: number) {
+    event.stopPropagation(); // Prevent event bubbling
+
+    // Calculate position based on the button that was clicked
+    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
+    if (buttonRect) {
+      this.itemMenuPosition = {
+        top: `${buttonRect.bottom + 5}px`,
+        left: `${buttonRect.left}px`
+      };
+    }
+
+    // If the same item menu is already open, close it
+    if (this.showItemMenu && this.activeItemType === itemType && this.activeItemId === itemId) {
+      this.closeItemMenu();
+      return;
+    }
+
+    // Close any other open menu
+    this.closeCollectionsMenu();
+
+    // Set active item and show menu
+    this.activeItemType = itemType;
+    this.activeItemId = itemId;
+    this.showItemMenu = true;
+
+    // Add a click listener to close the menu when clicking outside
+    setTimeout(() => {
+      document.addEventListener('click', this.closeItemMenuOnClickOutside);
+    }, 10);
+  }
+
+  // Close the item menu
+  closeItemMenu() {
+    this.showItemMenu = false;
+    this.activeItemType = null;
+    this.activeItemId = null;
+    document.removeEventListener('click', this.closeItemMenuOnClickOutside);
+  }
+
+  // Event handler to close item menu when clicking outside
+  closeItemMenuOnClickOutside = (event: MouseEvent) => {
+    if (!(event.target as HTMLElement).closest('.item-menu-wrapper') &&
+        !(event.target as HTMLElement).closest('button[mat-icon-button]')) {
+      this.closeItemMenu();
+    }
+  }
+
   // Event handler to close menu when clicking outside
   closeCollectionsMenuOnClickOutside = (event: MouseEvent) => {
     if (!(event.target as HTMLElement).closest('.collections-menu-wrapper') &&
@@ -113,6 +159,34 @@ export class SidebarComponent implements OnInit{
       name: '',
       description: ''
     };
+  }
+
+  // Create a new request in a collection or folder
+  createNewRequest(parentType: 'collection' | 'folder', parentId: number) {
+    this.closeItemMenu();
+    console.log(`Create new request in ${parentType} with ID: ${parentId}`);
+    // TODO: Implement request creation modal
+  }
+
+  // Create a new folder in a collection
+  createNewFolder(collectionId: number) {
+    this.closeItemMenu();
+    console.log(`Create new folder in collection with ID: ${collectionId}`);
+    // TODO: Implement folder creation modal
+  }
+
+  // Edit an item (collection, folder, or request)
+  editItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
+    this.closeItemMenu();
+    console.log(`Edit ${itemType} with ID: ${itemId}`);
+    // TODO: Implement edit functionality
+  }
+
+  // Delete an item (collection, folder, or request)
+  deleteItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
+    this.closeItemMenu();
+    console.log(`Delete ${itemType} with ID: ${itemId}`);
+    // TODO: Implement delete functionality with confirmation dialog
   }
 
   // Handle importing a collection

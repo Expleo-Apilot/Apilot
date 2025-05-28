@@ -41,12 +41,74 @@
           </div>
         </div>
       </div>
+      
+      <!-- Item Context Menu Dropdown -->
+      <div *ngIf="showItemMenu" class="item-menu-overlay">
+        <div class="item-menu-wrapper" [style.top]="itemMenuPosition.top" [style.left]="itemMenuPosition.left">
+          <!-- Collection-specific options -->
+          <ng-container *ngIf="activeItemType === 'collection'">
+            <div class="menu-item" (click)="createNewRequest('collection', activeItemId!)">
+              <mat-icon>add</mat-icon>
+              <span>New Request</span>
+            </div>
+            <div class="menu-item" (click)="createNewFolder(activeItemId!)">
+              <mat-icon>create_new_folder</mat-icon>
+              <span>New Folder</span>
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" (click)="editItem('collection', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('collection', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+          
+          <!-- Folder-specific options -->
+          <ng-container *ngIf="activeItemType === 'folder'">
+            <div class="menu-item" (click)="createNewRequest('folder', activeItemId!)">
+              <mat-icon>add</mat-icon>
+              <span>New Request</span>
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" (click)="editItem('folder', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('folder', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+          
+          <!-- Request-specific options -->
+          <ng-container *ngIf="activeItemType === 'request'">
+            <div class="menu-item" (click)="editItem('request', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('request', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
 
       <div class="collections-list">
         <div *ngFor="let collection of collections" class="collection-item">
           <div class="collection-header" (click)="toggleExpand(collection.id)">
-            <mat-icon>{{ isExpanded(collection.id) ? 'collections_bookmark' : 'collections' }}</mat-icon>
-            <span>{{ collection.name }}</span>
+            <div class="collection-icon">
+              <mat-icon>{{ isExpanded(collection.id) ? 'inventory_2' : 'inventory' }}</mat-icon>
+            </div>
+            <span class="collection-name">{{ collection.name }}</span>
+            <div class="collection-actions">
+              <button mat-icon-button class="action-button" (click)="toggleItemMenu($event, 'collection', collection.id)">
+                <mat-icon>more_horiz</mat-icon>
+              </button>
+            </div>
           </div>
 
           <div *ngIf="isExpanded(collection.id)" class="collection-content">
@@ -85,8 +147,15 @@
                    (cdkDragStarted)="onDragStarted(folder)"
                    (cdkDragEnded)="onDragEnded()">
                 <div class="folder-header" (click)="toggleExpand(folder.id)">
-                  <mat-icon>{{ isExpanded(folder.id) ? 'folder_open' : 'folder' }}</mat-icon>
-                  <span>{{ folder.name }}</span>
+                  <div class="folder-icon">
+                    <mat-icon>{{ isExpanded(folder.id) ? 'folder_open' : 'folder' }}</mat-icon>
+                  </div>
+                  <span class="folder-name">{{ folder.name }}</span>
+                  <div class="folder-actions">
+                    <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'folder', folder.id)">
+                      <mat-icon class="small-icon">more_horiz</mat-icon>
+                    </button>
+                  </div>
                 </div>
 
                 <div *ngIf="isExpanded(folder.id)" class="folder-content">
@@ -104,9 +173,15 @@
                          (cdkDragStarted)="onDragStarted(request)"
                          (cdkDragEnded)="onDragEnded()">
                       <div class="request-header">
-                        <mat-icon>subdirectory_arrow_right</mat-icon>
-                        <span class="request-method" [ngClass]="request.method.toLowerCase()">{{ request.method }}</span>
-                        <span>{{ request.name }}</span>
+                        <div class="request-icon">
+                          <span class="request-method" [ngClass]="request.method.toLowerCase()">{{ request.method }}</span>
+                        </div>
+                        <span class="request-name">{{ request.name }}</span>
+                        <div class="request-actions">
+                          <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id)">
+                            <mat-icon class="small-icon">more_horiz</mat-icon>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
