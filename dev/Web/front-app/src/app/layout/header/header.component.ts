@@ -17,9 +17,11 @@ export class HeaderComponent implements OnInit {
   showWorkspaceMenu = false;
   showCreateWorkspaceModal = false;
   showEditWorkspaceModal = false;
+  showDeleteConfirmModal = false;
   apiIconHovered = false;
   currentUser: any;
   isLoggedIn = false;
+  workspaceToDelete: Workspace | null = null;
   workspaceMenuPosition: { top: string; left: string } = { top: '0px', left: '0px' };
   selectedWorkspace!: Workspace;
 
@@ -332,32 +334,52 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  // Delete workspace
+  // Show delete confirmation modal
   deleteWorkspace(workspace: Workspace, event: MouseEvent) {
     // Prevent event propagation to avoid triggering selectWorkspace
     event.stopPropagation();
     
-    // Confirm before deleting
-    if (confirm(`Are you sure you want to delete the workspace "${workspace.name}"?`)) {
-      this.workspaceService.deleteWorkspace(workspace.id).subscribe({
-        next: (response) => {
-          if (response.isSuccess) {
-            // Refresh the workspaces list
-            this.loadWorkspaces();
-            
-            // If the deleted workspace was the selected one, clear the selection
-            if (this.selectedWorkspaceId === workspace.id) {
-              this.selectedWorkspaceId = null;
-              localStorage.removeItem('selectedWorkspace');
-            }
-          } else {
-            console.error('Failed to delete workspace:', response.error);
-          }
-        },
-        error: (error) => {
-          console.error('Error deleting workspace:', error);
-        }
-      });
+    // Set the workspace to delete and show confirmation modal
+    this.workspaceToDelete = workspace;
+    this.showDeleteConfirmModal = true;
+  }
+  
+  // Close delete confirmation modal
+  closeDeleteConfirmModal() {
+    this.showDeleteConfirmModal = false;
+    this.workspaceToDelete = null;
+  }
+  
+  // Confirm and delete the workspace
+  confirmDeleteWorkspace() {
+    if (!this.workspaceToDelete) {
+      return; // Don't proceed if no workspace is selected
     }
+    
+    // Call the API to delete the workspace
+    this.workspaceService.deleteWorkspace(this.workspaceToDelete.id).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          console.log('Workspace deleted successfully');
+          
+          // Refresh the workspaces list
+          this.loadWorkspaces();
+          
+          // If the deleted workspace was the selected one, clear the selection
+          if (this.selectedWorkspaceId === this.workspaceToDelete?.id) {
+            this.selectedWorkspaceId = null;
+            localStorage.removeItem('selectedWorkspace');
+          }
+        } else {
+          console.error('Failed to delete workspace:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting workspace:', error);
+      }
+    });
+    
+    // Close the modal
+    this.closeDeleteConfirmModal();
   }
 }

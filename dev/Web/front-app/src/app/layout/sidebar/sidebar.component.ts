@@ -25,9 +25,17 @@ export class SidebarComponent implements OnInit{
   activeItemType: 'collection' | 'folder' | 'request' | null = null;
   activeItemId: number | null = null;
 
-  // New collection modal state
+  // Collection modal states
   showNewCollectionModal = false;
+  showEditCollectionModal = false;
+  showDeleteConfirmModal = false;
+  currentCollection: Collection | null = null;
   newCollection = {
+    name: '',
+    description: ''
+  };
+  editCollection = {
+    id: 0,
     name: '',
     description: ''
   };
@@ -178,15 +186,46 @@ export class SidebarComponent implements OnInit{
   // Edit an item (collection, folder, or request)
   editItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
     this.closeItemMenu();
-    console.log(`Edit ${itemType} with ID: ${itemId}`);
-    // TODO: Implement edit functionality
+    
+    if (itemType === 'collection') {
+      // Find the collection to edit
+      const collection = this.findCollectionById(itemId.toString());
+      if (collection) {
+        this.currentCollection = collection;
+        this.editCollection = {
+          id: collection.id,
+          name: collection.name,
+          description: collection.description || ''
+        };
+        this.showEditCollectionModal = true;
+      }
+    } else if (itemType === 'folder') {
+      console.log(`Edit folder with ID: ${itemId}`);
+      // TODO: Implement folder edit functionality
+    } else if (itemType === 'request') {
+      console.log(`Edit request with ID: ${itemId}`);
+      // TODO: Implement request edit functionality
+    }
   }
 
   // Delete an item (collection, folder, or request)
   deleteItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
     this.closeItemMenu();
-    console.log(`Delete ${itemType} with ID: ${itemId}`);
-    // TODO: Implement delete functionality with confirmation dialog
+    
+    if (itemType === 'collection') {
+      // Find the collection to delete
+      const collection = this.findCollectionById(itemId.toString());
+      if (collection) {
+        this.currentCollection = collection;
+        this.showDeleteConfirmModal = true;
+      }
+    } else if (itemType === 'folder') {
+      console.log(`Delete folder with ID: ${itemId}`);
+      // TODO: Implement folder delete functionality
+    } else if (itemType === 'request') {
+      console.log(`Delete request with ID: ${itemId}`);
+      // TODO: Implement request delete functionality
+    }
   }
 
   // Handle importing a collection
@@ -305,6 +344,18 @@ export class SidebarComponent implements OnInit{
   closeNewCollectionModal() {
     this.showNewCollectionModal = false;
   }
+  
+  // Close the edit collection modal
+  closeEditCollectionModal() {
+    this.showEditCollectionModal = false;
+    this.currentCollection = null;
+  }
+  
+  // Close the delete confirmation modal
+  closeDeleteConfirmModal() {
+    this.showDeleteConfirmModal = false;
+    this.currentCollection = null;
+  }
 
   // Submit the new collection form
   submitNewCollection() {
@@ -337,6 +388,66 @@ export class SidebarComponent implements OnInit{
 
     // Close the modal
     this.closeNewCollectionModal();
+  }
+  
+  // Submit the edit collection form
+  submitEditCollection() {
+    if (!this.editCollection.name.trim() || !this.currentCollection) {
+      return; // Don't submit if name is empty or no collection is selected
+    }
+    
+    // Prepare the update request
+    const updateRequest = {
+      id: this.editCollection.id,
+      name: this.editCollection.name.trim(),
+      description: this.editCollection.description.trim(),
+      workSpaceId: this.workspaceId
+    };
+    
+    // Call the API to update the collection
+    this.collectionService.updateCollection(updateRequest).subscribe({
+      next: (response: ApiResponse<Collection>) => {
+        if (response.isSuccess) {
+          console.log('Collection updated successfully:', response.data);
+          // Reload collections to get the updated list
+          this.loadCollections();
+        } else {
+          console.error('Failed to update collection:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error updating collection:', error);
+      }
+    });
+    
+    // Close the modal
+    this.closeEditCollectionModal();
+  }
+  
+  // Confirm and delete the collection
+  confirmDeleteCollection() {
+    if (!this.currentCollection) {
+      return; // Don't proceed if no collection is selected
+    }
+    
+    // Call the API to delete the collection
+    this.collectionService.deleteCollection(this.currentCollection.id).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.isSuccess) {
+          console.log('Collection deleted successfully');
+          // Reload collections to get the updated list
+          this.loadCollections();
+        } else {
+          console.error('Failed to delete collection:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting collection:', error);
+      }
+    });
+    
+    // Close the modal
+    this.closeDeleteConfirmModal();
   }
 
 

@@ -969,6 +969,28 @@
   transform: translateY(-1px);
 }
 
+.btn-danger {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  min-width: 90px;
+  text-align: center;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Dark theme modal adjustments */
 :host-context(.dark-theme) .modal-container {
   background-color: #2d2d2d;
@@ -1030,4 +1052,49 @@
 :host-context(.dark-theme) .form-group input::placeholder,
 :host-context(.dark-theme) .form-group textarea::placeholder {
   color: #777;
+}
+
+/* Delete confirmation modal styles */
+.delete-confirm-modal {
+  max-width: 480px;
+}
+
+.confirm-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 0 20px;
+}
+
+.warning-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+  color: #f44336;
+  margin-bottom: 16px;
+}
+
+.confirm-message p {
+  margin: 8px 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.warning-text {
+  color: #757575;
+  font-size: 13px !important;
+  margin-top: 12px !important;
+}
+
+:host-context(.dark-theme) .warning-text {
+  color: #aaa;
+}
+
+:host-context(.dark-theme) .btn-danger {
+  background-color: #f44336;
+}
+
+:host-context(.dark-theme) .btn-danger:hover {
+  background-color: #d32f2f;
 }

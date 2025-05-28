@@ -300,4 +300,69 @@
     </div>
   </div>
 </div>
+
+<!-- Edit Collection Modal -->
+<div *ngIf="showEditCollectionModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Edit Collection</h2>
+      <button mat-icon-button (click)="closeEditCollectionModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitEditCollection()">
+        <div class="form-group">
+          <label for="editCollectionName">Name</label>
+          <input
+            type="text"
+            id="editCollectionName"
+            name="editCollectionName"
+            [(ngModel)]="editCollection.name"
+            placeholder="Enter collection name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="form-group">
+          <label for="editCollectionDescription">Description</label>
+          <textarea
+            id="editCollectionDescription"
+            name="editCollectionDescription"
+            [(ngModel)]="editCollection.description"
+            placeholder="Enter collection description"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeEditCollectionModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!editCollection.name">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteConfirmModal" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Collection</h2>
+      <button mat-icon-button (click)="closeDeleteConfirmModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the collection <strong>"{{ currentCollection?.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone. All requests and folders within this collection will be permanently deleted.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteConfirmModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteCollection()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
 </div>
