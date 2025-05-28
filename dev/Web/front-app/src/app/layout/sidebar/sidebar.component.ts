@@ -31,14 +31,22 @@ export class SidebarComponent implements OnInit{
   showEditCollectionModal = false;
   showDeleteConfirmModal = false;
   showNewFolderModal = false;
+  showEditFolderModal = false;
+  showDeleteFolderModal = false;
   currentCollection: Collection | null = null;
   currentCollectionId: number | null = null;
+  currentFolder: Folder | null = null;
   newCollection = {
     name: '',
     description: ''
   };
   newFolder = {
     name: ''
+  };
+  editFolder = {
+    id: 0,
+    name: '',
+    collectionId: 0
   };
   editCollection = {
     id: 0,
@@ -198,6 +206,91 @@ export class SidebarComponent implements OnInit{
     this.currentCollectionId = null;
   }
   
+  // Close the edit folder modal
+  closeEditFolderModal() {
+    this.showEditFolderModal = false;
+    this.currentFolder = null;
+  }
+  
+  // Close the delete folder modal
+  closeDeleteFolderModal() {
+    this.showDeleteFolderModal = false;
+    this.currentFolder = null;
+  }
+  
+  // Submit the edit folder form
+  submitEditFolder() {
+    if (!this.editFolder.name.trim() || !this.currentFolder) {
+      return; // Don't submit if name is empty or no folder is selected
+    }
+    
+    // Prepare the update request
+    const updateRequest = {
+      id: this.editFolder.id,
+      name: this.editFolder.name.trim(),
+      collectionId: this.editFolder.collectionId
+    };
+    
+    // Call the API to update the folder
+    this.folderService.updateFolder(updateRequest).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.isSuccess) {
+          console.log('Folder updated successfully');
+          
+          // Update the folder in the UI
+          if (this.currentFolder) {
+            this.currentFolder.name = this.editFolder.name.trim();
+          }
+        } else {
+          console.error('Failed to update folder:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error updating folder:', error);
+      },
+      complete: () => {
+        // Close the modal
+        this.closeEditFolderModal();
+      }
+    });
+  }
+  
+  // Confirm and delete the folder
+  confirmDeleteFolder() {
+    if (!this.currentFolder) {
+      return; // Don't proceed if no folder is selected
+    }
+    
+    // Call the API to delete the folder
+    this.folderService.deleteFolder(this.currentFolder.id).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.isSuccess) {
+          console.log('Folder deleted successfully');
+          
+          // Remove the folder from the UI
+          for (const collection of this.collections) {
+            if (collection.folders && collection.id === this.currentFolder?.collectionId) {
+              const index = collection.folders.findIndex(f => f.id === this.currentFolder?.id);
+              if (index !== -1) {
+                collection.folders.splice(index, 1);
+                break;
+              }
+            }
+          }
+        } else {
+          console.error('Failed to delete folder:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting folder:', error);
+      },
+      complete: () => {
+        // Close the modal
+        this.closeDeleteFolderModal();
+      }
+    });
+  }
+  
   // Submit the new folder form
   submitNewFolder() {
     if (!this.newFolder.name.trim() || !this.currentCollectionId) {
@@ -260,8 +353,22 @@ export class SidebarComponent implements OnInit{
         this.showEditCollectionModal = true;
       }
     } else if (itemType === 'folder') {
-      console.log(`Edit folder with ID: ${itemId}`);
-      // TODO: Implement folder edit functionality
+      // Find the folder to edit
+      for (const collection of this.collections) {
+        if (collection.folders) {
+          const folder = collection.folders.find(f => f.id === itemId);
+          if (folder) {
+            this.currentFolder = folder;
+            this.editFolder = {
+              id: folder.id,
+              name: folder.name,
+              collectionId: folder.collectionId
+            };
+            this.showEditFolderModal = true;
+            break;
+          }
+        }
+      }
     } else if (itemType === 'request') {
       console.log(`Edit request with ID: ${itemId}`);
       // TODO: Implement request edit functionality
@@ -280,8 +387,17 @@ export class SidebarComponent implements OnInit{
         this.showDeleteConfirmModal = true;
       }
     } else if (itemType === 'folder') {
-      console.log(`Delete folder with ID: ${itemId}`);
-      // TODO: Implement folder delete functionality
+      // Find the folder to delete
+      for (const collection of this.collections) {
+        if (collection.folders) {
+          const folder = collection.folders.find(f => f.id === itemId);
+          if (folder) {
+            this.currentFolder = folder;
+            this.showDeleteFolderModal = true;
+            break;
+          }
+        }
+      }
     } else if (itemType === 'request') {
       console.log(`Delete request with ID: ${itemId}`);
       // TODO: Implement request delete functionality
