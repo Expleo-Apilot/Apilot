@@ -136,11 +136,15 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           // Update current tab ID
           this.currentTabId = tabId;
           
+          // Tell the response service about the tab change
+          this.responseService.setCurrentTabId(tabId);
+          
           // Load the new tab data
           this.loadTabData(tabId);
         } else if (!tabId && this.tabService.tabs.length === 0) {
           // If there are no tabs, create a new one
           this.currentTabId = this.tabService.createNewTab().id;
+          this.responseService.setCurrentTabId(this.currentTabId);
         }
       })
     );
@@ -148,12 +152,15 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     // Initialize with the active tab or create one if none exists
     if (this.tabService.activeTab) {
       this.currentTabId = this.tabService.activeTab.id;
+      this.responseService.setCurrentTabId(this.currentTabId);
       this.loadTabData(this.currentTabId);
     } else if (this.tabService.tabs.length > 0) {
       this.currentTabId = this.tabService.tabs[0].id;
+      this.responseService.setCurrentTabId(this.currentTabId);
       this.tabService.activateTab(this.currentTabId);
     } else {
       this.currentTabId = this.tabService.createNewTab().id;
+      this.responseService.setCurrentTabId(this.currentTabId);
     }
   }
   
@@ -548,6 +555,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     } else {
       this.requestForm.get('body')?.enable({ emitEvent: false });
     }
+    
+    // Load any existing response data for this tab
+    this.responseData = this.responseService.getResponseForTab(tabId);
 
     this.cdr.detectChanges();
   }
@@ -580,8 +590,12 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.responseData = null;
 
-    // Clear any previous response data
-    this.responseService.clearResponseData();
+    // Clear any previous response data for this tab
+    if (this.currentTabId) {
+      this.responseService.clearResponseData(this.currentTabId);
+    } else {
+      this.responseService.clearResponseData();
+    }
     
     // Update auth credentials and headers before sending
     this.updateAuthCredentials();
@@ -654,8 +668,12 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         console.log('Response received:', this.responseData);
 
-        // Update the response data in the service
-        this.responseService.updateResponseData(response);
+        // Update the response data in the service for this specific tab
+        if (this.currentTabId) {
+          this.responseService.updateResponseData(response, this.currentTabId);
+        } else {
+          this.responseService.updateResponseData(response);
+        }
       },
       error: (error) => {
         console.error('Request error', error);
@@ -666,8 +684,12 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         };
         this.isLoading = false;
 
-        // Also update the response service with error data
-        this.responseService.updateResponseData(this.responseData);
+        // Also update the response service with error data for this specific tab
+        if (this.currentTabId) {
+          this.responseService.updateResponseData(this.responseData, this.currentTabId);
+        } else {
+          this.responseService.updateResponseData(this.responseData);
+        }
       }
     });
   }

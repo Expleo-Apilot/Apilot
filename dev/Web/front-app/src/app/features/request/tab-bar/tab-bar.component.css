@@ -6,11 +6,13 @@
   height: 48px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
   margin-top: 10px;
   padding: 0 2px;
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 .tabs-wrapper {
@@ -79,9 +81,9 @@
 .tab {
   display: flex;
   align-items: center;
-  padding: 0 20px; /* Increased padding */
-  min-width: 180px; /* Significantly increased minimum width */
-  max-width: 280px; /* Significantly increased maximum width */
+  padding: 0 20px;
+  min-width: 180px;
+  max-width: 280px;
   height: 48px;
   background-color: var(--card-bg);
   color: var(--text-color);
@@ -92,19 +94,24 @@
   transition: all 0.2s ease;
   font-size: 14px;
   font-weight: 500;
-  margin: 0 2px; /* Increased margin between tabs */
-  width: 200px; /* Fixed width for consistency */
+  margin: 0 2px;
+  width: 200px;
+  box-shadow: inset 0 -1px 0 0 var(--border-color);
 }
 
 .tab:hover {
-  background-color: var(--sidebar-hover-bg);
+  background-color: var(--hover-color);
+  transform: translateY(-1px);
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .tab.active {
   background-color: var(--background-color);
-  border-bottom: 3px solid var(--primary-color); /* Increased border thickness */
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
-  transform: translateY(-2px); /* Slight lift effect for active tab */
+  border-bottom: 3px solid var(--primary-color);
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.08), 0 1px 0 0 var(--background-color);
+  transform: translateY(-2px);
+  z-index: 2;
+  font-weight: 600;
 }
 
 /* Tab indicator line */
@@ -130,37 +137,51 @@
 /* Method indicator */
 .tab .method-indicator {
   display: inline-block;
-  width: 8px; /* Increased width */
-  height: 8px; /* Increased height */
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  margin-right: 10px; /* Increased margin */
+  margin-right: 8px;
   flex-shrink: 0;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2); /* Added subtle shadow */
+  transition: transform 0.2s ease;
+}
+
+.tab:hover .method-indicator {
+  transform: scale(1.2);
+}
+
+.tab.active .method-indicator {
+  transform: scale(1.2);
 }
 
 .tab .method-indicator.get {
   background-color: var(--method-get-color, #61affe);
+  box-shadow: 0 0 4px rgba(97, 175, 254, 0.4);
 }
 
 .tab .method-indicator.post {
   background-color: var(--method-post-color, #49cc90);
+  box-shadow: 0 0 4px rgba(73, 204, 144, 0.4);
 }
 
 .tab .method-indicator.put {
   background-color: var(--method-put-color, #fca130);
+  box-shadow: 0 0 4px rgba(252, 161, 48, 0.4);
 }
 
 .tab .method-indicator.delete {
   background-color: var(--method-delete-color, #f93e3e);
+  box-shadow: 0 0 4px rgba(249, 62, 62, 0.4);
 }
 
 .tab .method-indicator.patch {
   background-color: var(--method-patch-color, #50e3c2);
+  box-shadow: 0 0 4px rgba(80, 227, 194, 0.4);
 }
 
 .tab .method-indicator.options,
 .tab .method-indicator.head {
   background-color: var(--method-options-color, #9012fe);
+  box-shadow: 0 0 4px rgba(144, 18, 254, 0.4);
 }
 
 .tab-name {
@@ -168,10 +189,19 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px; /* Increased font size */
+  font-size: 14px;
   transition: color 0.2s ease;
-  margin: 0 6px; /* Increased margin */
-  letter-spacing: 0.2px; /* Added letter spacing for better readability */
+  margin: 0 8px;
+  letter-spacing: 0.2px;
+  opacity: 0.9;
+}
+
+.tab:hover .tab-name {
+  opacity: 1;
+}
+
+.tab.active .tab-name {
+  opacity: 1;
 }
 
 .tab.active .tab-name {
@@ -183,9 +213,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px; /* Increased width */
-  height: 22px; /* Increased height */
-  margin-left: 10px; /* Increased margin */
+  width: 22px;
+  height: 22px;
+  margin-left: 10px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -194,6 +224,7 @@
   padding: 0;
   opacity: 0.6;
   transition: all 0.2s ease;
+  transform-origin: center;
 }
 
 .tab:hover .close-tab-button {
@@ -212,10 +243,10 @@
 }
 
 .close-tab-button mat-icon {
-  font-size: 18px; /* Increased font size */
-  width: 18px; /* Increased width */
-  height: 18px; /* Increased height */
-  line-height: 18px; /* Increased line height */
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
 }
 
 .new-tab-button {
@@ -224,7 +255,7 @@
   justify-content: center;
   min-width: 48px;
   height: 48px;
-  background-color: rgba(var(--primary-color-rgb), 0.05);
+  background-color: rgba(var(--primary-color-rgb), 0.08);
   color: var(--primary-color);
   border: none;
   cursor: pointer;
@@ -234,14 +265,13 @@
   border-left: 1px solid var(--border-color);
   margin-left: 2px;
   border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  overflow: hidden;
 }
 
-.new-tab-button:hover {
-  background-color: rgba(var(--primary-color-rgb), 0.15);
-  transform: scale(1.05);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
+/* Removed hover effect for add button */
 
 .new-tab-button:active {
   transform: scale(0.95);
@@ -281,32 +311,7 @@
   display: none; /* Hide the icon since we're using pseudo-elements */
 }
 
-/* Tab counter badge */
-.tab-counter {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background-color: var(--primary-color);
-  color: white;
-  font-size: 11px; /* Increased font size */
-  border-radius: 12px; /* Increased border radius */
-  padding: 0 5px; /* Increased padding */
-  min-width: 18px; /* Increased min-width */
-  height: 18px; /* Increased height */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Added shadow */
-  font-weight: 600; /* Made font bolder */
-}
-
-.tab-counter.visible {
-  opacity: 1;
-  transform: scale(1);
-}
+/* Removed tab counter badge styles */
 
 /* Scroll buttons for tab navigation */
 .scroll-button {

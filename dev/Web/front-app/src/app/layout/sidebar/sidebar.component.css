@@ -75,6 +75,19 @@
   border-radius: 0 2px 2px 0;
 }
 
+.sidebar {
+  width: 250px;
+  height: 100%;
+  background-color: var(--sidebar-bg);
+  color: var(--text-color);
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
 .sidebar-content {
   flex: 1;
   min-width: 0;
@@ -84,8 +97,6 @@
   overflow: hidden;
   box-shadow: none;
 }
-
-
 
 .content-area {
   height: 100%;
