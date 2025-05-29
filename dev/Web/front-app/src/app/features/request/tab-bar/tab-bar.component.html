@@ -1,12 +1,28 @@
-<div class="tab-bar-container">
-  <div class="tabs-wrapper">
-    <div class="tabs-scroll-area">
+<div class="tab-bar-container" [class.scroll-left]="showLeftScroll" [class.scroll-right]="showRightScroll" #tabBarContainer>
+  <!-- Left scroll button -->
+  <button 
+    class="scroll-button left" 
+    [class.visible]="showLeftScroll"
+    (click)="scrollLeft()"
+    matTooltip="Scroll left">
+    <mat-icon>chevron_left</mat-icon>
+  </button>
+
+  <div class="tabs-wrapper" (scroll)="onScroll()" #tabsWrapper>
+    <div class="tabs-scroll-area" #tabsScrollArea>
       <div 
         *ngFor="let tab of tabs" 
         class="tab" 
         [class.active]="isTabActive(tab.id)"
         (click)="activateTab(tab.id)">
-        <span class="tab-name">{{ tab.name }}</span>
+        <!-- Method indicator dot -->
+        <span class="method-indicator" [class.get]="isGetMethod(tab.method)" 
+                                     [class.post]="isPostMethod(tab.method)"
+                                     [class.put]="isPutMethod(tab.method)"
+                                     [class.delete]="isDeleteMethod(tab.method)"
+                                     [class.patch]="isPatchMethod(tab.method)"
+                                     [class.options]="isOptionsMethod(tab.method)"></span>
+        <span class="tab-name" [matTooltip]="tab.url">{{ tab.name }}</span>
         <button 
           class="close-tab-button" 
           matTooltip="Close tab"
@@ -17,10 +33,25 @@
     </div>
   </div>
   
+  <!-- Right scroll button -->
+  <button 
+    class="scroll-button right" 
+    [class.visible]="showRightScroll"
+    (click)="scrollRight()"
+    matTooltip="Scroll right">
+    <mat-icon>chevron_right</mat-icon>
+  </button>
+  
   <button 
     class="new-tab-button" 
     matTooltip="Create new request tab"
     (click)="createNewTab()">
+    <!-- Using CSS pseudo-elements for the plus sign instead of mat-icon -->
     <mat-icon>add</mat-icon>
   </button>
+  
+  <!-- Tab counter badge -->
+  <div class="tab-counter" [class.visible]="tabs.length > 1">
+    {{ tabs.length }}
+  </div>
 </div>

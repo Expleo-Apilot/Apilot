@@ -3,42 +3,97 @@
   align-items: center;
   background-color: var(--card-bg);
   border-bottom: 1px solid var(--border-color);
-  height: 40px;
+  height: 48px;
   overflow: hidden;
   position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+  padding: 0 2px;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
 }
 
 .tabs-wrapper {
   display: flex;
   flex: 1;
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: thin;
+  -ms-overflow-style: none;
+  position: relative;
 }
 
+/* Custom scrollbar styling for modern browsers */
 .tabs-wrapper::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  height: 3px;
+  background: transparent;
+}
+
+.tabs-wrapper::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+
+.tabs-wrapper:hover::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
 }
 
 .tabs-scroll-area {
   display: flex;
   min-width: min-content;
+  position: relative;
+  padding-left: 2px;
+}
+
+/* Scroll indicators */
+.tab-bar-container::before,
+.tab-bar-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 15px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tab-bar-container::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--card-bg) 30%, transparent 100%);
+}
+
+.tab-bar-container::after {
+  right: 40px; /* Leave space for the new tab button */
+  background: linear-gradient(270deg, var(--card-bg) 30%, transparent 100%);
+}
+
+.tab-bar-container.scroll-left::before {
+  opacity: 1;
+}
+
+.tab-bar-container.scroll-right::after {
+  opacity: 1;
 }
 
 .tab {
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  min-width: 120px;
-  max-width: 200px;
-  height: 40px;
+  padding: 0 20px; /* Increased padding */
+  min-width: 180px; /* Significantly increased minimum width */
+  max-width: 280px; /* Significantly increased maximum width */
+  height: 48px;
   background-color: var(--card-bg);
   color: var(--text-color);
   border-right: 1px solid var(--border-color);
   cursor: pointer;
   user-select: none;
   position: relative;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 2px; /* Increased margin between tabs */
+  width: 200px; /* Fixed width for consistency */
 }
 
 .tab:hover {
@@ -47,7 +102,65 @@
 
 .tab.active {
   background-color: var(--background-color);
-  border-bottom: 2px solid var(--primary-color);
+  border-bottom: 3px solid var(--primary-color); /* Increased border thickness */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px); /* Slight lift effect for active tab */
+}
+
+/* Tab indicator line */
+.tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px; /* Increased height */
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.tab:hover::after {
+  background-color: rgba(var(--primary-color-rgb), 0.3);
+}
+
+.tab.active::after {
+  background-color: var(--primary-color);
+}
+
+/* Method indicator */
+.tab .method-indicator {
+  display: inline-block;
+  width: 8px; /* Increased width */
+  height: 8px; /* Increased height */
+  border-radius: 50%;
+  margin-right: 10px; /* Increased margin */
+  flex-shrink: 0;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2); /* Added subtle shadow */
+}
+
+.tab .method-indicator.get {
+  background-color: var(--method-get-color, #61affe);
+}
+
+.tab .method-indicator.post {
+  background-color: var(--method-post-color, #49cc90);
+}
+
+.tab .method-indicator.put {
+  background-color: var(--method-put-color, #fca130);
+}
+
+.tab .method-indicator.delete {
+  background-color: var(--method-delete-color, #f93e3e);
+}
+
+.tab .method-indicator.patch {
+  background-color: var(--method-patch-color, #50e3c2);
+}
+
+.tab .method-indicator.options,
+.tab .method-indicator.head {
+  background-color: var(--method-options-color, #9012fe);
 }
 
 .tab-name {
@@ -55,55 +168,205 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: 14px; /* Increased font size */
+  transition: color 0.2s ease;
+  margin: 0 6px; /* Increased margin */
+  letter-spacing: 0.2px; /* Added letter spacing for better readability */
+}
+
+.tab.active .tab-name {
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
 .close-tab-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-left: 8px;
+  width: 22px; /* Increased width */
+  height: 22px; /* Increased height */
+  margin-left: 10px; /* Increased margin */
   border: none;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   border-radius: 50%;
   padding: 0;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.tab:hover .close-tab-button {
+  opacity: 0.8;
 }
 
 .close-tab-button:hover {
-  background-color: rgba(var(--primary-color-rgb), 0.1);
+  background-color: rgba(var(--primary-color-rgb), 0.15);
   color: var(--text-color);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.close-tab-button:active {
+  transform: scale(0.95);
 }
 
 .close-tab-button mat-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-  line-height: 16px;
+  font-size: 18px; /* Increased font size */
+  width: 18px; /* Increased width */
+  height: 18px; /* Increased height */
+  line-height: 18px; /* Increased line height */
 }
 
 .new-tab-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  height: 40px;
-  background-color: transparent;
+  min-width: 48px;
+  height: 48px;
+  background-color: rgba(var(--primary-color-rgb), 0.05);
   color: var(--primary-color);
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 3;
+  border-left: 1px solid var(--border-color);
+  margin-left: 2px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .new-tab-button:hover {
-  background-color: var(--sidebar-hover-bg);
+  background-color: rgba(var(--primary-color-rgb), 0.15);
+  transform: scale(1.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.new-tab-button:active {
+  transform: scale(0.95);
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+}
+
+.new-tab-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 2px;
+  background-color: currentColor;
+  transform: translate(-50%, -50%);
+  transition: all 0.2s ease;
+}
+
+.new-tab-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 16px;
+  background-color: currentColor;
+  transform: translate(-50%, -50%);
+  transition: all 0.2s ease;
+}
+
+.new-tab-button:hover::before,
+.new-tab-button:hover::after {
+  background-color: var(--primary-color);
 }
 
 .new-tab-button mat-icon {
+  display: none; /* Hide the icon since we're using pseudo-elements */
+}
+
+/* Tab counter badge */
+.tab-counter {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 11px; /* Increased font size */
+  border-radius: 12px; /* Increased border radius */
+  padding: 0 5px; /* Increased padding */
+  min-width: 18px; /* Increased min-width */
+  height: 18px; /* Increased height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Added shadow */
+  font-weight: 600; /* Made font bolder */
+}
+
+.tab-counter.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Scroll buttons for tab navigation */
+.scroll-button {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-bg);
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  z-index: 3;
+  opacity: 0;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.scroll-button.visible {
+  opacity: 1;
+}
+
+.scroll-button:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.scroll-button:active {
+  transform: scale(0.95);
+}
+
+.scroll-button:hover {
+  color: var(--primary-color);
+}
+
+.scroll-button.left {
+  left: 0;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.scroll-button.right {
+  right: 48px; /* Leave space for the new tab button */
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.scroll-button mat-icon {
   font-size: 20px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.scroll-button:hover mat-icon {
+  opacity: 1;
 }
 
 /* Responsive adjustments */
@@ -111,5 +374,20 @@
   .tab {
     min-width: 100px;
     padding: 0 12px;
+  }
+  
+  .tab-name {
+    font-size: 12px;
+  }
+  
+  .close-tab-button {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .close-tab-button mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
   }
 }
