@@ -1,0 +1,26 @@
+<div class="tab-bar-container">
+  <div class="tabs-wrapper">
+    <div class="tabs-scroll-area">
+      <div 
+        *ngFor="let tab of tabs" 
+        class="tab" 
+        [class.active]="isTabActive(tab.id)"
+        (click)="activateTab(tab.id)">
+        <span class="tab-name">{{ tab.name }}</span>
+        <button 
+          class="close-tab-button" 
+          matTooltip="Close tab"
+          (click)="closeTab($event, tab.id)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <button 
+    class="new-tab-button" 
+    matTooltip="Create new request tab"
+    (click)="createNewTab()">
+    <mat-icon>add</mat-icon>
+  </button>
+</div>

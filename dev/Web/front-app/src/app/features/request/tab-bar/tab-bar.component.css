@@ -1,0 +1,115 @@
+.tab-bar-container {
+  display: flex;
+  align-items: center;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  height: 40px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tabs-wrapper {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.tabs-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.tabs-scroll-area {
+  display: flex;
+  min-width: min-content;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  min-width: 120px;
+  max-width: 200px;
+  height: 40px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border-right: 1px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.tab:hover {
+  background-color: var(--sidebar-hover-bg);
+}
+
+.tab.active {
+  background-color: var(--background-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.tab-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+
+.close-tab-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.close-tab-button:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--text-color);
+}
+
+.close-tab-button mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+
+.new-tab-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.new-tab-button:hover {
+  background-color: var(--sidebar-hover-bg);
+}
+
+.new-tab-button mat-icon {
+  font-size: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tab {
+    min-width: 100px;
+    padding: 0 12px;
+  }
+}
