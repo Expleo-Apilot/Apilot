@@ -18,6 +18,8 @@ export interface RequestTab {
   basicAuthPassword: string;
   bearerToken: string;
   active: boolean;
+  parentId?: number;           // ID of parent collection or folder
+  parentType?: 'collection' | 'folder';  // Type of parent
 }
 
 @Injectable({
@@ -97,7 +99,7 @@ export class TabService {
     // Create a new tab with default values
     const newTab: RequestTab = {
       id: this.generateId(),
-      name: 'New Request',
+      name: initialData?.name || 'New Request',
       url: initialData?.url || 'https://simple-books-api.glitch.me',
       method: initialData?.method || HttpMethod.GET,
       params: initialData?.params || [{ key: '', value: '', enabled: true }],
@@ -108,7 +110,9 @@ export class TabService {
       basicAuthUsername: initialData?.basicAuthUsername || '',
       basicAuthPassword: initialData?.basicAuthPassword || '',
       bearerToken: initialData?.bearerToken || '',
-      active: true
+      active: true,
+      parentId: initialData?.parentId,
+      parentType: initialData?.parentType
     };
     
     tabs.push(newTab);
