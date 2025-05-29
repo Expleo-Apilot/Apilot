@@ -1,11 +1,13 @@
 // request-editor.component.ts
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpMethod } from '../../../core/models/http-method.enum';
 import { AuthType } from '../../../core/models/auth-type.enum';
 import { HttpClientService } from '../../../core/services/http-client.service';
 import { KeyValuePair } from '../../../core/models/request.model';
 import { ResponseService } from '../../../core/services/response.service';
+import { TabService } from '../../../core/services/tab.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-request-editor',
@@ -13,7 +15,7 @@ import { ResponseService } from '../../../core/services/response.service';
   styleUrls: ['./request-editor.component.css'],
   standalone: false,
 })
-export class RequestEditorComponent implements OnInit {
+export class RequestEditorComponent implements OnInit, OnDestroy {
   requestForm!: FormGroup;
   httpMethods = Object.values(HttpMethod);
   authTypes = Object.values(AuthType);
@@ -32,6 +34,10 @@ export class RequestEditorComponent implements OnInit {
   basicAuthUsername: string = '';
   basicAuthPassword: string = '';
   bearerToken: string = '';
+  
+  // Tab management
+  currentTabId: string | null = null;
+  private subscriptions: Subscription[] = [];
 
   // Monaco editor options with improved configuration
   bodyEditorOptions = {
@@ -50,7 +56,8 @@ export class RequestEditorComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private httpClientService: HttpClientService,
-    private responseService: ResponseService, // Inject the new ResponseService
+    private responseService: ResponseService,
+    private tabService: TabService,
     public cdr: ChangeDetectorRef
   ) { }
 
@@ -72,11 +79,98 @@ export class RequestEditorComponent implements OnInit {
     this.setMonacoTheme(theme);
 
     // Subscribe to URL changes to parse parameters
-    this.requestForm.get('url')?.valueChanges.subscribe((url) => {
+    const urlSubscription = this.requestForm.get('url')?.valueChanges.subscribe((url) => {
       if (url) {
         this.parseUrlParameters(url);
+        // Save the current tab data when URL changes
+        this.saveCurrentTabData();
       }
       this.cdr.detectChanges();
+    });
+    
+    if (urlSubscription) {
+      this.subscriptions.push(urlSubscription);
+    }
+    
+    // Subscribe to method changes
+    const methodSubscription = this.requestForm.get('method')?.valueChanges.subscribe(() => {
+      // Save the current tab data when method changes
+      this.saveCurrentTabData();
+    });
+    
+    if (methodSubscription) {
+      this.subscriptions.push(methodSubscription);
+    }
+    
+    // Subscribe to body changes
+    const bodySubscription = this.requestForm.get('body')?.valueChanges.subscribe(() => {
+      // Save the current tab data when body changes
+      this.saveCurrentTabData();
+    });
+    
+    if (bodySubscription) {
+      this.subscriptions.push(bodySubscription);
+    }
+    
+    // Subscribe to auth type changes
+    const authTypeSubscription = this.requestForm.get('authType')?.valueChanges.subscribe(authType => {
+      this.selectedAuthType = authType;
+      this.updateAuthHeaders();
+      // Save the current tab data when auth type changes
+      this.saveCurrentTabData();
+    });
+    
+    if (authTypeSubscription) {
+      this.subscriptions.push(authTypeSubscription);
+    }
+    
+    // Subscribe to active tab changes
+    this.subscriptions.push(
+      this.tabService.activeTabId$.subscribe(tabId => {
+        if (tabId && tabId !== this.currentTabId) {
+          // Save current tab data before switching
+          if (this.currentTabId) {
+            this.saveCurrentTabData();
+          }
+          
+          // Update current tab ID
+          this.currentTabId = tabId;
+          
+          // Tell the response service about the tab change
+          this.responseService.setCurrentTabId(tabId);
+          
+          // Load the new tab data
+          this.loadTabData(tabId);
+        } else if (!tabId && this.tabService.tabs.length === 0) {
+          // If there are no tabs, create a new one
+          this.currentTabId = this.tabService.createNewTab().id;
+          this.responseService.setCurrentTabId(this.currentTabId);
+        }
+      })
+    );
+    
+    // Initialize with the active tab or create one if none exists
+    if (this.tabService.activeTab) {
+      this.currentTabId = this.tabService.activeTab.id;
+      this.responseService.setCurrentTabId(this.currentTabId);
+      this.loadTabData(this.currentTabId);
+    } else if (this.tabService.tabs.length > 0) {
+      this.currentTabId = this.tabService.tabs[0].id;
+      this.responseService.setCurrentTabId(this.currentTabId);
+      this.tabService.activateTab(this.currentTabId);
+    } else {
+      this.currentTabId = this.tabService.createNewTab().id;
+      this.responseService.setCurrentTabId(this.currentTabId);
+    }
+  }
+  
+  ngOnDestroy(): void {
+    // Clean up subscriptions
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    
+    // Remove event listener
+    window.removeEventListener('themeChange', (event: any) => {
+      this.setMonacoTheme(event.detail);
     });
   }
 
@@ -109,6 +203,10 @@ export class RequestEditorComponent implements OnInit {
 
   // Method to update editor language dynamically
   updateBodyEditorLanguage(type: 'none' | 'json' | 'text' | 'form'): void {
+    // Save the current body type to the tab
+    if (this.currentTabId) {
+      this.saveCurrentTabData();
+    }
     let language: string;
     switch (type) {
       case 'json':
@@ -233,19 +331,27 @@ export class RequestEditorComponent implements OnInit {
    */
   addHeader(): void {
     this.headers.push({ key: '', value: '', enabled: true });
+    this.saveCurrentTabData();
   }
 
   /**
    * Removes a header at the specified index
    */
   removeHeader(index: number): void {
-    if (index >= 0 && index < this.headers.length) {
+    // Check if it's the last header
+    if (this.headers.length === 1) {
+      // If it's the last one, just reset it instead of removing
+      this.headers[0] = { key: '', value: '', enabled: true };
+    } else {
+      // Otherwise remove the header
       this.headers.splice(index, 1);
-      // If all headers are removed, add an empty one
-      if (this.headers.length === 0) {
-        this.addHeader();
-      }
     }
+    
+    // Update auth headers to ensure consistency
+    this.updateAuthHeaders();
+    
+    // Save changes to the current tab
+    this.saveCurrentTabData();
   }
 
   /**
@@ -253,17 +359,26 @@ export class RequestEditorComponent implements OnInit {
    * Ensures proper formatting of Authorization headers
    */
   onHeaderChange(header: KeyValuePair): void {
-    // If this is an Authorization header, ensure proper formatting
+    // Check if this is an Authorization header
     if (header.key.toLowerCase() === 'authorization') {
-      // If we're not using auth type and the header doesn't start with Bearer/Basic
-      if (this.selectedAuthType === AuthType.NONE) {
-        // Check if it's a token without the Bearer prefix
-        if (header.value && !header.value.startsWith('Bearer ') && !header.value.startsWith('Basic ')) {
-          // Auto-format as Bearer token
-          header.value = `Bearer ${header.value}`;
-        }
+      // If it's manually edited, we need to update the auth type and credentials
+      const value = header.value.trim();
+      
+      if (value.startsWith('Basic ')) {
+        // Handle Basic auth
+        this.requestForm.get('authType')?.setValue(AuthType.BASIC);
+        // We could potentially decode and set username/password here
+      } else if (value.startsWith('Bearer ')) {
+        // Handle Bearer token
+        this.requestForm.get('authType')?.setValue(AuthType.BEARER);
+        this.requestForm.get('bearerToken')?.setValue(value.substring(7));
       }
     }
+    
+    // Save changes to the current tab
+    this.saveCurrentTabData();
+    
+    this.cdr.detectChanges();
   }
 
   addParam(): void {
@@ -272,11 +387,16 @@ export class RequestEditorComponent implements OnInit {
   }
 
   removeParam(index: number): void {
-    this.params.splice(index, 1);
-    if (this.params.length === 0) {
-      this.addParam();
+    // Check if it's the last param
+    if (this.params.length === 1) {
+      // If it's the last one, just reset it
+      this.params[0] = { key: '', value: '', enabled: true };
+    } else {
+      this.params.splice(index, 1);
     }
-    this.cdr.detectChanges();
+    
+    // Save changes to the current tab
+    this.saveCurrentTabData();
   }
 
   // Handle URL input event
@@ -401,6 +521,67 @@ export class RequestEditorComponent implements OnInit {
     return this.processUrl(baseUrl);
   }
 
+  // Load data from a tab
+  private loadTabData(tabId: string): void {
+    const tab = this.tabService.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    // Update form values
+    this.requestForm.patchValue({
+      url: tab.url,
+      method: tab.method,
+      body: tab.body,
+      authType: tab.authType,
+      basicAuthUsername: tab.basicAuthUsername,
+      basicAuthPassword: tab.basicAuthPassword,
+      bearerToken: tab.bearerToken
+    }, { emitEvent: false });
+
+    // Update other component properties
+    this.headers = [...tab.headers];
+    this.params = [...tab.params];
+    this.bodyType = tab.bodyType;
+    this.selectedAuthType = tab.authType;
+    this.basicAuthUsername = tab.basicAuthUsername;
+    this.basicAuthPassword = tab.basicAuthPassword;
+    this.bearerToken = tab.bearerToken;
+
+    // Update UI state
+    this.updateBodyEditorLanguage(this.bodyType);
+    
+    // If it's a GET request, disable the body
+    if (tab.method === HttpMethod.GET) {
+      this.requestForm.get('body')?.disable({ emitEvent: false });
+    } else {
+      this.requestForm.get('body')?.enable({ emitEvent: false });
+    }
+    
+    // Load any existing response data for this tab
+    this.responseData = this.responseService.getResponseForTab(tabId);
+
+    this.cdr.detectChanges();
+  }
+
+  // Save current tab data
+  private saveCurrentTabData(): void {
+    if (!this.currentTabId) return;
+
+    const formValue = this.requestForm.getRawValue(); // getRawValue includes disabled controls
+    
+    this.tabService.updateTabData(this.currentTabId, {
+      url: formValue.url,
+      method: formValue.method,
+      body: formValue.body,
+      params: [...this.params],
+      headers: [...this.headers],
+      bodyType: this.bodyType,
+      authType: formValue.authType,
+      basicAuthUsername: formValue.basicAuthUsername,
+      basicAuthPassword: formValue.basicAuthPassword,
+      bearerToken: formValue.bearerToken
+    });
+  }
+
   sendRequest(): void {
     if (this.requestForm.invalid) {
       return;
@@ -409,13 +590,17 @@ export class RequestEditorComponent implements OnInit {
     this.isLoading = true;
     this.responseData = null;
 
-    // Clear any previous response data
-    this.responseService.clearResponseData();
+    // Clear any previous response data for this tab
+    if (this.currentTabId) {
+      this.responseService.clearResponseData(this.currentTabId);
+    } else {
+      this.responseService.clearResponseData();
+    }
     
     // Update auth credentials and headers before sending
     this.updateAuthCredentials();
 
-    const formValue = this.requestForm.value;
+    const formValue = this.requestForm.getRawValue(); // Use getRawValue to get values from disabled controls too
     let body = null;
     
     // Prepare authentication data for the request
@@ -483,8 +668,12 @@ export class RequestEditorComponent implements OnInit {
         this.isLoading = false;
         console.log('Response received:', this.responseData);
 
-        // Update the response data in the service
-        this.responseService.updateResponseData(response);
+        // Update the response data in the service for this specific tab
+        if (this.currentTabId) {
+          this.responseService.updateResponseData(response, this.currentTabId);
+        } else {
+          this.responseService.updateResponseData(response);
+        }
       },
       error: (error) => {
         console.error('Request error', error);
@@ -495,8 +684,12 @@ export class RequestEditorComponent implements OnInit {
         };
         this.isLoading = false;
 
-        // Also update the response service with error data
-        this.responseService.updateResponseData(this.responseData);
+        // Also update the response service with error data for this specific tab
+        if (this.currentTabId) {
+          this.responseService.updateResponseData(this.responseData, this.currentTabId);
+        } else {
+          this.responseService.updateResponseData(this.responseData);
+        }
       }
     });
   }

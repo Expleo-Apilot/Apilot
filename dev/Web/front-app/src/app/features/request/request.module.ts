@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { RequestRoutingModule } from './request-routing.module';
 import { RequestEditorComponent } from './request-editor/request-editor.component';
+import { TabBarComponent } from './tab-bar/tab-bar.component';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
@@ -35,7 +36,8 @@ import {MatMenuModule} from '@angular/material/menu';
     MatProgressSpinnerModule,
     FormsModule,
     MonacoEditorModule,
-    MatMenuModule
+    MatMenuModule,
+    TabBarComponent
   ],
   exports: [
     RequestEditorComponent,
