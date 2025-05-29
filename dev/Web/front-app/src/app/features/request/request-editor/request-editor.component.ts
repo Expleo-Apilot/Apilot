@@ -4,10 +4,12 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpMethod } from '../../../core/models/http-method.enum';
 import { AuthType } from '../../../core/models/auth-type.enum';
 import { HttpClientService } from '../../../core/services/http-client.service';
-import { KeyValuePair } from '../../../core/models/request.model';
+import { KeyValuePair, Request } from '../../../core/models/request.model';
 import { ResponseService } from '../../../core/services/response.service';
 import { TabService } from '../../../core/services/tab.service';
+import { RequestService } from '../../../core/services/request.service';
 import { Subscription } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-request-editor',
@@ -58,6 +60,8 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     private httpClientService: HttpClientService,
     private responseService: ResponseService,
     private tabService: TabService,
+    private requestService: RequestService,
+    private snackBar: MatSnackBar,
     public cdr: ChangeDetectorRef
   ) { }
 
@@ -568,6 +572,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
     const formValue = this.requestForm.getRawValue(); // getRawValue includes disabled controls
     
+    // Get the current tab to preserve parent information
+    const currentTab = this.tabService.tabs.find(t => t.id === this.currentTabId);
+    
     this.tabService.updateTabData(this.currentTabId, {
       url: formValue.url,
       method: formValue.method,
@@ -578,7 +585,77 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       authType: formValue.authType,
       basicAuthUsername: formValue.basicAuthUsername,
       basicAuthPassword: formValue.basicAuthPassword,
-      bearerToken: formValue.bearerToken
+      bearerToken: formValue.bearerToken,
+      // Preserve parent information (collection or folder ID and type)
+      parentId: currentTab?.parentId,
+      parentType: currentTab?.parentType
+    });
+  }
+
+  /**
+   * Save the current request to the database
+   */
+  saveRequest(): void {
+    if (this.requestForm.invalid) {
+      return;
+    }
+
+    const formValue = this.requestForm.getRawValue();
+    const currentTab = this.tabService.tabs.find(t => t.id === this.currentTabId);
+    
+    if (!currentTab) {
+      this.snackBar.open('Unable to save request: No active tab', 'Close', { duration: 3000 });
+      return;
+    }
+
+    // Prepare the request object
+    const requestToSave: Partial<Request> = {
+      name: currentTab.name,
+      url: formValue.url,
+      method: formValue.method,
+      params: this.params.filter(p => p.key.trim() !== ''),
+      headers: this.headers.filter(h => h.key.trim() !== ''),
+      body: {
+        contentType: this.bodyType === 'json' ? 'application/json' : 
+                    this.bodyType === 'text' ? 'text/plain' : 
+                    'application/x-www-form-urlencoded',
+        content: formValue.body
+      },
+      auth: {
+        type: formValue.authType,
+        credentials: formValue.authType === AuthType.BASIC ? {
+          username: formValue.basicAuthUsername,
+          password: formValue.basicAuthPassword
+        } : formValue.authType === AuthType.BEARER ? {
+          token: formValue.bearerToken
+        } : undefined
+      }
+    };
+
+    // Add parent information if available
+    if (currentTab.parentType && currentTab.parentId) {
+      if (currentTab.parentType === 'collection') {
+        requestToSave.parentId = `collection_${currentTab.parentId}`;
+      } else if (currentTab.parentType === 'folder') {
+        requestToSave.parentId = `folder_${currentTab.parentId}`;
+      }
+    }
+
+    // Call the API to save the request
+    this.requestService.saveRequest(requestToSave).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          this.snackBar.open('Request saved successfully', 'Close', { duration: 3000 });
+          console.log('Request saved:', response.data);
+        } else {
+          this.snackBar.open(`Failed to save request: ${response.error}`, 'Close', { duration: 5000 });
+          console.error('Failed to save request:', response.error);
+        }
+      },
+      error: (error) => {
+        this.snackBar.open('Error saving request', 'Close', { duration: 5000 });
+        console.error('Error saving request:', error);
+      }
     });
   }
 

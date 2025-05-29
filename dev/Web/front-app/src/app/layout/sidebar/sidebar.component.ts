@@ -1,11 +1,14 @@
 // src/app/layout/sidebar/sidebar.component.ts
 import {Component, OnInit} from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {CollectionService} from '../../core/services/collection.service';
 import {FolderService} from '../../core/services/folder.service';
 import {ApiResponse, Collection, CreateCollectionRequest} from '../../core/models/collection.model';
 import {Folder, CreateFolderRequest} from '../../core/models/folder.model';
+import {TabService} from '../../core/services/tab.service';
+import {HttpMethod} from '../../core/models/http-method.enum';
+import {Request} from '../../core/models/request.model';
 
 
 
@@ -62,8 +65,10 @@ export class SidebarComponent implements OnInit{
 
 
   constructor(private route: ActivatedRoute,
+              private router: Router,
               private collectionService: CollectionService,
-              private folderService: FolderService) {}
+              private folderService: FolderService,
+              private tabService: TabService) {}
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -188,7 +193,23 @@ export class SidebarComponent implements OnInit{
   createNewRequest(parentType: 'collection' | 'folder', parentId: number) {
     this.closeItemMenu();
     console.log(`Create new request in ${parentType} with ID: ${parentId}`);
-    // TODO: Implement request creation modal
+    
+    // Create a new tab with default values and parent information
+    const newTab = this.tabService.createNewTab({
+      method: HttpMethod.GET,
+      url: 'https://simple-books-api.glitch.me',
+      name: `New ${parentType} Request`,
+      parentId: parentId,         // Store the parent ID
+      parentType: parentType      // Store the parent type
+    });
+    
+    console.log(`Created new tab with parent ${parentType} ID: ${parentId}`);
+    
+    // The request editor is already integrated in the workspace layout,
+    // so we don't need to navigate to a different route
+    
+    // This parent information can now be used later when saving the request
+    // to associate it with the correct collection or folder
   }
 
   // Create a new folder in a collection

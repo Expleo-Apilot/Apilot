@@ -27,11 +27,25 @@
         </mat-form-field>
       </div>
 
-      <div class="send-button">
-        <button mat-stroked-button type="submit" [disabled]="requestForm.invalid || isLoading" style="border-radius: 0px;">
+      <div class="send-button-container">
+        <!-- Main Send button -->
+        <button mat-stroked-button type="submit" class="send-button" [disabled]="requestForm.invalid || isLoading">
           <span *ngIf="!isLoading" style="color: white">Send</span>
           <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
         </button>
+        
+        <!-- Dropdown trigger button -->
+        <button mat-stroked-button type="button" class="dropdown-button" [disabled]="requestForm.invalid || isLoading" [matMenuTriggerFor]="sendMenu">
+          <mat-icon style="color: white">arrow_drop_down</mat-icon>
+        </button>
+        
+        <!-- Dropdown menu -->
+        <mat-menu #sendMenu="matMenu">
+          <button mat-menu-item (click)="saveRequest()">
+            <mat-icon>save</mat-icon>
+            <span>Save</span>
+          </button>
+        </mat-menu>
       </div>
     </div>
 
