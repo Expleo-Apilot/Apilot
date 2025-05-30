@@ -8,6 +8,7 @@ public class ApplicationUser : IdentityUser
     public string LastName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    public bool IsEmailVerified { get; set; } = false;
     
 
     public List<Workspace> Workspaces { get; set; } = new List<Workspace>();

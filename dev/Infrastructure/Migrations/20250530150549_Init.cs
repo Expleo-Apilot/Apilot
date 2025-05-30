@@ -34,6 +34,7 @@ namespace dev.Infrastructure.Migrations
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsEmailVerified = table.Column<bool>(type: "bit", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -52,6 +53,31 @@ namespace dev.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EmailVerifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    VerificationCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ExpiryTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsVerified = table.Column<bool>(type: "bit", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    IsSync = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastSyncDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    SyncId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmailVerifications", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -474,6 +500,9 @@ namespace dev.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "EmailVerifications");
 
             migrationBuilder.DropTable(
                 name: "Environments");

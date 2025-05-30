@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RequestEntity> Requests { get; set; }
     public DbSet<ResponseEntity> Responses { get; set; }
     public DbSet<HistoryEntity> Histories { get; set; }
+    public DbSet<EmailVerification> EmailVerifications { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
