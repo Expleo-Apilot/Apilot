@@ -20,6 +20,8 @@ export class VerifyEmailComponent implements OnInit {
   errorMessage = '';
   countdown = 0;
   canResend = true;
+  isFocused = false;
+  private timerInterval: any;
   
   constructor(
     private formBuilder: FormBuilder,
@@ -29,7 +31,12 @@ export class VerifyEmailComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {
     this.verificationForm = this.formBuilder.group({
-      verificationCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]]
+      verificationCode: ['', [
+        Validators.required, 
+        Validators.minLength(6), 
+        Validators.maxLength(6),
+        Validators.pattern(/^[A-Za-z0-9]{6}$/)
+      ]]
     });
   }
 
@@ -44,7 +51,11 @@ export class VerifyEmailComponent implements OnInit {
     // If no email is provided, redirect to signup
     if (!this.email) {
       this.router.navigate(['/auth/signup']);
+      return;
     }
+    
+    // Start the timer immediately when the component loads
+    this.startResendTimer();
   }
 
   onSubmit(): void {
@@ -83,31 +94,27 @@ export class VerifyEmailComponent implements OnInit {
       return;
     }
 
+    this.isSubmitting = true;
     this.canResend = false;
-    this.countdown = 180; // 3 minutes in seconds
-
+    
     this.authService.resendVerificationCode(this.email).subscribe({
       next: (response) => {
+        this.isSubmitting = false;
         if (response.success) {
           this.snackBar.open('Verification code resent. Please check your email.', 'Close', {
             duration: 5000,
             panelClass: ['success-snackbar']
           });
           
-          // Start countdown timer
-          const timer = setInterval(() => {
-            this.countdown--;
-            if (this.countdown <= 0) {
-              this.canResend = true;
-              clearInterval(timer);
-            }
-          }, 1000);
+          // Reset and start the countdown timer
+          this.startResendTimer();
         } else {
           this.errorMessage = response.message || 'Failed to resend verification code.';
           this.canResend = true;
         }
       },
       error: (error) => {
+        this.isSubmitting = false;
         this.errorMessage = error.error?.message || 'Failed to resend verification code.';
         console.error('Resend verification error:', error);
         this.canResend = true;
@@ -123,5 +130,71 @@ export class VerifyEmailComponent implements OnInit {
     const minutes = Math.floor(this.countdown / 60);
     const seconds = this.countdown % 60;
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  }
+  
+  // Start the resend timer with 1 minute countdown
+  private startResendTimer(): void {
+    // Clear any existing timer
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    
+    // Set initial state
+    this.countdown = 60; // 1 minute in seconds
+    this.canResend = false;
+    
+    // Start countdown timer
+    this.timerInterval = setInterval(() => {
+      this.countdown--;
+      if (this.countdown <= 0) {
+        this.canResend = true;
+        clearInterval(this.timerInterval);
+      }
+    }, 1000);
+  }
+  
+  ngOnDestroy(): void {
+    // Clean up timer when component is destroyed
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  }
+  
+  // Focus the code input when clicking on the code boxes
+  focusCodeInput(): void {
+    const input = document.getElementById('verificationCode') as HTMLInputElement;
+    if (input) {
+      input.focus();
+    }
+  }
+  
+  // Handle code input focus
+  onCodeFocus(): void {
+    this.isFocused = true;
+  }
+  
+  // Handle code input
+  onCodeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+    
+    // Only allow alphanumeric characters (letters and numbers)
+    if (value) {
+      const alphanumericValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      if (alphanumericValue !== value) {
+        this.verificationForm.get('verificationCode')?.setValue(alphanumericValue, { emitEvent: false });
+      }
+    }
+  }
+  
+  // Handle keydown events
+  onCodeKeydown(event: KeyboardEvent): void {
+    // Allow alphanumeric characters, backspace, delete, tab, arrows
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    const isAlphanumeric = /^[A-Za-z0-9]$/.test(event.key);
+    
+    if (!isAlphanumeric && !allowedKeys.includes(event.key)) {
+      event.preventDefault();
+    }
   }
 }

@@ -11,6 +11,7 @@
     </p>
     
     <form [formGroup]="verificationForm" (ngSubmit)="onSubmit()">
+      <!-- Verification code input with digit boxes -->
       <div class="form-group">
         <label for="verificationCode">Verification Code</label>
         <input 
@@ -20,36 +21,66 @@
           placeholder="Enter 6-digit code"
           maxlength="6"
           autocomplete="off"
+          (input)="onCodeInput($event)"
+          (focus)="onCodeFocus()"
+          (keydown)="onCodeKeydown($event)"
         >
+        
+        <!-- Visual representation of the code -->
+        <div class="code-boxes" (click)="focusCodeInput()">
+          <div class="code-box" *ngFor="let _ of [0,1,2,3,4,5]; let i = index" [class.active]="isFocused && i === verificationForm.get('verificationCode')?.value?.length || i < verificationForm.get('verificationCode')?.value?.length">
+            {{ verificationForm.get('verificationCode')?.value?.charAt(i) || '' }}
+          </div>
+        </div>
+        
         <div class="error-message" *ngIf="verificationForm.get('verificationCode')?.invalid && verificationForm.get('verificationCode')?.touched">
           <span *ngIf="verificationForm.get('verificationCode')?.errors?.['required']">Verification code is required</span>
-          <span *ngIf="verificationForm.get('verificationCode')?.errors?.['minlength'] || verificationForm.get('verificationCode')?.errors?.['maxlength']">
-            Verification code must be 6 digits
+          <span *ngIf="verificationForm.get('verificationCode')?.errors?.['minlength'] || verificationForm.get('verificationCode')?.errors?.['maxlength'] || verificationForm.get('verificationCode')?.errors?.['pattern']">
+            Verification code must be 6 alphanumeric characters
           </span>
         </div>
       </div>
       
-      <div class="error-message" *ngIf="errorMessage">
-        {{ errorMessage }}
+      <!-- Timer display -->
+      <div class="timer-container" *ngIf="!canResend">
+        <div class="timer-circle">
+          <div class="timer-text">{{ formatCountdown() }}</div>
+          <svg class="timer-svg" viewBox="0 0 100 100">
+            <circle class="timer-background" cx="50" cy="50" r="45"></circle>
+            <circle class="timer-progress" cx="50" cy="50" r="45" 
+                    [style.stroke-dashoffset]="(60 - countdown) / 60 * 283"></circle>
+          </svg>
+        </div>
+        <div class="timer-label">Time remaining until you can resend</div>
       </div>
       
+      <!-- Error message -->
+      <div class="error-message" *ngIf="errorMessage">
+        <div class="error-icon">⚠️</div>
+        <div class="error-text">{{ errorMessage }}</div>
+      </div>
+      
+      <!-- Verify button -->
       <button type="submit" class="verify-button" [disabled]="verificationForm.invalid || isSubmitting">
         <span *ngIf="!isSubmitting">Verify Email</span>
-        <span *ngIf="isSubmitting">Verifying...</span>
+        <span *ngIf="isSubmitting" class="loading-spinner"></span>
       </button>
       
+      <!-- Resend button -->
       <div class="resend-container">
         <button 
           type="button" 
           class="resend-button" 
           [disabled]="!canResend || isSubmitting"
           (click)="resendCode()"
+          [class.active]="canResend"
         >
           <span *ngIf="canResend">Resend Code</span>
-          <span *ngIf="!canResend">Resend in {{ formatCountdown() }}</span>
+          <span *ngIf="!canResend">Wait for timer</span>
         </button>
       </div>
       
+      <!-- Back to sign in link -->
       <div class="back-to-signin">
         <a (click)="goToSignin()">Back to Sign In</a>
       </div>
