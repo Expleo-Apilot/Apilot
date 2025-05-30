@@ -1,0 +1,141 @@
+.verify-email-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 20px;
+}
+
+.verify-email-card {
+  width: 100%;
+  max-width: 450px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+}
+
+.logo-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.logo {
+  height: 60px;
+  width: auto;
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.description {
+  color: #666;
+  text-align: center;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+  outline: none;
+}
+
+input:focus {
+  border-color: #4a56e2;
+}
+
+.error-message {
+  color: #e53935;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.verify-button {
+  width: 100%;
+  padding: 14px;
+  background-color: #4a56e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.verify-button:hover {
+  background-color: #3a46c2;
+}
+
+.verify-button:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
+}
+
+.resend-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.resend-button {
+  background: none;
+  border: none;
+  color: #4a56e2;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 5px 10px;
+  transition: color 0.3s;
+}
+
+.resend-button:hover {
+  color: #3a46c2;
+  text-decoration: underline;
+}
+
+.resend-button:disabled {
+  color: #a0a0a0;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.back-to-signin {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.back-to-signin a {
+  color: #4a56e2;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.back-to-signin a:hover {
+  color: #3a46c2;
+  text-decoration: underline;
+}

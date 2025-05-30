@@ -1,0 +1,58 @@
+<div class="verify-email-container">
+  <div class="verify-email-card">
+    <div class="logo-container">
+      <img src="assets/images/logo.png" alt="Apilot Logo" class="logo">
+    </div>
+    
+    <h2>Verify Your Email</h2>
+    <p class="description">
+      We've sent a verification code to <strong>{{ email }}</strong>. 
+      Please enter the 6-digit code below to verify your email address.
+    </p>
+    
+    <form [formGroup]="verificationForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="verificationCode">Verification Code</label>
+        <input 
+          type="text" 
+          id="verificationCode" 
+          formControlName="verificationCode" 
+          placeholder="Enter 6-digit code"
+          maxlength="6"
+          autocomplete="off"
+        >
+        <div class="error-message" *ngIf="verificationForm.get('verificationCode')?.invalid && verificationForm.get('verificationCode')?.touched">
+          <span *ngIf="verificationForm.get('verificationCode')?.errors?.['required']">Verification code is required</span>
+          <span *ngIf="verificationForm.get('verificationCode')?.errors?.['minlength'] || verificationForm.get('verificationCode')?.errors?.['maxlength']">
+            Verification code must be 6 digits
+          </span>
+        </div>
+      </div>
+      
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+      
+      <button type="submit" class="verify-button" [disabled]="verificationForm.invalid || isSubmitting">
+        <span *ngIf="!isSubmitting">Verify Email</span>
+        <span *ngIf="isSubmitting">Verifying...</span>
+      </button>
+      
+      <div class="resend-container">
+        <button 
+          type="button" 
+          class="resend-button" 
+          [disabled]="!canResend || isSubmitting"
+          (click)="resendCode()"
+        >
+          <span *ngIf="canResend">Resend Code</span>
+          <span *ngIf="!canResend">Resend in {{ formatCountdown() }}</span>
+        </button>
+      </div>
+      
+      <div class="back-to-signin">
+        <a (click)="goToSignin()">Back to Sign In</a>
+      </div>
+    </form>
+  </div>
+</div>
