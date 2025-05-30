@@ -1,14 +1,16 @@
 // src/app/layout/sidebar/sidebar.component.ts
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, OnDestroy} from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import {ActivatedRoute, Router} from '@angular/router';
 import {CollectionService} from '../../core/services/collection.service';
 import {FolderService} from '../../core/services/folder.service';
+import {RequestService} from '../../core/services/request.service';
 import {ApiResponse, Collection, CreateCollectionRequest} from '../../core/models/collection.model';
 import {Folder, CreateFolderRequest} from '../../core/models/folder.model';
 import {TabService} from '../../core/services/tab.service';
 import {HttpMethod} from '../../core/models/http-method.enum';
 import {Request} from '../../core/models/request.model';
+import {Subscription} from 'rxjs';
 
 
 
@@ -18,7 +20,7 @@ import {Request} from '../../core/models/request.model';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
-export class SidebarComponent implements OnInit{
+export class SidebarComponent implements OnInit, OnDestroy {
   activeNavItem: string = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
@@ -62,23 +64,29 @@ export class SidebarComponent implements OnInit{
 
   expandedItems: Set<number> = new Set();
   draggedItem: any = null;
+  
+  // Subscription to handle cleanup
+  private subscriptions: Subscription = new Subscription();
 
 
   constructor(private route: ActivatedRoute,
               private router: Router,
               private collectionService: CollectionService,
               private folderService: FolderService,
+              private requestService: RequestService,
               private tabService: TabService) {}
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    // Subscribe to route params to get workspace ID
+    const routeSub = this.route.params.subscribe(params => {
       const id = +params['id'];
       if (id) {
         this.workspaceId = id;
         console.log('Workspace ID from route:', this.workspaceId);
-        this.loadCollections()
+        this.loadCollections();
       }
     });
+    this.subscriptions.add(routeSub);
 
     // Initialize your collectionForm properly here to avoid undefined errors
     this.collectionForm = {
@@ -87,7 +95,15 @@ export class SidebarComponent implements OnInit{
       workSpaceId: 0
     };
 
-
+    // Subscribe to request changes to update the UI automatically
+    const requestChangeSub = this.requestService.requestsChanged$.subscribe(change => {
+      console.log('Request change detected:', change);
+      if (change.action !== 'init') {
+        // Reload collections when a request is created, updated, or deleted
+        this.loadCollections();
+      }
+    });
+    this.subscriptions.add(requestChangeSub);
   }
 
 
@@ -649,6 +665,7 @@ export class SidebarComponent implements OnInit{
 
 
   loadCollections() {
+    console.log('Loading collections for workspace:', this.workspaceId);
     this.collectionService.getCollectionsByWorkspaceId(this.workspaceId).subscribe({
       next: (res) => {
         if (res.isSuccess && res.data) {
@@ -674,5 +691,10 @@ export class SidebarComponent implements OnInit{
         this.collections = [];
       }
     });
+  }
+  
+  ngOnDestroy() {
+    // Clean up subscriptions when the component is destroyed
+    this.subscriptions.unsubscribe();
   }
 }

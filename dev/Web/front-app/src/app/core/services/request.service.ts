@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Request, CreateRequestDto } from '../models/request.model';
 
@@ -15,6 +16,14 @@ interface ApiResponse<T> {
 })
 export class RequestService {
   private baseUrl = environment.apiUrl || 'http://localhost:5051';
+  
+  // BehaviorSubject to notify subscribers when requests change
+  private _requestsChanged = new BehaviorSubject<{action: string, data?: any}>({
+    action: 'init'
+  });
+  
+  // Observable that components can subscribe to
+  public requestsChanged$ = this._requestsChanged.asObservable();
 
   constructor(private http: HttpClient) { }
 
@@ -36,7 +45,18 @@ export class RequestService {
    * @returns Observable of the API response containing the saved request
    */
   saveRequest(request: CreateRequestDto): Observable<ApiResponse<Request>> {
-    return this.http.post<ApiResponse<Request>>(`${this.baseUrl}/SaveRequest`, request, this.getHttpOptions());
+    return this.http.post<ApiResponse<Request>>(`${this.baseUrl}/SaveRequest`, request, this.getHttpOptions())
+      .pipe(
+        tap(response => {
+          if (response.isSuccess) {
+            // Notify subscribers that a request has been created
+            this._requestsChanged.next({
+              action: 'create',
+              data: response.data
+            });
+          }
+        })
+      );
   }
 
   /**
@@ -92,7 +112,18 @@ export class RequestService {
    * @returns Observable of the API response
    */
   updateRequest(request: Partial<Request>): Observable<ApiResponse<{}>> {
-    return this.http.put<ApiResponse<{}>>(`${this.baseUrl}/UpdateRequest`, request, this.getHttpOptions());
+    return this.http.put<ApiResponse<{}>>(`${this.baseUrl}/UpdateRequest`, request, this.getHttpOptions())
+      .pipe(
+        tap(response => {
+          if (response.isSuccess) {
+            // Notify subscribers that a request has been updated
+            this._requestsChanged.next({
+              action: 'update',
+              data: request
+            });
+          }
+        })
+      );
   }
 
   /**
@@ -105,7 +136,18 @@ export class RequestService {
     return this.http.delete<ApiResponse<{}>>(`${this.baseUrl}/DeleteRequest`, { 
       params,
       headers: this.getAuthHeaders()
-    });
+    })
+    .pipe(
+      tap(response => {
+        if (response.isSuccess) {
+          // Notify subscribers that a request has been deleted
+          this._requestsChanged.next({
+            action: 'delete',
+            data: { id }
+          });
+        }
+      })
+    );
   }
 
   /**
