@@ -1,7 +1,7 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
@@ -40,6 +40,13 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/login`, { email, password }).pipe(
       tap(response => {
         if (response && response.success) {
+          // Check if email verification is required
+          if (response.requiresEmailVerification) {
+            // Navigate to email verification page
+            this.router.navigate(['/auth/verify-email'], { queryParams: { email: email } });
+            return response;
+          }
+          
           // Store token and user info (only in browser)
           if (isPlatformBrowser(this.platformId)) {
             localStorage.setItem(this.tokenKey, response.token);
@@ -49,7 +56,8 @@ export class AuthService {
               email: response.email,
               firstName: response.firstName,
               lastName: response.lastName,
-              roles: response.roles
+              roles: response.roles,
+              isEmailVerified: response.isEmailVerified
             }));
           }
           
@@ -59,7 +67,8 @@ export class AuthService {
             email: response.email,
             firstName: response.firstName,
             lastName: response.lastName,
-            roles: response.roles
+            roles: response.roles,
+            isEmailVerified: response.isEmailVerified
           });
           this.isAuthenticatedSubject.next(true);
           this.router.navigate(['/workspace']);
@@ -68,7 +77,7 @@ export class AuthService {
       }),
       catchError(error => {
         console.error('Login error:', error);
-        throw error;
+        return throwError(() => error);
       })
     );
   }
@@ -86,29 +95,37 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/register`, registerData).pipe(
       tap(response => {
         if (response && response.success) {
-          // Store token and user info (only in browser)
-          if (isPlatformBrowser(this.platformId)) {
-            localStorage.setItem(this.tokenKey, response.token);
-            localStorage.setItem('currentUser', JSON.stringify({
+          // Check if email verification is required
+          if (response.requiresEmailVerification) {
+            // Navigate to email verification page
+            this.router.navigate(['/auth/verify-email'], { queryParams: { email: email } });
+          } else {
+            // Store token and user info (only in browser)
+            if (isPlatformBrowser(this.platformId)) {
+              localStorage.setItem(this.tokenKey, response.token);
+              localStorage.setItem('currentUser', JSON.stringify({
+                userId: response.userId,
+                username: response.username,
+                email: response.email,
+                firstName: response.firstName,
+                lastName: response.lastName,
+                roles: response.roles,
+                isEmailVerified: response.isEmailVerified
+              }));
+            }
+            
+            this.currentUserSubject.next({
               userId: response.userId,
               username: response.username,
               email: response.email,
               firstName: response.firstName,
               lastName: response.lastName,
-              roles: response.roles
-            }));
+              roles: response.roles,
+              isEmailVerified: response.isEmailVerified
+            });
+            this.isAuthenticatedSubject.next(true);
+            this.router.navigate(['/workspace']);
           }
-          
-          this.currentUserSubject.next({
-            userId: response.userId,
-            username: response.username,
-            email: response.email,
-            firstName: response.firstName,
-            lastName: response.lastName,
-            roles: response.roles
-          });
-          this.isAuthenticatedSubject.next(true);
-          this.router.navigate(['/workspace']);
         }
         return response;
       }),
@@ -142,5 +159,46 @@ export class AuthService {
   
   getCurrentUser(): any {
     return this.currentUserSubject.value;
+  }
+
+  /**
+   * Verify email with verification code
+   * @param email User's email address
+   * @param verificationCode 6-digit verification code
+   * @returns Observable with verification result
+   */
+  verifyEmail(email: string, verificationCode: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/verify-email`, { email, verificationCode }).pipe(
+      tap(response => {
+        if (response && response.success) {
+          // If verification is successful, update the user info with verified status
+          if (response.token) {
+            // Store new token (only in browser)
+            if (isPlatformBrowser(this.platformId)) {
+              localStorage.setItem(this.tokenKey, response.token);
+            }
+          }
+        }
+        return response;
+      }),
+      catchError(error => {
+        console.error('Email verification error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Resend verification code to user's email
+   * @param email User's email address
+   * @returns Observable with resend result
+   */
+  resendVerificationCode(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/resend-verification`, { email }).pipe(
+      catchError(error => {
+        console.error('Resend verification code error:', error);
+        return throwError(() => error);
+      })
+    );
   }
 }

@@ -55,12 +55,23 @@ export class SingupComponent implements OnInit {
     const { firstName, lastName, username, email, password } = this.registerForm.value;
 
     this.authService.register(email, password, firstName, lastName, username).subscribe({
-      next: () => {
-        // Navigation is handled in the auth service
+      next: (response) => {
+        this.isSubmitting = false;
+        
+        // If email verification is required, the auth service will handle navigation
+        // Otherwise, it will navigate to the workspace page
+        if (response.requiresEmailVerification) {
+          // Additional UI feedback can be added here if needed
+          console.log('Email verification required. Check your email for verification code.');
+        }
       },
       error: (error) => {
         this.isSubmitting = false;
-        this.errorMessage = 'Registration failed. Please try again.';
+        if (error.error && error.error.message) {
+          this.errorMessage = error.error.message;
+        } else {
+          this.errorMessage = 'Registration failed. Please try again.';
+        }
         console.error('Registration error:', error);
       }
     });
