@@ -15,7 +15,7 @@ public class EmailVerificationService : IEmailVerificationService
     private readonly IEmailService _emailService;
     private readonly ILogger<EmailVerificationService> _logger;
     private const int CodeLength = 6;
-    private const int CodeExpiryMinutes = 1; // Reduced from 3 to 1 minute
+    private const int CodeExpiryMinutes = 3; // Reduced from 30 to 3 minutes
 
     public EmailVerificationService(
         ApplicationDbContext context,

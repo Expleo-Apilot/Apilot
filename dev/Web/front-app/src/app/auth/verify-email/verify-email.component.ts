@@ -132,7 +132,7 @@ export class VerifyEmailComponent implements OnInit {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   }
   
-  // Start the resend timer with 1 minute countdown
+  // Start the resend timer with 3 minutes countdown
   private startResendTimer(): void {
     // Clear any existing timer
     if (this.timerInterval) {
@@ -140,7 +140,7 @@ export class VerifyEmailComponent implements OnInit {
     }
     
     // Set initial state
-    this.countdown = 60; // 1 minute in seconds
+    this.countdown = 180; // 3 minutes in seconds
     this.canResend = false;
     
     // Start countdown timer
