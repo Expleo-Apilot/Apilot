@@ -4,12 +4,15 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpMethod } from '../../../core/models/http-method.enum';
 import { AuthType } from '../../../core/models/auth-type.enum';
 import { HttpClientService } from '../../../core/services/http-client.service';
-import { KeyValuePair, Request } from '../../../core/models/request.model';
+import { KeyValuePair, Request, RequestFormData, convertFormDataToRequest } from '../../../core/models/request.model';
 import { ResponseService } from '../../../core/services/response.service';
 import { TabService } from '../../../core/services/tab.service';
 import { RequestService } from '../../../core/services/request.service';
 import { Subscription } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
+import { SaveRequestModalComponent, SaveLocation } from '../save-request-modal/save-request-modal.component';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-request-editor',
@@ -55,6 +58,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     wordWrap: 'on'
   };
 
+  // Current workspace ID
+  workspaceId: number = 0;
+
   constructor(
     private fb: FormBuilder,
     private httpClientService: HttpClientService,
@@ -62,6 +68,8 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     private tabService: TabService,
     private requestService: RequestService,
     private snackBar: MatSnackBar,
+    private dialog: MatDialog,
+    private route: ActivatedRoute,
     public cdr: ChangeDetectorRef
   ) { }
 
@@ -81,6 +89,13 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     const savedTheme = localStorage.getItem('theme');
     const theme = savedTheme === 'dark' ? 'vs-dark' : 'vs-light';
     this.setMonacoTheme(theme);
+    
+    // Get workspace ID from route
+    this.route.parent?.parent?.params.subscribe(params => {
+      if (params['id']) {
+        this.workspaceId = +params['id'];
+      }
+    });
 
     // Subscribe to URL changes to parse parameters
     const urlSubscription = this.requestForm.get('url')?.valueChanges.subscribe((url) => {
@@ -608,55 +623,115 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Prepare the request object
-    const requestToSave: Partial<Request> = {
-      name: currentTab.name,
-      url: formValue.url,
-      method: formValue.method,
-      params: this.params.filter(p => p.key.trim() !== ''),
-      headers: this.headers.filter(h => h.key.trim() !== ''),
-      body: {
-        contentType: this.bodyType === 'json' ? 'application/json' : 
-                    this.bodyType === 'text' ? 'text/plain' : 
-                    'application/x-www-form-urlencoded',
-        content: formValue.body
-      },
-      auth: {
-        type: formValue.authType,
-        credentials: formValue.authType === AuthType.BASIC ? {
-          username: formValue.basicAuthUsername,
-          password: formValue.basicAuthPassword
-        } : formValue.authType === AuthType.BEARER ? {
-          token: formValue.bearerToken
-        } : undefined
-      }
-    };
-
-    // Add parent information if available
-    if (currentTab.parentType && currentTab.parentId) {
-      if (currentTab.parentType === 'collection') {
-        requestToSave.parentId = `collection_${currentTab.parentId}`;
-      } else if (currentTab.parentType === 'folder') {
-        requestToSave.parentId = `folder_${currentTab.parentId}`;
-      }
-    }
-
-    // Call the API to save the request
-    this.requestService.saveRequest(requestToSave).subscribe({
-      next: (response) => {
-        if (response.isSuccess) {
-          this.snackBar.open('Request saved successfully', 'Close', { duration: 3000 });
-          console.log('Request saved:', response.data);
-        } else {
-          this.snackBar.open(`Failed to save request: ${response.error}`, 'Close', { duration: 5000 });
-          console.error('Failed to save request:', response.error);
-        }
-      },
-      error: (error) => {
-        this.snackBar.open('Error saving request', 'Close', { duration: 5000 });
-        console.error('Error saving request:', error);
+    // Open the save request modal dialog
+    const dialogRef = this.dialog.open(SaveRequestModalComponent, {
+      width: '500px',
+      data: {
+        workspaceId: this.workspaceId,
+        requestName: currentTab.name || this.getRequestNameFromUrl(formValue.url)
       }
     });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) {
+        return; // User canceled
+      }
+
+      // Get the request name from the result or generate one from the URL
+      const requestName = result.name || currentTab.name || this.getRequestNameFromUrl(formValue.url);
+      
+      // Create a RequestFormData object from the current form values
+      const requestFormData: RequestFormData = {
+        url: formValue.url,
+        method: formValue.method,
+        params: this.params.filter(p => p.key.trim() !== ''),
+        headers: this.headers.filter(h => h.key.trim() !== ''),
+        body: formValue.body,
+        authType: formValue.authType,
+        authData: {}
+      };
+      
+      // Add authentication data based on the auth type
+      if (formValue.authType === AuthType.BASIC) {
+        requestFormData.authData = {
+          'username': this.basicAuthUsername,
+          'password': this.basicAuthPassword
+        };
+      } else if (formValue.authType === AuthType.BEARER) {
+        requestFormData.authData = {
+          'token': this.bearerToken
+        };
+      }
+      
+      // Set collection or folder ID based on the selected location
+      let collectionId: number | undefined;
+      let folderId: number | undefined;
+      
+      if (result.location) {
+        const location: SaveLocation = result.location;
+        if (location.type === 'collection') {
+          collectionId = location.id;
+          // Update the tab's parent information
+          this.tabService.updateTabData(this.currentTabId!, {
+            parentType: 'collection',
+            parentId: location.id,
+            name: requestName
+          });
+        } else if (location.type === 'folder') {
+          folderId = location.id;
+          // Update the tab's parent information
+          this.tabService.updateTabData(this.currentTabId!, {
+            parentType: 'folder',
+            parentId: location.id,
+            name: requestName
+          });
+        }
+      }
+      
+      // Convert the form data to a request object compatible with the backend
+      const requestToSave = convertFormDataToRequest(requestFormData, requestName, collectionId, folderId);
+
+      // Call the API to save the request
+      this.requestService.saveRequest(requestToSave).subscribe({
+        next: (response) => {
+          if (response.isSuccess) {
+            this.snackBar.open('Request saved successfully', 'Close', { duration: 3000 });
+            console.log('Request saved:', response.data);
+          } else {
+            this.snackBar.open(`Failed to save request: ${response.error}`, 'Close', { duration: 5000 });
+            console.error('Failed to save request:', response.error);
+          }
+        },
+        error: (error) => {
+          this.snackBar.open('Error saving request', 'Close', { duration: 5000 });
+          console.error('Error saving request:', error);
+        }
+      });
+    });
+  }
+
+  /**
+   * Generate a request name from the URL
+   * This extracts the last part of the URL path to use as a name
+   */
+  private getRequestNameFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      const lastPart = pathParts[pathParts.length - 1];
+      
+      if (lastPart && lastPart.length > 0) {
+        return lastPart.charAt(0).toUpperCase() + lastPart.slice(1);
+      } else if (pathParts.length > 1 && pathParts[pathParts.length - 2]) {
+        return pathParts[pathParts.length - 2].charAt(0).toUpperCase() + pathParts[pathParts.length - 2].slice(1);
+      }
+      
+      // If no meaningful path parts, use the hostname
+      return urlObj.hostname.split('.')[0].charAt(0).toUpperCase() + urlObj.hostname.split('.')[0].slice(1);
+    } catch (e) {
+      // If URL parsing fails, return a generic name
+      return 'New Request';
+    }
   }
 
   sendRequest(): void {

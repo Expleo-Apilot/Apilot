@@ -127,7 +127,7 @@
                    (cdkDragEnded)="onDragEnded()">
                 <div class="request-header">
                   <mat-icon>subdirectory_arrow_right</mat-icon>
-                  <span class="request-method" [ngClass]="request.method.toLowerCase()">{{ request.method }}</span>
+                  <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
                   <span>{{ request.name }}</span>
                 </div>
               </div>
@@ -174,11 +174,11 @@
                          (cdkDragEnded)="onDragEnded()">
                       <div class="request-header">
                         <div class="request-icon">
-                          <span class="request-method" [ngClass]="request.method.toLowerCase()">{{ request.method }}</span>
+                          <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
                         </div>
                         <span class="request-name">{{ request.name }}</span>
                         <div class="request-actions">
-                          <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id)">
+                          <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0)">
                             <mat-icon class="small-icon">more_horiz</mat-icon>
                           </button>
                         </div>

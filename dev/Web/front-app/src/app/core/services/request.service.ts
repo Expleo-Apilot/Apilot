@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Request } from '../models/request.model';
+import { Request, CreateRequestDto } from '../models/request.model';
 
 interface ApiResponse<T> {
   isSuccess: boolean;
@@ -35,7 +35,7 @@ export class RequestService {
    * @param request The request to save
    * @returns Observable of the API response containing the saved request
    */
-  saveRequest(request: Partial<Request>): Observable<ApiResponse<Request>> {
+  saveRequest(request: CreateRequestDto): Observable<ApiResponse<Request>> {
     return this.http.post<ApiResponse<Request>>(`${this.baseUrl}/SaveRequest`, request, this.getHttpOptions());
   }
 

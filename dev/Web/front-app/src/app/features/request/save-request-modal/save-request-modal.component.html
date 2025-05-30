@@ -1,0 +1,103 @@
+<div class="save-request-modal">
+  <div class="modal-header">
+    <h2 mat-dialog-title>Save Request</h2>
+    <button mat-icon-button (click)="onCancel()" class="close-button" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  
+  <div mat-dialog-content>
+    <div class="request-name-container">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Request Name</mat-label>
+        <input matInput [(ngModel)]="requestName" placeholder="Enter request name" required>
+        <mat-icon matSuffix>edit</mat-icon>
+        <mat-hint>Give your request a descriptive name</mat-hint>
+      </mat-form-field>
+    </div>
+    
+    <div class="location-container">
+      <h3>
+        <mat-icon class="section-icon">save</mat-icon>
+        <span>Save Location</span>
+      </h3>
+      
+      <div *ngIf="isLoading" class="loading-indicator">
+        <mat-spinner diameter="30" color="accent"></mat-spinner>
+        <span>Loading collections...</span>
+      </div>
+      
+      <div *ngIf="error" class="error-message">
+        <mat-icon>error_outline</mat-icon>
+        <div class="error-content">
+          <span class="error-title">Error loading collections</span>
+          <span class="error-details">{{ error }}</span>
+        </div>
+      </div>
+      
+      <div *ngIf="!isLoading && !error" class="collections-container">
+        <div *ngIf="collections.length === 0" class="no-collections">
+          <mat-icon class="empty-icon">folder_off</mat-icon>
+          <p>No collections available</p>
+          <span class="empty-hint">Please create a collection first to save your request</span>
+        </div>
+        
+        <div *ngIf="collections.length > 0" class="collections-list">
+          <div *ngFor="let collection of collections" class="collection-item">
+            <div class="collection-header" 
+                 [class.selected]="isSelected('collection', collection.id)"
+                 (click)="selectCollection(collection, $event)">
+              <div class="expand-icon" (click)="toggleCollectionExpand(collection.id, $event)">
+                <mat-icon>{{ isCollectionExpanded(collection.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+              </div>
+              <div class="collection-icon">
+                <mat-icon>inventory_2</mat-icon>
+              </div>
+              <span class="collection-name">{{ collection.name }}</span>
+              <div *ngIf="isSelected('collection', collection.id)" class="selected-indicator">
+                <mat-icon>check_circle</mat-icon>
+              </div>
+            </div>
+            
+            <div *ngIf="isCollectionExpanded(collection.id)" class="folders-list">
+              <div *ngIf="collection.folders.length === 0" class="no-folders">
+                <p class="empty-message">No folders in this collection</p>
+              </div>
+              
+              <div *ngFor="let folder of collection.folders" 
+                   class="folder-item"
+                   [class.selected]="isSelected('folder', folder.id)"
+                   (click)="selectFolder(folder, $event)">
+                <div class="folder-icon">
+                  <mat-icon>folder</mat-icon>
+                </div>
+                <span class="folder-name">{{ folder.name }}</span>
+                <div *ngIf="isSelected('folder', folder.id)" class="selected-indicator">
+                  <mat-icon>check_circle</mat-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div mat-dialog-actions>
+    <div class="action-buttons">
+      <button mat-button 
+              class="cancel-button" 
+              (click)="onCancel()">
+        Cancel
+      </button>
+      <button mat-raised-button 
+              class="save-button"
+              color="primary" 
+              [disabled]="!selectedLocation || !requestName.trim()" 
+              (click)="onSave()">
+        <mat-icon>save</mat-icon>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
