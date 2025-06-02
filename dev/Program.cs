@@ -7,12 +7,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using dev.Application.Interfaces;
+using dev.Application.Interfaces.Services;
 using dev.Application.Services.Auth;
 using dev.Application.Services.CurrentUser;
 using dev.Domain.Entities;
 using dev.Infrastructure.Auth;
 using dev.Infrastructure.Data;
 using dev.Infrastructure.Services;
+using ICurrentUserService = dev.Application.Interfaces.Services.ICurrentUserService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,6 +81,9 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
+// Add SignalR services
+builder.Services.AddSignalR();
+
 
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddScoped<ICollectionService , CollectionService>();
@@ -87,6 +92,7 @@ builder.Services.AddScoped<IRequestService , RequestService>();
 builder.Services.AddScoped<IEnvironmentService , EnvironmentService>();
 builder.Services.AddScoped<IResponseService , ResponseService>();
 builder.Services.AddScoped<IHistoryService , HistoryService>();
+builder.Services.AddScoped<ICollaborationService, CollaborationService>();
 builder.Services.AddScoped<IOpenApiImportService, OpenApiImportService>();
 builder.Services.AddScoped<IOpenApiFileHandlerService , OpenApiFileHandlerService>();
 
@@ -135,14 +141,33 @@ builder.Services.AddAuthentication(options => {
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
+    
+    // Configure JWT authentication for SignalR
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            
+            return Task.CompletedTask;
+        }
+    };
 });
 
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ICurrentUserServiceSecond, CurrentUserServiceSecond>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+builder.Services.AddScoped<ICollaborationService, CollaborationService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddCors(options =>
@@ -152,7 +177,14 @@ builder.Services.AddCors(options =>
             .WithOrigins("http://localhost:4200")
             .AllowAnyHeader()
             .AllowAnyMethod()
+            .AllowCredentials() // Required for SignalR
     );
+});
+
+// Add SignalR services
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
 });
 
 var app = builder.Build();
@@ -179,6 +211,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<dev.Api.Hubs.CollaborationHub>("/hubs/collaboration");
 app.UseCors("AllowAngularApp");
 
 app.Run();

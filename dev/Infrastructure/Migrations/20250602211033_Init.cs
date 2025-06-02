@@ -302,6 +302,47 @@ namespace dev.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Collaborations",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CollectionId = table.Column<int>(type: "int", nullable: false),
+                    InvitedUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    InvitedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Permission = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    IsSync = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastSyncDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    SyncId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Collaborations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Collaborations_AspNetUsers_InvitedByUserId",
+                        column: x => x.InvitedByUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Collaborations_AspNetUsers_InvitedUserId",
+                        column: x => x.InvitedUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Collaborations_Collections_CollectionId",
+                        column: x => x.CollectionId,
+                        principalTable: "Collections",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Folders",
                 columns: table => new
                 {
@@ -443,6 +484,21 @@ namespace dev.Infrastructure.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Collaborations_CollectionId",
+                table: "Collaborations",
+                column: "CollectionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Collaborations_InvitedByUserId",
+                table: "Collaborations",
+                column: "InvitedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Collaborations_InvitedUserId",
+                table: "Collaborations",
+                column: "InvitedUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Collections_WorkSpaceId",
                 table: "Collections",
                 column: "WorkSpaceId");
@@ -500,6 +556,9 @@ namespace dev.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "Collaborations");
 
             migrationBuilder.DropTable(
                 name: "EmailVerifications");

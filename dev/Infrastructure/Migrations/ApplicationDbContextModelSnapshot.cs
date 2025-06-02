@@ -237,6 +237,66 @@ namespace dev.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("dev.Domain.Entities.Collaboration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CollectionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InvitedByUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("InvitedUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSync")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastSyncDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Permission")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CollectionId");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("InvitedUserId");
+
+                    b.ToTable("Collaborations");
+                });
+
             modelBuilder.Entity("dev.Domain.Entities.Collection", b =>
                 {
                     b.Property<int>("Id")
@@ -694,6 +754,33 @@ namespace dev.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("dev.Domain.Entities.Collaboration", b =>
+                {
+                    b.HasOne("dev.Domain.Entities.Collection", "Collection")
+                        .WithMany("Collaborations")
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dev.Domain.Entities.ApplicationUser", "InvitedByUser")
+                        .WithMany("SentCollaborations")
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("dev.Domain.Entities.ApplicationUser", "InvitedUser")
+                        .WithMany("ReceivedCollaborations")
+                        .HasForeignKey("InvitedUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Collection");
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("InvitedUser");
+                });
+
             modelBuilder.Entity("dev.Domain.Entities.Collection", b =>
                 {
                     b.HasOne("dev.Domain.Entities.Workspace", "WorkSpace")
@@ -856,11 +943,17 @@ namespace dev.Infrastructure.Migrations
 
             modelBuilder.Entity("dev.Domain.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("ReceivedCollaborations");
+
+                    b.Navigation("SentCollaborations");
+
                     b.Navigation("Workspaces");
                 });
 
             modelBuilder.Entity("dev.Domain.Entities.Collection", b =>
                 {
+                    b.Navigation("Collaborations");
+
                     b.Navigation("Folders");
 
                     b.Navigation("Requests");

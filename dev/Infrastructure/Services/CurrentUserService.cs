@@ -1,13 +1,14 @@
-using System.Security.Claims;
+using dev.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
-namespace dev.Application.Services.CurrentUser;
+namespace dev.Infrastructure.Services;
 
-public class CurrentUserServiceSecond : ICurrentUserServiceSecond
+public class CurrentUserService : ICurrentUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public CurrentUserServiceSecond(IHttpContextAccessor httpContextAccessor)
+    public CurrentUserService(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }

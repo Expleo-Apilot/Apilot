@@ -1,6 +1,6 @@
-namespace dev.Application.Services.CurrentUser;
+namespace dev.Application.Interfaces.Services;
 
-public interface ICurrentUserServiceSecond
+public interface ICurrentUserService
 {
     string? UserId { get; }
     string? UserName { get; }

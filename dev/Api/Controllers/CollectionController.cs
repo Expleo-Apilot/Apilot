@@ -1,7 +1,7 @@
 using dev.Application.DTOs.Collection;
 using dev.Application.Features.Collection.Commands;
 using dev.Application.Features.Collection.Queries;
-using dev.Application.Services.CurrentUser;
+using dev.Application.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

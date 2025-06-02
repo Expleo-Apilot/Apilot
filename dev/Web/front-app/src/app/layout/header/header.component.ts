@@ -1,5 +1,6 @@
-import { Component, OnInit, ViewChild, ElementRef, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, NgZone, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { SignalRService } from '../../core/services/signalr.service';
 import { Workspace } from '../../core/models/workspace.model';
 import { WorkspaceMenuComponent } from '../../features/workspace/workspace-menu/workspace-menu.component';
 import { AuthService } from '../../auth.service';
@@ -18,6 +19,7 @@ export class HeaderComponent implements OnInit {
   showCreateWorkspaceModal = false;
   showEditWorkspaceModal = false;
   showDeleteConfirmModal = false;
+  showInviteModal = false;
   apiIconHovered = false;
   currentUser: any;
   isLoggedIn = false;
@@ -36,6 +38,7 @@ export class HeaderComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private workspaceService: WorkspaceService,
+    private signalRService: SignalRService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
     private router: Router
@@ -57,6 +60,9 @@ export class HeaderComponent implements OnInit {
       if (this.isLoggedIn) {
         this.loadWorkspaces();
         this.loadSelectedWorkspace();
+        this.startSignalRConnection();
+      } else {
+        this.stopSignalRConnection();
       }
     });
 
@@ -68,6 +74,7 @@ export class HeaderComponent implements OnInit {
     if (this.isLoggedIn) {
       this.loadWorkspaces();
       this.loadSelectedWorkspace();
+      this.startSignalRConnection();
     }
   }
 
@@ -245,8 +252,31 @@ export class HeaderComponent implements OnInit {
     }
   }
 
-  logout() {
+  logout(): void {
+    this.stopSignalRConnection();
     this.authService.logout();
+    this.router.navigate(['/auth/signin']);
+  }
+
+  /**
+   * Starts the SignalR connection for collaboration notifications
+   */
+  startSignalRConnection(): void {
+    this.signalRService.startConnection();
+  }
+
+  /**
+   * Stops the SignalR connection when user logs out
+   */
+  stopSignalRConnection(): void {
+    this.signalRService.stopConnection();
+  }
+
+  /**
+   * Toggles the visibility of the invite modal
+   */
+  toggleInviteModal(): void {
+    this.showInviteModal = !this.showInviteModal;
   }
 
   private isBrowser(): boolean {

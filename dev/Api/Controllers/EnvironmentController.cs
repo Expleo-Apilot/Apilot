@@ -1,7 +1,7 @@
 using dev.Application.DTOs.Environment;
 using dev.Application.Features.Environment.Commands;
 using dev.Application.Features.Environment.Queries;
-using dev.Application.Services.CurrentUser;
+using dev.Application.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

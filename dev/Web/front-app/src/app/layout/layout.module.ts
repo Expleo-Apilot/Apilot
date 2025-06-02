@@ -12,15 +12,16 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatButtonToggleGroup, MatButtonToggleModule} from '@angular/material/button-toggle';
+import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatSidenavModule} from '@angular/material/sidenav';
 import {RouterModule, RouterOutlet} from '@angular/router';
-import {MatList, MatListItem, MatListModule} from '@angular/material/list';
+import {MatListModule} from '@angular/material/list';
 import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
 import {MatTabsModule} from '@angular/material/tabs';
 import {FormsModule} from '@angular/forms';
 import {DragDropModule} from '@angular/cdk/drag-drop';
 import {MatMenuModule} from '@angular/material/menu';
+import { CollaborationModule } from '../features/collaboration/collaboration.module';
 
 @NgModule({
   declarations: [
@@ -40,18 +41,16 @@ import {MatMenuModule} from '@angular/material/menu';
     MatIconModule,
     MatInputModule,
     MatFormFieldModule,
-    MatButtonToggleGroup,
+    MatButtonToggleModule,
     MatSidenavModule,
     RouterOutlet,
-    MatList,
-    MatListItem,
     MatTabsModule,
-    MatButtonToggleModule,
     MatListModule,
     DragDropModule,
     MonacoEditorModule,
     MatMenuModule,
     WorkspaceMenuComponent,
+    CollaborationModule,
   ],
   exports: [
     HeaderComponent,
