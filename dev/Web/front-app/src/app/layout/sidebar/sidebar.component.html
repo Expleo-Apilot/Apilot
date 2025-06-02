@@ -99,9 +99,9 @@
 
       <div class="collections-list">
         <div *ngFor="let collection of collections" class="collection-item">
-          <div class="collection-header" (click)="toggleExpand(collection.id)">
+          <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
             <div class="collection-icon">
-              <mat-icon>{{ isExpanded(collection.id) ? 'inventory_2' : 'inventory' }}</mat-icon>
+              <mat-icon>{{ isExpanded(collection.id, 'collection') ? 'inventory_2' : 'inventory' }}</mat-icon>
             </div>
             <span class="collection-name">{{ collection.name }}</span>
             <div class="collection-actions">
@@ -111,7 +111,7 @@
             </div>
           </div>
 
-          <div *ngIf="isExpanded(collection.id)" class="collection-content">
+          <div *ngIf="isExpanded(collection.id, 'collection')" class="collection-content">
             <!-- Collection's requests -->
             <div cdkDropList
                  [id]="'collection-' + collection.id"
@@ -146,9 +146,9 @@
                    [cdkDragData]="folder"
                    (cdkDragStarted)="onDragStarted(folder)"
                    (cdkDragEnded)="onDragEnded()">
-                <div class="folder-header" (click)="toggleExpand(folder.id)">
+                <div class="folder-header" (click)="toggleExpand(folder.id, 'folder')">
                   <div class="folder-icon">
-                    <mat-icon>{{ isExpanded(folder.id) ? 'folder_open' : 'folder' }}</mat-icon>
+                    <mat-icon>{{ isExpanded(folder.id, 'folder') ? 'folder_open' : 'folder' }}</mat-icon>
                   </div>
                   <span class="folder-name">{{ folder.name }}</span>
                   <div class="folder-actions">
@@ -158,7 +158,7 @@
                   </div>
                 </div>
 
-                <div *ngIf="isExpanded(folder.id)" class="folder-content">
+                <div *ngIf="isExpanded(folder.id, 'folder')" class="folder-content">
                   <!-- Folder's requests -->
                   <div cdkDropList
                        [id]="'folder-' + folder.id"

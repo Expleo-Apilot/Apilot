@@ -63,6 +63,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   workspaceId! : number
 
   expandedItems: Set<number> = new Set();
+  expandedCollections: Set<number> = new Set();
+  expandedFolders: Set<number> = new Set();
   draggedItem: any = null;
   
   // Subscription to handle cleanup
@@ -453,16 +455,61 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.activeNavItem = item;
   }
 
-  toggleExpand(id: number) {
-    if (this.expandedItems.has(id)) {
-      this.expandedItems.delete(id);
-    } else {
-      this.expandedItems.add(id);
+  toggleExpand(id: number, itemType: 'collection' | 'folder' = 'collection') {
+    if (itemType === 'collection') {
+      if (this.expandedCollections.has(id)) {
+        this.expandedCollections.delete(id);
+        
+        // When a collection is collapsed, also collapse all its folders
+        if (this.collections) {
+          const collection = this.collections.find(c => c.id === id);
+          if (collection && collection.folders) {
+            collection.folders.forEach(folder => {
+              this.expandedFolders.delete(folder.id);
+            });
+          }
+        }
+      } else {
+        this.expandedCollections.add(id);
+      }
+    } else if (itemType === 'folder') {
+      // For folders, toggle only the folder's expanded state
+      // Find the parent collection to ensure it stays expanded
+      let parentCollectionId: number | null = null;
+      
+      if (this.collections) {
+        for (const collection of this.collections) {
+          if (collection.folders && collection.folders.some(f => f.id === id)) {
+            parentCollectionId = collection.id;
+            break;
+          }
+        }
+      }
+      
+      // Ensure the parent collection stays expanded
+      if (parentCollectionId !== null) {
+        this.expandedCollections.add(parentCollectionId);
+      }
+      
+      // Toggle the folder's expanded state
+      if (this.expandedFolders.has(id)) {
+        this.expandedFolders.delete(id);
+      } else {
+        this.expandedFolders.add(id);
+      }
     }
+    
+    // Update the combined expandedItems set for backward compatibility
+    this.expandedItems = new Set([...this.expandedCollections, ...this.expandedFolders]);
   }
 
-  isExpanded(id: number): boolean {
-    return this.expandedItems.has(id);
+  isExpanded(id: number, itemType: 'collection' | 'folder' = 'collection'): boolean {
+    if (itemType === 'collection') {
+      return this.expandedCollections.has(id);
+    } else if (itemType === 'folder') {
+      return this.expandedFolders.has(id);
+    }
+    return this.expandedItems.has(id); // Fallback for backward compatibility
   }
 
   onDragStarted(item: any) {
