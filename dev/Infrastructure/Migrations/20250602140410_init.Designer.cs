@@ -12,8 +12,8 @@ using dev.Infrastructure.Data;
 namespace dev.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250530150549_Init")]
-    partial class Init
+    [Migration("20250602140410_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
