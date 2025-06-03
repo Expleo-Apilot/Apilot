@@ -1,5 +1,8 @@
 // src/app/layout/sidebar/sidebar.component.ts
 import {Component, OnInit, OnDestroy} from '@angular/core';
+
+// Define a type for the navigation items
+type NavItem = 'collections' | 'environments' | 'flows' | 'history';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import {ActivatedRoute, Router} from '@angular/router';
 import {CollectionService} from '../../core/services/collection.service';
@@ -10,7 +13,9 @@ import {Folder, CreateFolderRequest} from '../../core/models/folder.model';
 import {TabService} from '../../core/services/tab.service';
 import {HttpMethod} from '../../core/models/http-method.enum';
 import {Request} from '../../core/models/request.model';
-import {Subscription} from 'rxjs';
+import {Subscription, forkJoin} from 'rxjs';
+import {CollaborationService} from '../../core/services/collaboration.service';
+import {CollaborationStatus} from '../../core/models/collaboration.model';
 
 
 
@@ -21,7 +26,7 @@ import {Subscription} from 'rxjs';
   styleUrl: './sidebar.component.css'
 })
 export class SidebarComponent implements OnInit, OnDestroy {
-  activeNavItem: string = 'collections';
+  activeNavItem: NavItem = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
 
@@ -59,6 +64,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     description: ''
   };
   collections!: Collection[];
+  sharedCollections!: Collection[];
   collectionForm! : CreateCollectionRequest;
   workspaceId! : number
 
@@ -76,6 +82,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
               private collectionService: CollectionService,
               private folderService: FolderService,
               private requestService: RequestService,
+              private collaborationService: CollaborationService,
               private tabService: TabService) {}
 
   ngOnInit() {
@@ -212,16 +219,28 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.closeItemMenu();
     console.log(`Create new request in ${parentType} with ID: ${parentId}`);
     
+    // Check if this is a shared collection or folder
+    let isShared = false;
+    
+    if (parentType === 'collection') {
+      const collection = this.findCollectionById(parentId.toString());
+      isShared = collection ? !!(collection as any).isShared : false;
+    } else if (parentType === 'folder') {
+      const collection = this.findCollectionByFolderId(parentId);
+      isShared = collection ? !!(collection as any).isShared : false;
+    }
+    
     // Create a new tab with default values and parent information
     const newTab = this.tabService.createNewTab({
       method: HttpMethod.GET,
       url: 'https://simple-books-api.glitch.me',
       name: `New ${parentType} Request`,
       parentId: parentId,         // Store the parent ID
-      parentType: parentType      // Store the parent type
+      parentType: parentType,     // Store the parent type
+      isShared: isShared          // Indicate if this is in a shared collection
     });
     
-    console.log(`Created new tab with parent ${parentType} ID: ${parentId}`);
+    console.log(`Created new tab with parent ${parentType} ID: ${parentId}, isShared: ${isShared}`);
     
     // The request editor is already integrated in the workspace layout,
     // so we don't need to navigate to a different route
@@ -233,6 +252,18 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Create a new folder in a collection
   createNewFolder(collectionId: number) {
     console.log('Creating new folder in collection:', collectionId);
+    
+    // Check if this is a shared collection
+    const collection = this.findCollectionById(collectionId.toString());
+    const isShared = collection ? !!(collection as any).isShared : false;
+    
+    // If it's a shared collection, check if the user has edit permission
+    if (isShared) {
+      // For now, we'll allow folder creation in shared collections
+      // In a real implementation, you would check the user's permission level
+      console.log('Creating folder in a shared collection');
+    }
+    
     this.currentCollectionId = collectionId;
     this.newFolder.name = ''; // Reset the form
     this.showNewFolderModal = true;
@@ -392,7 +423,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.showEditCollectionModal = true;
       }
     } else if (itemType === 'folder') {
-      // Find the folder to edit
+      // Find the folder to edit in owned collections
+      let folderFound = false;
       for (const collection of this.collections) {
         if (collection.folders) {
           const folder = collection.folders.find(f => f.id === itemId);
@@ -404,7 +436,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
               collectionId: folder.collectionId
             };
             this.showEditFolderModal = true;
+            folderFound = true;
             break;
+          }
+        }
+      }
+      
+      // If folder not found in owned collections, check shared collections
+      if (!folderFound && this.sharedCollections) {
+        for (const collection of this.sharedCollections) {
+          if (collection.folders) {
+            const folder = collection.folders.find(f => f.id === itemId);
+            if (folder) {
+              this.currentFolder = folder;
+              this.editFolder = {
+                id: folder.id,
+                name: folder.name,
+                collectionId: folder.collectionId
+              };
+              this.showEditFolderModal = true;
+              break;
+            }
           }
         }
       }
@@ -426,14 +478,30 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.showDeleteConfirmModal = true;
       }
     } else if (itemType === 'folder') {
-      // Find the folder to delete
+      // Find the folder to delete in owned collections
+      let folderFound = false;
       for (const collection of this.collections) {
         if (collection.folders) {
           const folder = collection.folders.find(f => f.id === itemId);
           if (folder) {
             this.currentFolder = folder;
             this.showDeleteFolderModal = true;
+            folderFound = true;
             break;
+          }
+        }
+      }
+      
+      // If folder not found in owned collections, check shared collections
+      if (!folderFound && this.sharedCollections) {
+        for (const collection of this.sharedCollections) {
+          if (collection.folders) {
+            const folder = collection.folders.find(f => f.id === itemId);
+            if (folder) {
+              this.currentFolder = folder;
+              this.showDeleteFolderModal = true;
+              break;
+            }
           }
         }
       }
@@ -451,7 +519,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // You would typically open a file picker or import dialog here
   }
 
-  setActiveNavItem(item: string) {
+  setActiveNavItem(item: NavItem) {
     this.activeNavItem = item;
   }
 
@@ -579,14 +647,46 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   findCollectionByFolderId(folderId: number): Collection | undefined {
     // Find the collection that contains the folder with the given ID
-    return this.collections.find(collection =>
+    
+    // First check owned collections
+    const ownedCollection = this.collections.find(collection =>
       collection.folders && collection.folders.some(folder => folder.id === folderId)
     );
+    if (ownedCollection) {
+      return ownedCollection;
+    }
+    
+    // If not found, check shared collections
+    if (this.sharedCollections) {
+      const sharedCollection = this.sharedCollections.find(collection =>
+        collection.folders && collection.folders.some(folder => folder.id === folderId)
+      );
+      if (sharedCollection) {
+        return sharedCollection;
+      }
+    }
+    
+    return undefined;
   }
 
   findCollectionById(collectionId: string): Collection | undefined {
     // Convert collection.id (number) to string for comparison
-    return this.collections.find(collection => collection.id.toString() === collectionId);
+    
+    // First check owned collections
+    const ownedCollection = this.collections.find(collection => collection.id.toString() === collectionId);
+    if (ownedCollection) {
+      return ownedCollection;
+    }
+    
+    // If not found, check shared collections
+    if (this.sharedCollections) {
+      const sharedCollection = this.sharedCollections.find(collection => collection.id.toString() === collectionId);
+      if (sharedCollection) {
+        return sharedCollection;
+      }
+    }
+    
+    return undefined;
   }
 
 
@@ -713,11 +813,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   loadCollections() {
     console.log('Loading collections for workspace:', this.workspaceId);
-    this.collectionService.getCollectionsByWorkspaceId(this.workspaceId).subscribe({
-      next: (res) => {
-        if (res.isSuccess && res.data) {
-          console.log('Collections loaded:', res.data);
-          this.collections = res.data;
+    
+    // Load both owned collections and shared collections
+    forkJoin({
+      owned: this.collectionService.getCollectionsByWorkspaceId(this.workspaceId),
+      shared: this.collectionService.getSharedCollections()
+    }).subscribe({
+      next: (results) => {
+        // Process owned collections
+        if (results.owned.isSuccess && results.owned.data) {
+          console.log('Owned collections loaded:', results.owned.data);
+          this.collections = results.owned.data;
 
           // Initialize folders array if it doesn't exist
           this.collections.forEach(collection => {
@@ -729,13 +835,36 @@ export class SidebarComponent implements OnInit, OnDestroy {
             }
           });
         } else {
-          console.error('Failed to load collections:', res.error);
+          console.error('Failed to load owned collections:', results.owned.error);
           this.collections = [];
+        }
+
+        // Process shared collections
+        if (results.shared.isSuccess && results.shared.data) {
+          console.log('Shared collections loaded:', results.shared.data);
+          this.sharedCollections = results.shared.data;
+
+          // Initialize folders array if it doesn't exist
+          this.sharedCollections.forEach(collection => {
+            if (!collection.folders) {
+              collection.folders = [];
+            }
+            if (!collection.requests) {
+              collection.requests = [];
+            }
+            
+            // Mark as shared for UI display
+            collection.isShared = true;
+          });
+        } else {
+          console.error('Failed to load shared collections:', results.shared.error);
+          this.sharedCollections = [];
         }
       },
       error: (error) => {
         console.error('Error loading collections:', error);
         this.collections = [];
+        this.sharedCollections = [];
       }
     });
   }
