@@ -1,4 +1,5 @@
 using dev.Application.DTOs.Collaboration;
+using dev.Application.Interfaces;
 using dev.Application.Interfaces.Services;
 using dev.Domain.Entities;
 using dev.Domain.Enums;
@@ -13,15 +14,21 @@ public class CollaborationService : ICollaborationService
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<CollaborationService> _logger;
 
     public CollaborationService(
         ApplicationDbContext dbContext,
         UserManager<ApplicationUser> userManager,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IEmailService emailService,
+        ILogger<CollaborationService> logger)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _currentUserService = currentUserService;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<CollaborationDto> CreateCollaborationAsync(CreateCollaborationRequest request)
@@ -95,20 +102,38 @@ public class CollaborationService : ICollaborationService
         _dbContext.Collaborations.Add(collaboration);
         await _dbContext.SaveChangesAsync();
 
-        // Return the DTO
-        return new CollaborationDto
+        // Create the DTO for response
+        var collaborationDto = new CollaborationDto
         {
             Id = collaboration.Id,
             CollectionId = collaboration.CollectionId,
             CollectionName = collection.Name,
             InvitedUserId = collaboration.InvitedUserId,
             InvitedUserEmail = invitedUser.Email,
+            InvitedUserName = invitedUser.UserName,
             InvitedByUserId = collaboration.InvitedByUserId,
             InvitedByUserEmail = (await _userManager.FindByIdAsync(collaboration.InvitedByUserId))?.Email ?? string.Empty,
+            InvitedByUserName = _currentUserService.UserName ?? "unknown",
             Permission = collaboration.Permission,
             Status = collaboration.Status,
             CreatedAt = collaboration.CreatedAt
         };
+        
+        // Send email notification to the invited user
+        try
+        {
+            await _emailService.SendCollaborationInvitationAsync(invitedUser.Email, collaborationDto);
+            _logger.LogInformation("Collaboration invitation email sent to {Email} for collection {CollectionId}", 
+                invitedUser.Email, collaboration.CollectionId);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't fail the operation if email sending fails
+            _logger.LogError(ex, "Failed to send collaboration invitation email to {Email} for collection {CollectionId}", 
+                invitedUser.Email, collaboration.CollectionId);
+        }
+        
+        return collaborationDto;
     }
 
     public async Task<CollaborationDto> UpdateCollaborationStatusAsync(UpdateCollaborationStatusRequest request)
@@ -141,20 +166,88 @@ public class CollaborationService : ICollaborationService
 
         await _dbContext.SaveChangesAsync();
 
-        // Return the updated DTO
-        return new CollaborationDto
+        // Get user details
+        var invitedUser = await _userManager.FindByIdAsync(collaboration.InvitedUserId);
+        var invitedByUser = await _userManager.FindByIdAsync(collaboration.InvitedByUserId);
+        
+        // Create the updated DTO
+        var collaborationDto = new CollaborationDto
         {
             Id = collaboration.Id,
             CollectionId = collaboration.CollectionId,
             CollectionName = collaboration.Collection.Name,
             InvitedUserId = collaboration.InvitedUserId,
-            InvitedUserEmail = (await _userManager.FindByIdAsync(collaboration.InvitedUserId))?.Email ?? string.Empty,
+            InvitedUserEmail = invitedUser?.Email ?? string.Empty,
+            InvitedUserName = invitedUser?.UserName ?? string.Empty,
             InvitedByUserId = collaboration.InvitedByUserId,
-            InvitedByUserEmail = (await _userManager.FindByIdAsync(collaboration.InvitedByUserId))?.Email ?? string.Empty,
+            InvitedByUserEmail = invitedByUser?.Email ?? string.Empty,
+            InvitedByUserName = invitedByUser?.UserName ?? string.Empty,
             Permission = collaboration.Permission,
             Status = collaboration.Status,
             CreatedAt = collaboration.CreatedAt
         };
+        
+        // Send email notification to the user who sent the invitation about the status update
+        if (invitedByUser?.Email != null)
+        {
+            try
+            {
+                // Create a custom email for the response notification
+                string subject = $"Apilot - Collaboration Response: {collaborationDto.CollectionName}";
+                string statusText = request.Status == CollaborationStatus.Accepted ? "accepted" : "declined";
+                string body = $@"<html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: #4a56e2; color: white; padding: 15px; text-align: center; }}
+                        .content {{ padding: 20px; border: 1px solid #ddd; }}
+                        .status {{ font-size: 18px; font-weight: bold; margin: 20px 0; 
+                                 color: {(request.Status == CollaborationStatus.Accepted ? "#28a745" : "#dc3545")}; }}
+                        .collection-name {{ font-weight: bold; color: #4a56e2; }}
+                        .button {{ display: inline-block; background-color: #4a56e2; color: white; 
+                                 padding: 10px 20px; text-decoration: none; border-radius: 5px; 
+                                 margin: 20px 0; }}
+                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #777; }}
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <div class='header'>
+                            <h2>Apilot Collaboration Update</h2>
+                        </div>
+                        <div class='content'>
+                            <p>Hello {invitedByUser.UserName},</p>
+                            <div class='status'>{invitedUser?.UserName ?? "The user"} has {statusText} your invitation</div>
+                            
+                            <p>Your invitation to collaborate on the collection <span class='collection-name'>{collaborationDto.CollectionName}</span> has been {statusText} by {invitedUser?.UserName ?? "the user"}.</p>
+                            
+                            {(request.Status == CollaborationStatus.Accepted ? $@"<p>They now have {(collaboration.Permission == CollaborationPermission.View ? "view" : "edit")} access to this collection.</p>" : "<p>The user will not have access to this collection.</p>")}
+                            
+                            <a href='https://apilot.com/collections/{collaborationDto.CollectionId}' class='button'>View Collection</a>
+                            
+                            <p>Thank you for using Apilot!</p>
+                        </div>
+                        <div class='footer'>
+                            <p>&copy; {DateTime.Now.Year} Apilot. All rights reserved.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>";
+                
+                await _emailService.SendEmailAsync(invitedByUser.Email, subject, body, true);
+                _logger.LogInformation("Collaboration response email sent to {Email} for collection {CollectionId}", 
+                    invitedByUser.Email, collaboration.CollectionId);
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't fail the operation if email sending fails
+                _logger.LogError(ex, "Failed to send collaboration response email to {Email} for collection {CollectionId}", 
+                    invitedByUser.Email, collaboration.CollectionId);
+            }
+        }
+        
+        return collaborationDto;
     }
 
     public async Task<IEnumerable<CollaborationDto>> GetCollaborationsByCollectionIdAsync(int collectionId)
