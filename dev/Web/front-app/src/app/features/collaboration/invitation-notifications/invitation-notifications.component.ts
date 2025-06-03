@@ -3,6 +3,8 @@ import { Subscription } from 'rxjs';
 import { Collaboration, CollaborationStatus } from '../../../core/models/collaboration.model';
 import { CollaborationService } from '../../../core/services/collaboration.service';
 import { SignalRService } from '../../../core/services/signalr.service';
+import { CollectionService } from '../../../core/services/collection.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-invitation-notifications',
@@ -21,7 +23,9 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
 
   constructor(
     private collaborationService: CollaborationService,
-    private signalRService: SignalRService
+    private signalRService: SignalRService,
+    private collectionService: CollectionService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -69,6 +73,7 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
     this.collaborationService.getPendingCollaborationsForUser().subscribe({
       next: (response) => {
         this.loading = false;
+        console.log(response);
         if (response.success && response.data) {
           this.pendingInvitations = response.data;
         } else {
@@ -89,6 +94,8 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
     if (this.showNotificationsPanel) {
       this.loadPendingInvitations();
     }
+    this.loadPendingInvitations()
+    console.log("invitations" )
   }
 
   updateInvitationStatus(collaborationId: number, status: number): void {
@@ -108,6 +115,11 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
           if (this.pendingInvitations.length === 0) {
             this.showNotificationsPanel = false;
           }
+          
+          // If the invitation was accepted (status 1), refresh collections
+          if (status === 1) { // CollaborationStatus.Accepted
+            this.refreshCollections();
+          }
         } else {
           this.error = response.message || 'Failed to update invitation status';
         }
@@ -117,6 +129,24 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
         this.error = err.error?.message || err.message || 'An error occurred while updating invitation status';
       }
     });
+  }
+  
+  /**
+   * Refreshes the collections to display newly shared collections
+   * This is called after accepting a collaboration invitation
+   */
+  private refreshCollections(): void {
+    // Reload the current route to refresh the collections in the sidebar
+    const currentUrl = this.router.url;
+    this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+      this.router.navigate([currentUrl]);
+    });
+    
+    // Show a browser notification to inform the user
+    this.showBrowserNotification(
+      'Collection shared successfully', 
+      'The shared collection is now available in your collections list'
+    );
   }
 
   /**

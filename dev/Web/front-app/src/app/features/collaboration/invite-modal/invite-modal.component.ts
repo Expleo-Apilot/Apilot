@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Collection } from '../../../core/models/collection.model';
 import { CollaborationPermission } from '../../../core/models/collaboration.model';
@@ -11,7 +11,7 @@ import { CollectionService } from '../../../core/services/collection.service';
   templateUrl: './invite-modal.component.html',
   styleUrls: ['./invite-modal.component.css']
 })
-export class InviteModalComponent implements OnInit {
+export class InviteModalComponent implements OnInit, OnChanges {
   @Input() show = false;
   @Output() close = new EventEmitter<void>();
 
@@ -37,19 +37,46 @@ export class InviteModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadCollections();
+    // Initial load of collections
+    if (this.show) {
+      this.loadCollections();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Reload collections whenever the modal is shown
+    if (changes['show'] && changes['show'].currentValue === true) {
+      this.loadCollections();
+    }
   }
 
   loadCollections(): void {
-    // Get the current workspace ID from localStorage
-    const workspaceData = localStorage.getItem('selectedWorkspace');
-    if (!workspaceData) {
-      this.error = 'No workspace selected. Please select a workspace first.';
-      return;
+    // Extract workspace ID from URL path
+    const currentUrl = window.location.pathname;
+    const match = currentUrl.match(/\/workspace\/(\d+)/);
+    let workspaceId: number;
+
+    if (match && match[1]) {
+      // Use workspace ID from URL path
+      workspaceId = +match[1];
+      console.log('Workspace ID from URL path:', workspaceId);
+    } else {
+      // Fallback to localStorage if path extraction fails
+      const workspaceData = localStorage.getItem('selectedWorkspace');
+      if (!workspaceData) {
+        this.error = 'No workspace selected. Please select a workspace first.';
+        return;
+      }
+      const workspace = JSON.parse(workspaceData);
+      workspaceId = workspace.id;
+      console.log('Fallback to localStorage. Workspace ID:', workspaceId);
     }
 
-    const workspace = JSON.parse(workspaceData);
-    this.collectionService.getCollectionsByWorkspaceId(workspace.id).subscribe({
+    // Reset collections and form
+    this.collections = [];
+    this.error = '';
+
+    this.collectionService.getCollectionsByWorkspaceId(workspaceId).subscribe({
       next: (response) => {
         if (response.isSuccess && response.data) {
           this.collections = response.data;
@@ -67,6 +94,7 @@ export class InviteModalComponent implements OnInit {
   }
 
   onSubmit(): void {
+
     if (this.inviteForm.invalid) {
       return;
     }
