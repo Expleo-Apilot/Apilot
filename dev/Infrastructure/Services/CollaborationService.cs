@@ -224,7 +224,7 @@ public class CollaborationService : ICollaborationService
                             
                             {(request.Status == CollaborationStatus.Accepted ? $@"<p>They now have {(collaboration.Permission == CollaborationPermission.View ? "view" : "edit")} access to this collection.</p>" : "<p>The user will not have access to this collection.</p>")}
                             
-                            <a href='https://apilot.com/collections/{collaborationDto.CollectionId}' class='button'>View Collection</a>
+                           
                             
                             <p>Thank you for using Apilot!</p>
                         </div>
