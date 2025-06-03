@@ -18,10 +18,6 @@
 
   <div class="right-section">
     <!-- Sign in button when not authenticated -->
-    <button *ngIf="!isLoggedIn" mat-flat-button color="primary" class="signin-button" routerLink="/auth/signin">
-      <mat-icon>login</mat-icon>
-      Sign In
-    </button>
     <!-- Invite button when authenticated -->
     <button *ngIf="isLoggedIn" mat-flat-button color="accent" class="invite-button" (click)="toggleInviteModal()">
       <mat-icon>person_add</mat-icon>
@@ -139,7 +135,7 @@
     <div class="modal-content">
       <p class="delete-message">Are you sure you want to delete the workspace <strong>"{{workspaceToDelete.name}}"</strong>?</p>
       <p class="delete-warning">This action cannot be undone. All data associated with this workspace will be permanently deleted.</p>
-      
+
       <div class="modal-actions">
         <button mat-button type="button" (click)="closeDeleteConfirmModal()">Cancel</button>
         <button mat-flat-button color="warn" (click)="confirmDeleteWorkspace()" class="delete-button">Delete</button>
