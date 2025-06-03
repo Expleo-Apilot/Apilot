@@ -51,13 +51,17 @@ export class HeaderComponent implements OnInit {
 
     this.applyTheme();
 
-    // Subscribe to auth state changes
+    // Subscribe to auth state changes from the BehaviorSubject
+    this.authService.isAuthenticated$.subscribe(isAuthenticated => {
+      this.isLoggedIn = isAuthenticated;
+      this.cdr.detectChanges(); // Force change detection to update UI
+    });
+
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
-      this.isLoggedIn = !!user;
-
+      
       // Load workspaces when user is logged in
-      if (this.isLoggedIn) {
+      if (user) {
         this.loadWorkspaces();
         this.loadSelectedWorkspace();
         this.startSignalRConnection();
@@ -67,8 +71,12 @@ export class HeaderComponent implements OnInit {
     });
 
     // Check initial auth state
+    // This is important to initialize the state correctly on page load
     this.isLoggedIn = this.authService.isLoggedIn();
     this.currentUser = this.authService.getCurrentUser();
+    
+    // Force change detection to ensure UI reflects the correct state
+    this.cdr.detectChanges();
 
     // Load workspaces if user is logged in
     if (this.isLoggedIn) {

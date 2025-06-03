@@ -69,6 +69,7 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
     this.collaborationService.getPendingCollaborationsForUser().subscribe({
       next: (response) => {
         this.loading = false;
+        console.log(response);
         if (response.success && response.data) {
           this.pendingInvitations = response.data;
         } else {
@@ -89,6 +90,8 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
     if (this.showNotificationsPanel) {
       this.loadPendingInvitations();
     }
+    this.loadPendingInvitations()
+    console.log("invitations" )
   }
 
   updateInvitationStatus(collaborationId: number, status: number): void {

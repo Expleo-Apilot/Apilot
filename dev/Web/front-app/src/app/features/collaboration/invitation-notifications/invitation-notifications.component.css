@@ -310,122 +310,122 @@
   padding: 16px;
 }
 
-.invitation-item {
-  margin-bottom: 16px;
-  border-radius: 10px;
-  overflow: hidden;
+/* Compact invitation item styles */
+.compact-invitation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  border-radius: 8px;
   background-color: white;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.2s ease;
   border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   position: relative;
+  padding: 12px 16px;
+  overflow: hidden;
 }
 
-.invitation-item:last-child,
-.invitation-item.last-item {
+.compact-invitation-item:last-child,
+.compact-invitation-item.last-item {
   margin-bottom: 0;
 }
 
-.invitation-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+.compact-invitation-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
   border-color: rgba(21, 101, 192, 0.3);
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.invitation-item:hover::before {
+.compact-invitation-item:hover::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0;
   height: 100%;
-  width: 4px;
+  width: 3px;
   background: linear-gradient(to bottom, #1565C0, #42a5f5);
-  border-radius: 2px 0 0 2px;
-}
-
-.invitation-content {
-  padding: 20px;
 }
 
 .invitation-header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-}
-
-.invitation-icon-container {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(21, 101, 192, 0.12), rgba(21, 101, 192, 0.05));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(21, 101, 192, 0.1);
-}
-
-.invitation-icon-container::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.invitation-item:hover .invitation-icon-container::after {
-  opacity: 1;
+  flex: 1;
+  min-width: 0; /* Allows text truncation to work */
 }
 
 .invitation-icon {
-  color: #1565C0;
-  font-size: 24px;
-  height: 24px;
-  width: 24px;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.invitation-item:hover .invitation-icon {
-  transform: scale(1.1);
-}
-
-.invitation-details {
-  flex: 1;
-}
-
-.invitation-permission {
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 4px;
-  margin-left: 12px;
-  letter-spacing: 0.7px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: #1565C0;
+  background: rgba(21, 101, 192, 0.08);
+  border-radius: 50%;
+  padding: 6px;
+  flex-shrink: 0;
+}
+
+.invitation-icon mat-icon {
+  font-size: 20px;
   height: 20px;
-  position: relative;
+  width: 20px;
+}
+
+.invitation-main-content {
+  flex: 1;
+  min-width: 0; /* Allows text truncation to work */
+}
+
+.invitation-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.collection-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.invitation-details-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666;
+}
+
+.invited-by {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.invited-by strong {
+  font-weight: 500;
+  color: #444;
 }
 
 .permission-badge {
   display: flex;
   align-items: center;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   letter-spacing: 0.3px;
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .permission-view {
@@ -434,76 +434,75 @@
   border: 1px solid rgba(33, 150, 243, 0.2);
 }
 
-.permission-view::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background-color: #1976d2;
-  opacity: 0.6;
-}
-
 .permission-edit {
   background-color: rgba(76, 175, 80, 0.08);
   color: #388e3c;
   border: 1px solid rgba(76, 175, 80, 0.2);
 }
 
-.permission-edit::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background-color: #388e3c;
-  opacity: 0.6;
-}
-
 .permission-badge mat-icon {
-  font-size: 16px;
-  height: 16px;
-  width: 16px;
-  margin-right: 6px;
+  font-size: 14px;
+  height: 14px;
+  width: 14px;
+  margin-right: 4px;
 }
 
 .invitation-date {
   font-size: 12px;
   color: #757575;
   white-space: nowrap;
-  background: rgba(0, 0, 0, 0.03);
-  padding: 3px 8px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  padding: 0 4px;
+  transition: all 0.2s ease;
 }
 
-.invitation-item:hover .invitation-date {
-  background: rgba(21, 101, 192, 0.08);
+.compact-invitation-item:hover .invitation-date {
   color: #1565C0;
 }
 
-.invitation-actions {
+.compact-invitation-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
 }
 
 .decline-button, .accept-button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+}
+
+.decline-button {
+  background-color: rgba(244, 67, 54, 0.08);
+  color: #e53935;
+}
+
+.decline-button:hover {
+  background-color: rgba(244, 67, 54, 0.15);
+  transform: scale(1.1);
+}
+
+.accept-button {
+  background-color: rgba(76, 175, 80, 0.08);
+  color: #388e3c;
+}
+
+.accept-button:hover {
+  background-color: rgba(76, 175, 80, 0.15);
+  transform: scale(1.1);
+}
+
+.decline-button mat-icon, .accept-button mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
 }
 
 .button-icon {

@@ -18,6 +18,7 @@ export interface Collaboration {
   invitedUserEmail: string;
   invitedByUserId: string;
   invitedByUserName: string;
+  invitedByUserEmail: string;
   permission: CollaborationPermission;
   status: CollaborationStatus;
   createdAt: Date;

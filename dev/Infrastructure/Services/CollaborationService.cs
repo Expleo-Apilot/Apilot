@@ -207,6 +207,8 @@ public class CollaborationService : ICollaborationService
                 CollectionName = collection.Name,
                 InvitedUserId = collaboration.InvitedUserId,
                 InvitedUserEmail = invitedUser?.Email ?? string.Empty,
+                InvitedByUserName = invitedByUser?.UserName ?? string.Empty,
+                InvitedUserName = invitedByUser?.UserName ?? string.Empty,
                 InvitedByUserId = collaboration.InvitedByUserId,
                 InvitedByUserEmail = invitedByUser?.Email ?? string.Empty,
                 Permission = collaboration.Permission,
