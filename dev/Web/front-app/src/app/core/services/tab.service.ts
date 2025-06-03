@@ -20,6 +20,7 @@ export interface RequestTab {
   active: boolean;
   parentId?: number;           // ID of parent collection or folder
   parentType?: 'collection' | 'folder';  // Type of parent
+  isShared?: boolean;          // Indicates if the request belongs to a shared collection
 }
 
 @Injectable({

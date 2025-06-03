@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiResponse, Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../models/collection.model';
+import { CollaborationStatus } from '../models/collaboration.model';
 
 @Injectable({
   providedIn: 'root'
@@ -83,5 +85,29 @@ export class CollectionService {
       params: { id: id.toString() },
       headers: this.getAuthHeaders()
     });
+  }
+
+  /**
+   * Get collections that the user has been invited to and accepted
+   * @returns Observable of shared collections
+   */
+  getSharedCollections(): Observable<ApiResponse<Collection[]>> {
+    return this.http.get<ApiResponse<Collection[]>>(
+      `${this.baseUrl}/api/collection/shared`,
+      this.getHttpOptions()
+    ).pipe(
+      map(response => {
+        // Transform the response to ensure backward compatibility
+        return {
+          ...response,
+          isSuccess: response.success,
+          error: response.message || null,
+          data: response.data?.map(collection => ({
+            ...collection,
+            isShared: true // Mark collections as shared
+          })) || []
+        };
+      })
+    );
   }
 }

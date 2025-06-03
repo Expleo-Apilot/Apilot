@@ -14,8 +14,8 @@
     </div>
   </div>
 
-  <div class="sidebar-content">
-    <div *ngIf="activeNavItem === 'collections'" class="content-area collections-area">
+  <div class="sidebar-content" [ngSwitch]="activeNavItem">
+    <div *ngSwitchCase="'collections'" class="content-area collections-area">
       <div class="content-header">
         <div class="action-buttons">
           <button mat-icon-button (click)="toggleCollectionsMenu($event)">
@@ -98,18 +98,23 @@
       </div>
 
       <div class="collections-list">
-        <div *ngFor="let collection of collections" class="collection-item">
-          <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
-            <div class="collection-icon">
-              <mat-icon>{{ isExpanded(collection.id, 'collection') ? 'inventory_2' : 'inventory' }}</mat-icon>
-            </div>
-            <span class="collection-name">{{ collection.name }}</span>
-            <div class="collection-actions">
-              <button mat-icon-button class="action-button" (click)="toggleItemMenu($event, 'collection', collection.id)">
-                <mat-icon>more_horiz</mat-icon>
-              </button>
-            </div>
+        <!-- My Collections Section -->
+        <div class="collections-section">
+          <div class="section-header">
+            <span class="section-title">My Collections</span>
           </div>
+          <div *ngFor="let collection of collections" class="collection-item">
+            <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
+              <div class="collection-icon">
+                <mat-icon>{{ isExpanded(collection.id, 'collection') ? 'inventory_2' : 'inventory' }}</mat-icon>
+              </div>
+              <span class="collection-name">{{ collection.name }}</span>
+              <div class="collection-actions">
+                <button mat-icon-button class="action-button" (click)="toggleItemMenu($event, 'collection', collection.id)">
+                  <mat-icon>more_horiz</mat-icon>
+                </button>
+              </div>
+            </div>
 
           <div *ngIf="isExpanded(collection.id, 'collection')" class="collection-content">
             <!-- Collection's requests -->
@@ -193,10 +198,109 @@
             </div>
           </div>
         </div>
+        
+        <!-- Shared Collections Section -->
+        <div class="collections-section" *ngIf="sharedCollections && sharedCollections.length > 0">
+          <div class="section-header">
+            <span class="section-title">Shared With Me</span>
+          </div>
+          <div *ngFor="let collection of sharedCollections" class="collection-item shared-collection">
+            <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
+              <div class="collection-icon">
+                <mat-icon>folder_shared</mat-icon>
+              </div>
+              <span class="collection-name">{{ collection.name }}</span>
+              <div class="collection-actions">
+                <button mat-icon-button class="action-button" (click)="toggleItemMenu($event, 'collection', collection.id)">
+                  <mat-icon>more_horiz</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="isExpanded(collection.id, 'collection')" class="collection-content">
+              <!-- Collection's requests -->
+              <div cdkDropList
+                   [id]="'collection-' + collection.id"
+                   [cdkDropListConnectedTo]="getConnectedLists()"
+                   (cdkDropListDropped)="onDrop($event)"
+                   class="request-list"
+                   [cdkDropListData]="collection.requests">
+                <div *ngFor="let request of collection.requests"
+                     class="request-item"
+                     cdkDrag
+                     [cdkDragData]="request"
+                     (cdkDragStarted)="onDragStarted(request)"
+                     (cdkDragEnded)="onDragEnded()">
+                  <div class="request-header">
+                    <mat-icon>subdirectory_arrow_right</mat-icon>
+                    <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                    <span>{{ request.name }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Collection's folders -->
+              <div cdkDropList
+                   [id]="'collection-folders-' + collection.id"
+                   [cdkDropListConnectedTo]="getConnectedLists()"
+                   (cdkDropListDropped)="onDrop($event)"
+                   class="folder-list"
+                   [cdkDropListData]="collection.folders">
+                <div *ngFor="let folder of collection.folders"
+                     class="folder-item"
+                     cdkDrag
+                     [cdkDragData]="folder"
+                     (cdkDragStarted)="onDragStarted(folder)"
+                     (cdkDragEnded)="onDragEnded()">
+                  <div class="folder-header" (click)="toggleExpand(folder.id, 'folder')">
+                    <div class="folder-icon">
+                      <mat-icon>{{ isExpanded(folder.id, 'folder') ? 'folder_open' : 'folder' }}</mat-icon>
+                    </div>
+                    <span class="folder-name">{{ folder.name }}</span>
+                    <div class="folder-actions">
+                      <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'folder', folder.id)">
+                        <mat-icon class="small-icon">more_horiz</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div *ngIf="isExpanded(folder.id, 'folder')" class="folder-content">
+                    <!-- Folder's requests -->
+                    <div cdkDropList
+                         [id]="'folder-' + folder.id"
+                         [cdkDropListConnectedTo]="getFolderConnectedLists(folder)"
+                         (cdkDropListDropped)="onDrop($event)"
+                         class="request-list"
+                         [cdkDropListData]="folder.requests">
+                      <div *ngFor="let request of folder.requests"
+                           class="request-item"
+                           cdkDrag
+                           [cdkDragData]="request"
+                           (cdkDragStarted)="onDragStarted(request)"
+                           (cdkDragEnded)="onDragEnded()">
+                        <div class="request-header">
+                          <div class="request-icon">
+                            <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                          </div>
+                          <span class="request-name">{{ request.name }}</span>
+                          <div class="request-actions">
+                            <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0)">
+                              <mat-icon class="small-icon">more_horiz</mat-icon>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div *ngIf="activeNavItem === 'environments'" class="content-area environments-area">
+    <div *ngSwitchCase="'environments'" class="content-area environments-area">
       <div class="content-header">
         <span class="area-title">Environments</span>
         <button mat-icon-button><mat-icon>add</mat-icon></button>
@@ -214,7 +318,7 @@
       </div>
     </div>
 
-    <div *ngIf="activeNavItem === 'flows'" class="content-area flows-area">
+    <div *ngSwitchCase="'flows'" class="content-area flows-area">
       <div class="content-header">
         <span class="area-title">Flows</span>
         <button mat-icon-button><mat-icon>add</mat-icon></button>
@@ -225,7 +329,7 @@
       </div>
     </div>
 
-    <div *ngIf="activeNavItem === 'history'" class="content-area history-area">
+    <div *ngSwitchCase="'history'" class="content-area history-area">
       <div class="content-header">
         <span class="area-title">History</span>
         <div class="action-buttons">
@@ -442,7 +546,7 @@
     <div class="modal-content">
       <div class="confirm-message">
         <mat-icon class="warning-icon">warning</mat-icon>
-        <p>Are you sure you want to delete the folder <strong>"{{ currentFolder?.name }}"</strong>?</p>
+        <p>Are you sure you want to delete the folder <strong>"{{ currentFolder.name }}"</strong>?</p>
         <p class="warning-text">This action cannot be undone. All requests within this folder will be permanently deleted.</p>
       </div>
       <div class="modal-actions">

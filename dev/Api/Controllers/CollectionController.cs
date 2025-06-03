@@ -1,7 +1,7 @@
 using dev.Application.DTOs.Collection;
 using dev.Application.Features.Collection.Commands;
 using dev.Application.Features.Collection.Queries;
-using dev.Application.Services.CurrentUser;
+using dev.Application.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -87,4 +87,11 @@ public class CollectionController : ControllerBase
         return Ok(result);
     }
     
+    [HttpGet("/api/collection/shared")]
+    public async Task<IActionResult> GetSharedCollections()
+    {
+        var query = new GetSharedCollectionsQuery();
+        var result = await _mediator.Send(query);
+        return Ok(result);
+    }
 }

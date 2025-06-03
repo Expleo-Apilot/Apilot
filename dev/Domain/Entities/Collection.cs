@@ -12,4 +12,7 @@ public class Collection : BaseEntity
 
     public List<Folder> Folders { get; set; } = new List<Folder>();
     public List<RequestEntity> Requests { get; set; } = new List<RequestEntity>();
+    
+    // Collaborations for this collection
+    public List<Collaboration> Collaborations { get; set; } = new List<Collaboration>();
 }

@@ -23,7 +23,7 @@
       Sign In
     </button>
     <!-- Invite button when authenticated -->
-    <button *ngIf="isLoggedIn" mat-flat-button color="accent" class="invite-button">
+    <button *ngIf="isLoggedIn" mat-flat-button color="accent" class="invite-button" (click)="toggleInviteModal()">
       <mat-icon>person_add</mat-icon>
       Invite
     </button>
@@ -41,9 +41,8 @@
     <button mat-icon-button (click)="toggleTheme()" aria-label="Toggle theme">
       <mat-icon>{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
-    <button mat-icon-button aria-label="Notifications">
-      <mat-icon>notifications</mat-icon>
-    </button>
+    <!-- Collaboration notifications -->
+    <app-invitation-notifications *ngIf="isLoggedIn"></app-invitation-notifications>
     <button mat-icon-button *ngIf="isLoggedIn" (click)="logout()" aria-label="Logout" class="logout-button">
       <mat-icon>exit_to_app</mat-icon>
     </button>
@@ -178,3 +177,6 @@
     </div>
   </div>
 </div>
+
+<!-- Invite Modal -->
+<app-invite-modal *ngIf="isLoggedIn" [show]="showInviteModal" (close)="toggleInviteModal()"></app-invite-modal>

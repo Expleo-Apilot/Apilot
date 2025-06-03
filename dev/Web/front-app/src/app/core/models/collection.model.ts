@@ -14,6 +14,7 @@ export interface Collection {
   syncId: string;
   folders: Folder[];
   requests: Request[];
+  isShared?: boolean; // Flag to indicate if this collection is shared with the user
 }
 
 
@@ -31,7 +32,9 @@ export interface UpdateCollectionRequest {
 }
 
 export interface ApiResponse<T> {
-  isSuccess: boolean;
+  success: boolean;
+  isSuccess?: boolean; // For backward compatibility
   data: T;
-  error: any | null;
+  error?: any | null; // For backward compatibility
+  message?: string; // Added to match backend response format
 }

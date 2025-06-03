@@ -164,6 +164,27 @@
   box-sizing: border-box;
 }
 
+.collections-section {
+  margin-bottom: 16px;
+}
+
+.section-header {
+  padding: 8px 12px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.shared-collection .collection-header {
+  border-left: 2px solid var(--primary-color);
+}
+
+.shared-collection .collection-icon mat-icon {
+  color: var(--primary-color);
+}
+
 .collection-item {
   margin: 2px 0;
   border-radius: 4px;

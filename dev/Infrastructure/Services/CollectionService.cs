@@ -1,7 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using dev.Application.DTOs.Collection;
 using dev.Application.Interfaces;
+using dev.Application.Interfaces.Services;
 using dev.Domain.Entities;
+using dev.Domain.Enums;
 using dev.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,12 +15,21 @@ public class CollectionService : ICollectionService
     private readonly ILogger<CollectionService> _logger;
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly ICollaborationService _collaborationService;
 
-    public CollectionService(ApplicationDbContext context, ILogger<CollectionService> logger, IMapper mapper)
+    public CollectionService(
+        ApplicationDbContext context, 
+        ILogger<CollectionService> logger, 
+        IMapper mapper,
+        ICurrentUserService currentUserService,
+        ICollaborationService collaborationService)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
+        _collaborationService = collaborationService ?? throw new ArgumentNullException(nameof(collaborationService));
     }
     
     
@@ -33,7 +44,7 @@ public class CollectionService : ICollectionService
             collection.IsDeleted = false;
             collection.IsSync = false;
             collection.CreatedAt = DateTime.Now;
-            collection.CreatedBy = "admin";
+            collection.CreatedBy = _currentUserService.UserName ?? "unknown";
             collection.SyncId = Guid.NewGuid();
             
             await _context.Collections.AddAsync(collection);
@@ -81,6 +92,7 @@ public class CollectionService : ICollectionService
         try
         {
             var collection = await _context.Collections
+                .Include(c => c.WorkSpace)
                 .Include(c => c.Requests)
                 .Include(w => w.Folders).ThenInclude(f => f.Requests).ThenInclude(res => res.Responses)
                 .FirstOrDefaultAsync(w => w.Id == id );
@@ -90,11 +102,32 @@ public class CollectionService : ICollectionService
                 _logger.LogWarning("Collection with ID {Id} not found ", id);
                 throw new KeyNotFoundException($"Collection with ID {id} not found");
             }
+            
+            // Check if user is the owner or has access
+            bool isOwner = collection.WorkSpace.UserId == _currentUserService.UserId;
+            bool hasAccess = false;
+            
+            if (!isOwner)
+            {
+                hasAccess = await _collaborationService.HasCollectionAccessAsync(
+                    collection.Id, CollaborationPermission.View);
+            }
+            
+            if (!isOwner && !hasAccess)
+            {
+                _logger.LogWarning("User {UserId} attempted to access collection {Id} without permission", 
+                    _currentUserService.UserId, collection.Id);
+                throw new UnauthorizedAccessException("You don't have permission to access this collection");
+            }
 
             _logger.LogInformation("Collection with ID {Id} found", id);
             return _mapper.Map<CollectionDto>(collection);
         }
         catch (KeyNotFoundException)
+        {
+            throw;
+        }
+        catch (UnauthorizedAccessException)
         {
             throw;
         }
@@ -112,16 +145,51 @@ public class CollectionService : ICollectionService
         try
         {
             _logger.LogInformation("Fetching collections for workspace ID: {WorkspaceId}", workspaceId);
-        
-            var collections = await _context.Collections
+            
+            // Get the workspace to check ownership
+            var workspace = await _context.Workspaces
+                .FirstOrDefaultAsync(w => w.Id == workspaceId);
+                
+            if (workspace == null)
+            {
+                _logger.LogWarning("Workspace with ID {Id} not found", workspaceId);
+                throw new KeyNotFoundException($"Workspace with ID {workspaceId} not found");
+            }
+            
+            // Check if the current user is the owner of the workspace
+            bool isWorkspaceOwner = workspace.UserId == _currentUserService.UserId;
+            
+            // Get all collections in the workspace
+            var workspaceCollections = await _context.Collections
                 .Include(c => c.Requests)
                 .Include(w => w.Folders).ThenInclude(f => f.Requests).ThenInclude(req => req.Responses)
                 .Where(c => c.WorkSpaceId == workspaceId)
                 .ToListAsync();
-        
-            _logger.LogInformation("Retrieved {Count} collections for workspace ID: {WorkspaceId}", 
-                collections.Count, workspaceId);
-            return _mapper.Map<List<CollectionDto>>(collections);
+                
+            // If user is workspace owner, return all collections
+            if (isWorkspaceOwner)
+            {
+                _logger.LogInformation("User is workspace owner. Retrieved {Count} collections for workspace ID: {WorkspaceId}", 
+                    workspaceCollections.Count, workspaceId);
+                return _mapper.Map<List<CollectionDto>>(workspaceCollections);
+            }
+            
+            // If not the workspace owner, get collections user has access to via collaborations
+            var collaborationCollectionIds = await _context.Collaborations
+                .Where(c => c.InvitedUserId == _currentUserService.UserId && 
+                           c.Status == CollaborationStatus.Accepted)
+                .Select(c => c.CollectionId)
+                .ToListAsync();
+                
+            // Filter collections to only include those the user has access to
+            var accessibleCollections = workspaceCollections
+                .Where(c => collaborationCollectionIds.Contains(c.Id))
+                .ToList();
+                
+            _logger.LogInformation("User has access to {Count} collections in workspace ID: {WorkspaceId} via collaborations", 
+                accessibleCollections.Count, workspaceId);
+                
+            return _mapper.Map<List<CollectionDto>>(accessibleCollections);
         }
         catch (Exception ex)
         {
@@ -139,6 +207,7 @@ public class CollectionService : ICollectionService
             _logger.LogInformation("Updating collection with ID: {Id}", collectionDto.Id);
         
             var collection = await _context.Collections
+                .Include(c => c.WorkSpace)
                 .FirstOrDefaultAsync(c => c.Id == collectionDto.Id);
         
             if (collection == null)
@@ -146,20 +215,38 @@ public class CollectionService : ICollectionService
                 _logger.LogWarning("Collection with ID {Id} not found for update", collectionDto.Id);
                 throw new KeyNotFoundException($"Collection with ID {collectionDto.Id} not found");
             }
-        
+            
+            // Check if user is the owner or has edit permission
+            bool isOwner = collection.WorkSpace.UserId == _currentUserService.UserId;
+            bool hasEditPermission = false;
+            
+            if (!isOwner)
+            {
+                hasEditPermission = await _collaborationService.HasCollectionAccessAsync(
+                    collection.Id, CollaborationPermission.Edit);
+            }
+            
+            if (!isOwner && !hasEditPermission)
+            {
+                _logger.LogWarning("User {UserId} attempted to update collection {Id} without permission", 
+                    _currentUserService.UserId, collection.Id);
+                throw new UnauthorizedAccessException("You don't have permission to update this collection");
+            }
             
             _mapper.Map(collectionDto, collection);
             collection.UpdatedAt = DateTime.UtcNow;
-            collection.UpdatedBy = "admin"; 
+            collection.UpdatedBy = _currentUserService.UserName ?? "unknown"; 
             collection.IsSync = false; 
             
             await _context.SaveChangesAsync();
         
             _logger.LogInformation("Collection with ID: {Id} updated successfully", collection.Id);
-        
-            
         }
         catch (KeyNotFoundException)
+        {
+            throw;
+        }
+        catch (UnauthorizedAccessException)
         {
             throw;
         }
@@ -183,17 +270,29 @@ public class CollectionService : ICollectionService
         try
         {
             var collection = await _context.Collections
+                .Include(c => c.WorkSpace)
                 .Include(c => c.Folders)
                     .ThenInclude(f => f.Requests)
                         .ThenInclude(r => r.Responses)
                 .Include(c => c.Requests)
                     .ThenInclude(r => r.Responses)
+                .Include(c => c.Collaborations)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (collection == null)
             {
                 _logger.LogWarning("Collection with ID {Id} not found for deletion", id);
                 throw new KeyNotFoundException($"Collection with ID {id} not found");
+            }
+            
+            // Check if user is the owner (only owners can delete collections)
+            bool isOwner = collection.WorkSpace.UserId == _currentUserService.UserId;
+            
+            if (!isOwner)
+            {
+                _logger.LogWarning("User {UserId} attempted to delete collection {Id} without permission", 
+                    _currentUserService.UserId, collection.Id);
+                throw new UnauthorizedAccessException("You don't have permission to delete this collection");
             }
             
             

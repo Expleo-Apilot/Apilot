@@ -15,6 +15,9 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RequestModule } from './features/request/request.module';
 import { ResponseModule } from './features/response/response.module';
 import { WorkspaceModule } from './features/workspace/workspace.module';
+import { CollaborationModule } from './features/collaboration/collaboration.module';
+import { CollaborationService } from './core/services/collaboration.service';
+import { SignalRService } from './core/services/signalr.service';
 import { AuthInterceptor } from './auth/auth.interceptor';
 
 @NgModule({
@@ -38,11 +41,14 @@ import { AuthInterceptor } from './auth/auth.interceptor';
     SplitAreaComponent,
     RequestModule,
     ResponseModule,
-    WorkspaceModule
+    WorkspaceModule,
+    CollaborationModule
   ],
   providers: [
     provideClientHydration(withEventReplay()),
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    CollaborationService,
+    SignalRService
   ],
   bootstrap: [AppComponent]
 })

@@ -21,6 +21,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ResponseEntity> Responses { get; set; }
     public DbSet<HistoryEntity> Histories { get; set; }
     public DbSet<EmailVerification> EmailVerifications { get; set; }
+    public DbSet<Collaboration> Collaborations { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -172,6 +173,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 v => JsonSerializer.Serialize(v, new JsonSerializerOptions()),
                 v => JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()));
         
+        // Configure Collaboration relationships
+        modelBuilder.Entity<Collection>()
+            .HasMany(c => c.Collaborations)
+            .WithOne(collab => collab.Collection)
+            .HasForeignKey(collab => collab.CollectionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasMany(u => u.ReceivedCollaborations)
+            .WithOne(collab => collab.InvitedUser)
+            .HasForeignKey(collab => collab.InvitedUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasMany(u => u.SentCollaborations)
+            .WithOne(collab => collab.InvitedByUser)
+            .HasForeignKey(collab => collab.InvitedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // Apply query filters for soft delete
         modelBuilder.Entity<Workspace>().HasQueryFilter(p => !p.IsDeleted);
         modelBuilder.Entity<Collection>().HasQueryFilter(p => !p.IsDeleted);
         modelBuilder.Entity<Folder>().HasQueryFilter(p => !p.IsDeleted);
@@ -179,6 +200,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<ResponseEntity>().HasQueryFilter(p => !p.IsDeleted);
         modelBuilder.Entity<Environment>().HasQueryFilter(p => !p.IsDeleted);
         modelBuilder.Entity<HistoryEntity>().HasQueryFilter(p => !p.IsDeleted);
+        modelBuilder.Entity<Collaboration>().HasQueryFilter(p => !p.IsDeleted);
         
     }
 }
