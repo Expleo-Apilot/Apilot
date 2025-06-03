@@ -256,9 +256,41 @@ public class CollaborationService : ICollaborationService
         return dtos;
     }
 
-    public Task<IEnumerable<CollaborationDto>> GetCollaborationsForUserAsync()
+    public async Task<IEnumerable<CollaborationDto>> GetCollaborationsForUserAsync()
     {
-        throw new NotImplementedException();
+        if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+        {
+            throw new UnauthorizedAccessException("User is not authenticated");
+        }
+
+        // Get all collaborations for the current user (both invited by and invited to)
+        var collaborations = await _dbContext.Collaborations
+            .Include(c => c.Collection)
+            .Where(c => c.InvitedUserId == _currentUserService.UserId)
+            .ToListAsync();
+
+        // Convert to DTOs
+        var dtos = new List<CollaborationDto>();
+        foreach (var collaboration in collaborations)
+        {
+            var invitedByUser = await _userManager.FindByIdAsync(collaboration.InvitedByUserId);
+
+            dtos.Add(new CollaborationDto
+            {
+                Id = collaboration.Id,
+                CollectionId = collaboration.CollectionId,
+                CollectionName = collaboration.Collection.Name,
+                InvitedUserId = collaboration.InvitedUserId,
+                InvitedUserEmail = (await _userManager.FindByIdAsync(collaboration.InvitedUserId))?.Email ?? string.Empty,
+                InvitedByUserId = collaboration.InvitedByUserId,
+                InvitedByUserEmail = invitedByUser?.Email ?? string.Empty,
+                Permission = collaboration.Permission,
+                Status = collaboration.Status,
+                CreatedAt = collaboration.CreatedAt
+            });
+        }
+
+        return dtos;
     }
 
     public async Task<bool> HasCollectionAccessAsync(int collectionId, CollaborationPermission requiredPermission)
