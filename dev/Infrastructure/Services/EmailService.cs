@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using dev.Application.DTOs.Collaboration;
 using dev.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -149,6 +150,61 @@ public class EmailService : IEmailService
                 </div>
                 <div class='footer'>
                     <p>&copy; {DateTime.Now.Year} Apilot. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>");
+
+        await SendEmailAsync(to, subject, bodyBuilder.ToString(), true);
+    }
+    
+    public async Task SendCollaborationInvitationAsync(string to, CollaborationDto collaboration)
+    {
+        string subject = $"Apilot - Invitation to Collaborate on Collection: {collaboration.CollectionName}";
+        
+        string permissionText = collaboration.Permission == Domain.Enums.CollaborationPermission.View ? "view" : "edit";
+        
+        StringBuilder bodyBuilder = new StringBuilder();
+        bodyBuilder.Append(@"<html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4a56e2; color: white; padding: 15px; text-align: center; }
+                .content { padding: 20px; border: 1px solid #ddd; }
+                .invitation { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+                .collection-name { font-weight: bold; color: #4a56e2; }
+                .permission { font-weight: bold; }
+                .button-container { text-align: center; margin: 25px 0; }
+                .button { display: inline-block; background-color: #4a56e2; color: white; 
+                         padding: 10px 20px; text-decoration: none; border-radius: 5px; 
+                         margin: 0 10px; }
+                .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #777; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>Apilot Collection Invitation</h2>
+                </div>
+                <div class='content'>");
+
+        bodyBuilder.Append($@"<p>Hello,</p>
+                    <div class='invitation'>You have been invited to collaborate on a collection in Apilot</div>
+                    
+                    <p><strong>{collaboration.InvitedByUserName}</strong> has invited you to collaborate on the collection <span class='collection-name'>{collaboration.CollectionName}</span> with <span class='permission'>{permissionText}</span> permission.</p>
+                    
+                    <p>With this collaboration, you will be able to {(permissionText == "view" ? "view" : "view and modify")} the requests, folders, and other resources within this collection.</p>
+                    
+                    <p style='font-weight: bold; margin: 20px 0; font-size: 16px;'>Please log into your Apilot account to view and respond to this invitation.</p>
+                    
+                    <p>You can find all your pending invitations in the Notifications section of your account dashboard.</p>
+                    
+                    <p>Thank you for using Apilot!</p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; {DateTime.Now.Year} Apilot. All rights reserved.</p>
+                    <p>If you did not expect this invitation, please disregard this email.</p>
                 </div>
             </div>
         </body>
