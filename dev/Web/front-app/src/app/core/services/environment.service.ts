@@ -8,7 +8,7 @@ import {
   AddVariableToEnvironmentRequest,
   UpdateVariableInEnvironmentRequest,
   AddVariablesToEnvironmentRequest,
-  RemoveVariableFromEnvironmentRequest
+  RemoveVariableFromEnvironmentRequest, EnvironmentResponse, EnvironmentsResponse
 } from '../models/environment.model';
 import { ApiResponse } from '../models/api-response.model';
 
@@ -33,8 +33,8 @@ export class EnvironmentService {
   }
 
 
-  createEnvironment(request: CreateEnvironmentRequest): Observable<ApiResponse<Environment>> {
-    return this.http.post<ApiResponse<Environment>>(
+  createEnvironment(request: CreateEnvironmentRequest): Observable<EnvironmentResponse> {
+    return this.http.post<EnvironmentResponse>(
       `${this.baseUrl}/CreateEnvironment`,
       request,
       this.getHttpOptions()
@@ -42,16 +42,16 @@ export class EnvironmentService {
   }
 
 
-  getAllEnvironments(): Observable<ApiResponse<Environment[]>> {
-    return this.http.get<ApiResponse<Environment[]>>(
+  getAllEnvironments(): Observable<EnvironmentsResponse> {
+    return this.http.get<EnvironmentsResponse>(
       `${this.baseUrl}/GetEnvironments`,
       this.getHttpOptions()
     );
   }
 
 
-  getEnvironmentById(id: number): Observable<ApiResponse<Environment>> {
-    return this.http.get<ApiResponse<Environment>>(
+  getEnvironmentById(id: number): Observable<EnvironmentResponse> {
+    return this.http.get<EnvironmentResponse>(
       `${this.baseUrl}/GetEnvironment`,
       {
         ...this.getHttpOptions(),
@@ -60,8 +60,8 @@ export class EnvironmentService {
     );
   }
 
-  getEnvironmentsByWorkspaceId(workspaceId: number): Observable<ApiResponse<Environment[]>> {
-    return this.http.get<ApiResponse<Environment[]>>(
+  getEnvironmentsByWorkspaceId(workspaceId: number): Observable<EnvironmentsResponse> {
+    return this.http.get<EnvironmentsResponse>(
       `${this.baseUrl}/GetEnvironmentsByWorkspaceId`,
       {
         ...this.getHttpOptions(),
@@ -91,8 +91,8 @@ export class EnvironmentService {
   }
 
 
-  addVariablesToEnvironment(request: AddVariablesToEnvironmentRequest): Observable<ApiResponse<Environment>> {
-    return this.http.post<ApiResponse<Environment>>(
+  addVariablesToEnvironment(request: AddVariablesToEnvironmentRequest): Observable<EnvironmentResponse> {
+    return this.http.post<EnvironmentResponse>(
       `${this.baseUrl}/AddVariablesToEnvironment`,
       request,
       this.getHttpOptions()

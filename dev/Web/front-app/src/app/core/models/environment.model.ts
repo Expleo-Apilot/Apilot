@@ -1,4 +1,5 @@
 import {KeyValuePair} from './request.model';
+import {Workspace} from './workspace.model';
 
 export interface Environment {
   id: number;
@@ -16,7 +17,6 @@ export interface Environment {
 export interface CreateEnvironmentRequest {
   name: string;
   workSpaceId: number;
-  variables?: { [key: string]: string };
 }
 
 export interface UpdateEnvironmentRequest {
@@ -44,4 +44,17 @@ export interface AddVariablesToEnvironmentRequest {
 export interface RemoveVariableFromEnvironmentRequest {
   environmentId: number;
   key: string;
+}
+
+
+export interface EnvironmentResponse {
+  isSuccess: boolean;
+  data: Environment;
+  error: string | null;
+}
+
+export interface EnvironmentsResponse {
+  isSuccess: boolean;
+  data: Environment[];
+  error: string | null;
 }

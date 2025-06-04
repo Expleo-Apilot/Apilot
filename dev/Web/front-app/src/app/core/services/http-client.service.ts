@@ -2,15 +2,22 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { HttpMethod } from '../models/http-method.enum';
+import {HistoryService} from './history.service';
+import {CreateHistoryDto, PerformRequestDto} from '../models/history.model';
+import {Authentication, KeyValuePair} from '../models/request.model';
+import {ActivatedRoute} from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HttpClientService {
+  private workspaceIdRoute! : number;
   private apiUrl = 'http://localhost:5051/PerformRequest'; // API endpoint from your
 
-  constructor(private http: HttpClient) { }
-  
+  constructor(private http: HttpClient ,
+              private historyService: HistoryService ,
+              private route: ActivatedRoute,) { }
+
   private getAuthHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -53,6 +60,37 @@ export class HttpClientService {
       body: body,
       authentication: auth
     };
+
+    this.route.paramMap.subscribe(params => {
+      const workspaceId = params.get('id');
+      console.log(workspaceId);
+      if (workspaceId) {
+        this.workspaceIdRoute = Number(workspaceId);
+        console.log("ssss"+this.workspaceIdRoute)// ou parseInt(workspaceId!, 10);
+
+      }
+      });
+
+   /* let createHistory : CreateHistoryDto = {
+      timeStamp: new Date(),
+      workSpaceId: this.workspaceIdRoute,
+      Requests : {
+        method: method,
+        url: url,
+        params: paramsDict,
+        headers: headersDict,
+        authentication : auth,
+        body : body
+      }
+    }
+    this.historyService.SaveHistory(createHistory).subscribe({
+      next : (data) => {
+        console.log(data);
+      },
+      error : (error) => {
+        console.log(error);
+      }
+    })*/
 
     // Send the HTTP request with authorization header
     return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions());
