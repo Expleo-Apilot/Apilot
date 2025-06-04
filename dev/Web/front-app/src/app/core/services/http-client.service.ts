@@ -11,12 +11,10 @@ import {ActivatedRoute} from '@angular/router';
   providedIn: 'root'
 })
 export class HttpClientService {
-  private workspaceIdRoute! : number;
   private apiUrl = 'http://localhost:5051/PerformRequest'; // API endpoint from your
 
   constructor(private http: HttpClient ,
-              private historyService: HistoryService ,
-              private route: ActivatedRoute,) { }
+              private historyService: HistoryService ) { }
 
   private getAuthHeaders(): HttpHeaders {
     return new HttpHeaders({
@@ -39,7 +37,8 @@ export class HttpClientService {
     headers: { key: string, value: string, description?: string, enabled: boolean }[],
     params: { key: string, value: string, description?: string, enabled: boolean }[],
     body?: any,
-    auth?: any
+    auth?: any,
+    workspaceId : number  = 0
   ): Observable<any> {
     // Convert the headers array to a dictionary format expected by the backend
     const headersDict = this.convertArrayToDictionary(
@@ -61,19 +60,9 @@ export class HttpClientService {
       authentication: auth
     };
 
-    this.route.paramMap.subscribe(params => {
-      const workspaceId = params.get('id');
-      console.log(workspaceId);
-      if (workspaceId) {
-        this.workspaceIdRoute = Number(workspaceId);
-        console.log("ssss"+this.workspaceIdRoute)// ou parseInt(workspaceId!, 10);
-
-      }
-      });
-
-   /* let createHistory : CreateHistoryDto = {
+    let createHistory : CreateHistoryDto = {
       timeStamp: new Date(),
-      workSpaceId: this.workspaceIdRoute,
+      workSpaceId: workspaceId,
       Requests : {
         method: method,
         url: url,
@@ -90,7 +79,7 @@ export class HttpClientService {
       error : (error) => {
         console.log(error);
       }
-    })*/
+    })
 
     // Send the HTTP request with authorization header
     return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions());
