@@ -24,6 +24,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
   requestForm!: FormGroup;
   httpMethods = Object.values(HttpMethod);
   authTypes = Object.values(AuthType);
+  workspaceIdRoute! : number;
 
   headers: KeyValuePair[] = [{ key: '', value: '', enabled: true }];
   params: KeyValuePair[] = [{ key: '', value: '', enabled: true }];
@@ -33,13 +34,13 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
   // Declare bodyType property
   bodyType: 'none' | 'json' | 'text' | 'form' = 'json'; // Default to JSON
-  
+
   // Authentication properties
   selectedAuthType: AuthType = AuthType.NONE;
   basicAuthUsername: string = '';
   basicAuthPassword: string = '';
   bearerToken: string = '';
-  
+
   // Tab management
   currentTabId: string | null = null;
   private subscriptions: Subscription[] = [];
@@ -89,7 +90,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     const savedTheme = localStorage.getItem('theme');
     const theme = savedTheme === 'dark' ? 'vs-dark' : 'vs-light';
     this.setMonacoTheme(theme);
-    
+
     // Get workspace ID from route
     this.route.parent?.parent?.params.subscribe(params => {
       if (params['id']) {
@@ -106,31 +107,31 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       }
       this.cdr.detectChanges();
     });
-    
+
     if (urlSubscription) {
       this.subscriptions.push(urlSubscription);
     }
-    
+
     // Subscribe to method changes
     const methodSubscription = this.requestForm.get('method')?.valueChanges.subscribe(() => {
       // Save the current tab data when method changes
       this.saveCurrentTabData();
     });
-    
+
     if (methodSubscription) {
       this.subscriptions.push(methodSubscription);
     }
-    
+
     // Subscribe to body changes
     const bodySubscription = this.requestForm.get('body')?.valueChanges.subscribe(() => {
       // Save the current tab data when body changes
       this.saveCurrentTabData();
     });
-    
+
     if (bodySubscription) {
       this.subscriptions.push(bodySubscription);
     }
-    
+
     // Subscribe to auth type changes
     const authTypeSubscription = this.requestForm.get('authType')?.valueChanges.subscribe(authType => {
       this.selectedAuthType = authType;
@@ -138,11 +139,11 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       // Save the current tab data when auth type changes
       this.saveCurrentTabData();
     });
-    
+
     if (authTypeSubscription) {
       this.subscriptions.push(authTypeSubscription);
     }
-    
+
     // Subscribe to active tab changes
     this.subscriptions.push(
       this.tabService.activeTabId$.subscribe(tabId => {
@@ -151,13 +152,13 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           if (this.currentTabId) {
             this.saveCurrentTabData();
           }
-          
+
           // Update current tab ID
           this.currentTabId = tabId;
-          
+
           // Tell the response service about the tab change
           this.responseService.setCurrentTabId(tabId);
-          
+
           // Load the new tab data
           this.loadTabData(tabId);
         } else if (!tabId && this.tabService.tabs.length === 0) {
@@ -167,7 +168,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         }
       })
     );
-    
+
     // Initialize with the active tab or create one if none exists
     if (this.tabService.activeTab) {
       this.currentTabId = this.tabService.activeTab.id;
@@ -182,11 +183,11 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       this.responseService.setCurrentTabId(this.currentTabId);
     }
   }
-  
+
   ngOnDestroy(): void {
     // Clean up subscriptions
     this.subscriptions.forEach(sub => sub.unsubscribe());
-    
+
     // Remove event listener
     window.removeEventListener('themeChange', (event: any) => {
       this.setMonacoTheme(event.detail);
@@ -212,7 +213,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         this.requestForm.get('body')?.enable();
       }
     });
-    
+
     // React to auth type changes
     this.requestForm.get('authType')?.valueChanges.subscribe(authType => {
       this.selectedAuthType = authType;
@@ -259,19 +260,19 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
    */
   updateAuthHeaders(): void {
     // Find any manually added Authorization header
-    const manualAuthHeader = this.headers.find(h => 
-      h.key.toLowerCase() === 'authorization' && 
+    const manualAuthHeader = this.headers.find(h =>
+      h.key.toLowerCase() === 'authorization' &&
       this.selectedAuthType === AuthType.NONE
     );
-    
+
     // Remove existing auth headers only if we're using auth types
     if (this.selectedAuthType !== AuthType.NONE) {
-      this.headers = this.headers.filter(h => 
-        h.key.toLowerCase() !== 'authorization' && 
+      this.headers = this.headers.filter(h =>
+        h.key.toLowerCase() !== 'authorization' &&
         h.key.toLowerCase() !== 'x-api-key'
       );
     }
-    
+
     // Add appropriate auth header based on selected type
     switch (this.selectedAuthType) {
       case AuthType.BASIC:
@@ -284,14 +285,14 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           });
         }
         break;
-        
+
       case AuthType.BEARER:
         if (this.bearerToken) {
           // Ensure the token doesn't already have the Bearer prefix
-          const tokenValue = this.bearerToken.startsWith('Bearer ') ? 
-            this.bearerToken : 
+          const tokenValue = this.bearerToken.startsWith('Bearer ') ?
+            this.bearerToken :
             `Bearer ${this.bearerToken}`;
-            
+
           this.headers.unshift({
             key: 'Authorization',
             value: tokenValue,
@@ -299,15 +300,15 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           });
         }
         break;
-        
+
       case AuthType.API_KEY:
         // Implement API key auth if needed
         break;
-        
+
       case AuthType.OAUTH2:
         // Implement OAuth2 if needed
         break;
-        
+
       case AuthType.NONE:
       default:
         // Restore manually added Authorization header if it exists
@@ -319,7 +320,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         break;
     }
   }
-  
+
   /**
    * Update auth credentials and refresh headers
    */
@@ -329,7 +330,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     this.bearerToken = this.requestForm.get('bearerToken')?.value || '';
     this.updateAuthHeaders();
   }
-  
+
   setupDefaultHeaders(): void {
     this.headers = [
       { key: 'Content-Type', value: 'application/json', enabled: true },
@@ -365,10 +366,10 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       // Otherwise remove the header
       this.headers.splice(index, 1);
     }
-    
+
     // Update auth headers to ensure consistency
     this.updateAuthHeaders();
-    
+
     // Save changes to the current tab
     this.saveCurrentTabData();
   }
@@ -382,7 +383,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     if (header.key.toLowerCase() === 'authorization') {
       // If it's manually edited, we need to update the auth type and credentials
       const value = header.value.trim();
-      
+
       if (value.startsWith('Basic ')) {
         // Handle Basic auth
         this.requestForm.get('authType')?.setValue(AuthType.BASIC);
@@ -393,10 +394,10 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         this.requestForm.get('bearerToken')?.setValue(value.substring(7));
       }
     }
-    
+
     // Save changes to the current tab
     this.saveCurrentTabData();
-    
+
     this.cdr.detectChanges();
   }
 
@@ -413,7 +414,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     } else {
       this.params.splice(index, 1);
     }
-    
+
     // Save changes to the current tab
     this.saveCurrentTabData();
   }
@@ -567,14 +568,14 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
     // Update UI state
     this.updateBodyEditorLanguage(this.bodyType);
-    
+
     // If it's a GET request, disable the body
     if (tab.method === HttpMethod.GET) {
       this.requestForm.get('body')?.disable({ emitEvent: false });
     } else {
       this.requestForm.get('body')?.enable({ emitEvent: false });
     }
-    
+
     // Load any existing response data for this tab
     this.responseData = this.responseService.getResponseForTab(tabId);
 
@@ -586,10 +587,10 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     if (!this.currentTabId) return;
 
     const formValue = this.requestForm.getRawValue(); // getRawValue includes disabled controls
-    
+
     // Get the current tab to preserve parent information
     const currentTab = this.tabService.tabs.find(t => t.id === this.currentTabId);
-    
+
     this.tabService.updateTabData(this.currentTabId, {
       url: formValue.url,
       method: formValue.method,
@@ -617,7 +618,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
     const formValue = this.requestForm.getRawValue();
     const currentTab = this.tabService.tabs.find(t => t.id === this.currentTabId);
-    
+
     if (!currentTab) {
       this.snackBar.open('Unable to save request: No active tab', 'Close', { duration: 3000 });
       return;
@@ -639,7 +640,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
       // Get the request name from the result or generate one from the URL
       const requestName = result.name || currentTab.name || this.getRequestNameFromUrl(formValue.url);
-      
+
       // Create a RequestFormData object from the current form values
       const requestFormData: RequestFormData = {
         url: formValue.url,
@@ -650,7 +651,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         authType: formValue.authType,
         authData: {}
       };
-      
+
       // Add authentication data based on the auth type
       if (formValue.authType === AuthType.BASIC) {
         requestFormData.authData = {
@@ -662,11 +663,11 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           'token': this.bearerToken
         };
       }
-      
+
       // Set collection or folder ID based on the selected location
       let collectionId: number | undefined;
       let folderId: number | undefined;
-      
+
       if (result.location) {
         const location: SaveLocation = result.location;
         if (location.type === 'collection') {
@@ -687,7 +688,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           });
         }
       }
-      
+
       // Convert the form data to a request object compatible with the backend
       const requestToSave = convertFormDataToRequest(requestFormData, requestName, collectionId, folderId);
 
@@ -719,13 +720,13 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       const urlObj = new URL(url);
       const pathParts = urlObj.pathname.split('/');
       const lastPart = pathParts[pathParts.length - 1];
-      
+
       if (lastPart && lastPart.length > 0) {
         return lastPart.charAt(0).toUpperCase() + lastPart.slice(1);
       } else if (pathParts.length > 1 && pathParts[pathParts.length - 2]) {
         return pathParts[pathParts.length - 2].charAt(0).toUpperCase() + pathParts[pathParts.length - 2].slice(1);
       }
-      
+
       // If no meaningful path parts, use the hostname
       return urlObj.hostname.split('.')[0].charAt(0).toUpperCase() + urlObj.hostname.split('.')[0].slice(1);
     } catch (e) {
@@ -738,6 +739,10 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     if (this.requestForm.invalid) {
       return;
     }
+    this.route.paramMap.subscribe(params => {
+      const workspaceId = params.get('id');
+      this.workspaceIdRoute = Number(workspaceId);
+    });
 
     this.isLoading = true;
     this.responseData = null;
@@ -748,13 +753,13 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     } else {
       this.responseService.clearResponseData();
     }
-    
+
     // Update auth credentials and headers before sending
     this.updateAuthCredentials();
 
     const formValue = this.requestForm.getRawValue(); // Use getRawValue to get values from disabled controls too
     let body = null;
-    
+
     // Prepare authentication data for the request
     let authData = null;
     if (this.selectedAuthType !== AuthType.NONE) {
@@ -762,7 +767,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         authType: this.selectedAuthType,
         authData: {}
       };
-      
+
       switch (this.selectedAuthType) {
         case AuthType.BASIC:
           authData.authData = {
@@ -770,17 +775,17 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
             password: this.basicAuthPassword
           };
           break;
-          
+
         case AuthType.BEARER:
           authData.authData = {
             token: this.bearerToken
           };
           break;
-          
+
         case AuthType.API_KEY:
           // Will be implemented in the future
           break;
-          
+
         case AuthType.OAUTH2:
           // Will be implemented in the future
           break;
@@ -813,7 +818,8 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       validHeaders,
       this.params.filter(p => p.key.trim() !== '' && p.enabled),
       body,
-      authData // Include authentication data in the request
+      authData ,
+      this.workspaceIdRoute// Include authentication data in the request
     ).subscribe({
       next: (response) => {
         this.responseData = response;

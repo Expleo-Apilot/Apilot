@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { Observable } from 'rxjs';
-/*import { Workspace } from '../models/workspace.model';*/
 import {WorkspaceCreateRequest} from '../models/workspace.model';
 import {WorkspaceUpdateRequest} from '../models/workspace.model';
 import {WorkspaceResponse} from '../models/workspace.model';
