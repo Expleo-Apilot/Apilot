@@ -120,24 +120,65 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Toggle the collections dropdown menu
   toggleCollectionsMenu(event: MouseEvent) {
-    event.stopPropagation(); // Prevent event bubbling
+    event.preventDefault();
+    event.stopPropagation();
 
-    // Calculate position based on the button that was clicked
-    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
-    if (buttonRect) {
-      this.menuPosition = {
-        top: `${buttonRect.bottom + 5}px`,
-        left: `${buttonRect.left}px`
-      };
+    // Get the button element that was clicked
+    const button = (event.currentTarget || event.target) as HTMLElement;
+    if (!button) return;
+
+    // Get the button's position relative to the viewport
+    const buttonRect = button.getBoundingClientRect();
+    const sidebarContainer = document.querySelector('.sidebar-container');
+    if (!sidebarContainer) return;
+
+    const sidebarRect = sidebarContainer.getBoundingClientRect();
+
+    // Calculate available space
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceRight = viewportWidth - buttonRect.left;
+
+    // Menu dimensions
+    const menuWidth = 220; // Width from CSS
+    const menuHeight = 200; // Approximate height
+
+    // Calculate optimal position
+    let top = buttonRect.bottom;
+    let left = Math.max(sidebarRect.left, buttonRect.left);
+
+    // Adjust vertical position if needed
+    if (spaceBelow < menuHeight) {
+      top = Math.max(0, buttonRect.top - menuHeight);
     }
 
+    // Adjust horizontal position if needed
+    if (spaceRight < menuWidth) {
+      left = Math.max(sidebarRect.left, buttonRect.right - menuWidth);
+    }
+
+    // Ensure menu stays within sidebar bounds
+    left = Math.max(sidebarRect.left, Math.min(left, sidebarRect.right - menuWidth));
+
+    // Update menu position
+    this.menuPosition = {
+      top: `${top}px`,
+      left: `${left}px`
+    };
+
+    // Toggle menu visibility
     this.showCollectionsMenu = !this.showCollectionsMenu;
 
-    // Add a click listener to close the menu when clicking outside
+    // Handle click outside
     if (this.showCollectionsMenu) {
+      // Remove any existing listener first
+      document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+      
+      // Add new listener with a slight delay to avoid immediate closure
       setTimeout(() => {
         document.addEventListener('click', this.closeCollectionsMenuOnClickOutside);
-      }, 10);
+      }, 100);
     } else {
       document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
     }
@@ -151,16 +192,52 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Toggle item menu (for collection, folder, or request)
   toggleItemMenu(event: MouseEvent, itemType: 'collection' | 'folder' | 'request', itemId: number) {
-    event.stopPropagation(); // Prevent event bubbling
+    event.preventDefault();
+    event.stopPropagation();
 
-    // Calculate position based on the button that was clicked
-    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
-    if (buttonRect) {
-      this.itemMenuPosition = {
-        top: `${buttonRect.bottom + 5}px`,
-        left: `${buttonRect.left}px`
-      };
+    // Get the button element that was clicked
+    const button = (event.currentTarget || event.target) as HTMLElement;
+    if (!button) return;
+
+    // Get the button's position relative to the viewport
+    const buttonRect = button.getBoundingClientRect();
+    const sidebarContainer = document.querySelector('.sidebar-container');
+    if (!sidebarContainer) return;
+
+    const sidebarRect = sidebarContainer.getBoundingClientRect();
+
+    // Calculate available space
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceRight = viewportWidth - buttonRect.left;
+
+    // Menu dimensions
+    const menuWidth = 220; // Width from CSS
+    const menuHeight = 200; // Approximate height
+
+    // Calculate optimal position
+    let top = buttonRect.bottom;
+    let left = Math.max(sidebarRect.left, buttonRect.left);
+
+    // Adjust vertical position if needed
+    if (spaceBelow < menuHeight) {
+      top = Math.max(0, buttonRect.top - menuHeight);
     }
+
+    // Adjust horizontal position if needed
+    if (spaceRight < menuWidth) {
+      left = Math.max(sidebarRect.left, buttonRect.right - menuWidth);
+    }
+
+    // Ensure menu stays within sidebar bounds
+    left = Math.max(sidebarRect.left, Math.min(left, sidebarRect.right - menuWidth));
+
+    // Update menu position
+    this.itemMenuPosition = {
+      top: `${top}px`,
+      left: `${left}px`
+    };
 
     // If the same item menu is already open, close it
     if (this.showItemMenu && this.activeItemType === itemType && this.activeItemId === itemId) {
@@ -176,10 +253,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.activeItemId = itemId;
     this.showItemMenu = true;
 
-    // Add a click listener to close the menu when clicking outside
+    // Handle click outside
+    // Remove any existing listener first
+    document.removeEventListener('click', this.closeItemMenuOnClickOutside);
+    
+    // Add new listener with a slight delay to avoid immediate closure
     setTimeout(() => {
       document.addEventListener('click', this.closeItemMenuOnClickOutside);
-    }, 10);
+    }, 100);
   }
 
   // Close the item menu
@@ -192,16 +273,26 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Event handler to close item menu when clicking outside
   closeItemMenuOnClickOutside = (event: MouseEvent) => {
-    if (!(event.target as HTMLElement).closest('.item-menu-wrapper') &&
-        !(event.target as HTMLElement).closest('button[mat-icon-button]')) {
+    const target = event.target as HTMLElement;
+    const menuWrapper = target.closest('.item-menu-wrapper');
+    const button = target.closest('button[mat-icon-button]');
+    const isClickInsideMenu = menuWrapper !== null;
+    const isClickOnButton = button !== null && button.contains(target);
+
+    if (!isClickInsideMenu && !isClickOnButton) {
       this.closeItemMenu();
     }
   }
 
   // Event handler to close menu when clicking outside
   closeCollectionsMenuOnClickOutside = (event: MouseEvent) => {
-    if (!(event.target as HTMLElement).closest('.collections-menu-wrapper') &&
-        !(event.target as HTMLElement).closest('button[mat-icon-button]')) {
+    const target = event.target as HTMLElement;
+    const menuWrapper = target.closest('.collections-menu-wrapper');
+    const button = target.closest('button[mat-icon-button]');
+    const isClickInsideMenu = menuWrapper !== null;
+    const isClickOnButton = button !== null && button.contains(target);
+
+    if (!isClickInsideMenu && !isClickOnButton) {
       this.closeCollectionsMenu();
     }
   }
