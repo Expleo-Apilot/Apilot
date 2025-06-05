@@ -1,5 +1,6 @@
 // src/app/layout/sidebar/sidebar.component.ts
 import {Component, OnInit, OnDestroy} from '@angular/core';
+import {EnvironmentService} from '../../core/services/environment.service';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
@@ -66,7 +67,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   collections!: Collection[];
   sharedCollections!: Collection[];
   collectionForm! : CreateCollectionRequest;
-  workspaceId! : number
+  workspaceId: number = 1; // You should get this from your workspace service or route
 
   expandedItems: Set<number> = new Set();
   expandedCollections: Set<number> = new Set();
@@ -83,6 +84,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
               private folderService: FolderService,
               private requestService: RequestService,
               private collaborationService: CollaborationService,
+              private environmentService: EnvironmentService,
               private tabService: TabService) {}
 
   ngOnInit() {
@@ -521,6 +523,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   setActiveNavItem(item: NavItem) {
     this.activeNavItem = item;
+    if (item === 'environments') {
+      this.environmentService.getEnvironmentsByWorkspaceId(this.workspaceId)
+        .subscribe({
+          next: (response) => {
+            console.log('Environments:', response);
+          },
+          error: (error) => {
+            console.error('Error fetching environments:', error);
+          }
+        });
+    }
   }
 
   toggleExpand(id: number, itemType: 'collection' | 'folder' = 'collection') {
