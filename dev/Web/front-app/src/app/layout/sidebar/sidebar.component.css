@@ -3,13 +3,13 @@
 :root {
   --sidebar-width: 280px;
   --nav-width: 56px;
-  --header-height: 45px;
+  --header-height: 52px;
   --transition-speed: 0.2s;
 }
 
 .sidebar-container {
   display: flex;
-  height: 100%;
+  height: 100vh;
   overflow: hidden;
   width: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -102,6 +102,7 @@
   position: relative;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  display: flex;
 }
 
 .content-area {
@@ -109,10 +110,19 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
+}
+
+.collections-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
 }
 
 .content-header {
-  height: 52px;
+  height: var(--header-height);
+  min-height: var(--header-height);
   padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -121,6 +131,9 @@
   background: linear-gradient(to bottom, var(--sidebar-bg), rgba(255,255,255,0.02));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .action-buttons {
@@ -174,12 +187,42 @@
 }
 
 /* Collections list styles */
+.collections-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .collections-list {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 8px;
   scrollbar-width: thin;
   scrollbar-color: var(--primary-color) transparent;
+  flex: 1;
+  position: relative;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
+  max-height: calc(100vh - 120px);
+}
+
+/* Custom scrollbar styling for webkit browsers */
+.collections-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.collections-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.collections-list::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--primary-color-rgb), 0.3);
+  border-radius: 3px;
+}
+
+.collections-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.5);
 }
 
 .collections-section {
