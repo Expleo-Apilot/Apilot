@@ -499,6 +499,93 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) inset;
 }
 
+.file-input-container {
+  position: relative;
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed var(--border-color);
+  border-radius: 6px;
+  background-color: var(--sidebar-filter-bg);
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.file-input-container:hover {
+  border-color: var(--primary-color);
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.file-input-container input[type="file"] {
+  width: 100%;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.file-format-info {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: rgba(var(--primary-color-rgb), 0.08);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.file-format-info mat-icon {
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+  margin-right: 8px;
+  color: var(--primary-color);
+}
+
+.file-format-info span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Import tabs styles */
+.import-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.import-tab {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+  color: var(--text-secondary);
+}
+
+.import-tab mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+  margin-right: 8px;
+}
+
+.import-tab span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.import-tab:hover {
+  color: var(--primary-color);
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.import-tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background-color: rgba(var(--primary-color-rgb), 0.08);
+}
+
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;

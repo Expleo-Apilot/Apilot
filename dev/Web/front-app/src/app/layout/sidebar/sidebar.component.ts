@@ -1,5 +1,6 @@
 // src/app/layout/sidebar/sidebar.component.ts
-import {Component, OnInit, OnDestroy} from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
+import { CollectionImportService } from '../../core/services/collection-import.service';
 import {EnvironmentService} from '../../core/services/environment.service';
 
 // Define a type for the navigation items
@@ -44,6 +45,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   showNewFolderModal = false;
   showEditFolderModal = false;
   showDeleteFolderModal = false;
+  showImportCollectionModal = false;
+  importCollectionUrl = '';
+  isImporting = false;
+  importError = '';
   currentCollection: Collection | null = null;
   currentCollectionId: number | null = null;
   currentFolder: Folder | null = null;
@@ -74,6 +79,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   expandedFolders: Set<number> = new Set();
   draggedItem: any = null;
   
+  // ViewChild reference to file input element
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
+  
   // Subscription to handle cleanup
   private subscriptions: Subscription = new Subscription();
 
@@ -85,6 +93,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
               private requestService: RequestService,
               private collaborationService: CollaborationService,
               private environmentService: EnvironmentService,
+              private collectionImportService: CollectionImportService,
               private tabService: TabService) {}
 
   ngOnInit() {
@@ -606,10 +615,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Handle importing a collection
   importCollection() {
-    // Implement the import functionality
-    console.log('Import collection');
+    // Open the import collection modal
+    console.log('Opening import collection modal');
     this.closeCollectionsMenu();
-    // You would typically open a file picker or import dialog here
+    this.showImportCollectionModal = true;
+  }
+
+  closeImportCollectionModal() {
+    this.showImportCollectionModal = false;
+    this.importCollectionUrl = '';
+    this.isImporting = false;
+    this.importError = '';
   }
 
   setActiveNavItem(item: NavItem) {
@@ -973,6 +989,87 @@ export class SidebarComponent implements OnInit, OnDestroy {
     });
   }
   
+  // Handle collection import submission
+  submitImportCollection() {
+    // Check if URL is provided
+    if (this.importCollectionUrl && this.importCollectionUrl.trim() !== '') {
+      this.importCollectionFromUrl();
+      return;
+    }
+    
+    // Otherwise proceed with file import
+    const fileInput = this.fileInputRef?.nativeElement;
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      console.error('No file selected');
+      this.importError = 'Please select a file to import';
+      return;
+    }
+    
+    const file = fileInput.files[0];
+    
+    // Check if the file is a JSON file
+    if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+      console.error('Invalid file type. Please select a JSON file.');
+      this.importError = 'Invalid file type. Please select a JSON file';
+      return;
+    }
+    
+    // Show loading state
+    this.isImporting = true;
+    this.importError = '';
+    
+    // Import the collection using the service
+    this.collectionImportService.importFromFile(file, this.workspaceId)
+      .subscribe({
+        next: (collection) => {
+          console.log('Collection imported successfully:', collection);
+          this.closeImportCollectionModal();
+          // Refresh collections list
+          this.loadCollections();
+        },
+        error: (error) => {
+          console.error('Error importing collection:', error);
+          this.importError = error.message || 'Failed to import collection';
+          this.isImporting = false;
+        },
+        complete: () => {
+          this.isImporting = false;
+        }
+      });
+  }
+  
+  // Import collection from URL
+  importCollectionFromUrl() {
+    if (!this.importCollectionUrl || this.importCollectionUrl.trim() === '') {
+      console.error('No URL provided');
+      this.importError = 'Please enter a valid URL';
+      return;
+    }
+    
+    // Show loading state
+    this.isImporting = true;
+    this.importError = '';
+    
+    // Import the collection using the service
+    this.collectionImportService.importFromUrl(this.importCollectionUrl, this.workspaceId)
+      .subscribe({
+        next: (collection) => {
+          console.log('Collection imported successfully:', collection);
+          this.closeImportCollectionModal();
+          // Refresh collections list
+          this.loadCollections();
+        },
+        error: (error) => {
+          console.error('Error importing collection from URL:', error);
+          this.importError = error.message || 'Failed to import collection from URL';
+          this.isImporting = false;
+        },
+        complete: () => {
+          this.isImporting = false;
+        }
+      });
+  }
+
   ngOnDestroy() {
     // Clean up subscriptions when the component is destroyed
     this.subscriptions.unsubscribe();
