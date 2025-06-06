@@ -41,7 +41,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Item Context Menu Dropdown -->
       <div *ngIf="showItemMenu" class="item-menu-overlay">
         <div class="item-menu-wrapper" [style.top]="itemMenuPosition.top" [style.left]="itemMenuPosition.left">
@@ -65,7 +65,7 @@
               <span>Delete</span>
             </div>
           </ng-container>
-          
+
           <!-- Folder-specific options -->
           <ng-container *ngIf="activeItemType === 'folder'">
             <div class="menu-item" (click)="createNewRequest('folder', activeItemId!)">
@@ -82,7 +82,7 @@
               <span>Delete</span>
             </div>
           </ng-container>
-          
+
           <!-- Request-specific options -->
           <ng-container *ngIf="activeItemType === 'request'">
             <div class="menu-item" (click)="editItem('request', activeItemId!)">
@@ -97,9 +97,10 @@
         </div>
       </div>
 
-      <div class="collections-list">
-        <!-- My Collections Section -->
-        <div class="collections-section">
+      <div class="collections-container">
+        <div class="collections-list">
+          <!-- My Collections Section -->
+          <div class="collections-section">
           <div class="section-header">
             <span class="section-title">My Collections</span>
           </div>
@@ -198,7 +199,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Shared Collections Section -->
         <div class="collections-section" *ngIf="sharedCollections && sharedCollections.length > 0">
           <div class="section-header">
@@ -297,6 +298,7 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
 
@@ -362,8 +364,9 @@
       </div>
     </div>
   </div>
+</div>
 
-<!-- New Collection Modal -->
+<!-- Modals -->
 <div *ngIf="showNewCollectionModal" class="modal-overlay">
   <div class="modal-container">
     <div class="modal-header">
@@ -399,6 +402,69 @@
         <div class="modal-actions">
           <button type="button" class="btn-secondary" (click)="closeNewCollectionModal()">Cancel</button>
           <button type="submit" class="btn-primary" [disabled]="!newCollection.name">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Import Collection Modal -->
+<div *ngIf="showImportCollectionModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Import Collection</h2>
+      <button mat-icon-button (click)="closeImportCollectionModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitImportCollection()">
+        <div class="import-tabs">
+          <div class="import-tab" [class.active]="!importCollectionUrl" (click)="importCollectionUrl = ''">
+            <mat-icon>upload_file</mat-icon>
+            <span>Upload File</span>
+          </div>
+          <div class="import-tab" [class.active]="importCollectionUrl !== ''" (click)="importCollectionUrl = ' '">
+            <mat-icon>link</mat-icon>
+            <span>Import from URL</span>
+          </div>
+        </div>
+        
+        <div *ngIf="!importCollectionUrl" class="form-group">
+          <label for="collectionFile">Collection File</label>
+          <div class="file-input-container">
+            <input
+              type="file"
+              id="collectionFile"
+              name="collectionFile"
+              accept=".json,application/json"
+              #fileInput
+            >
+          </div>
+          <div class="file-format-info">
+            <mat-icon>info</mat-icon>
+            <span>Please select a valid JSON collection file</span>
+          </div>
+        </div>
+        
+        <div *ngIf="importCollectionUrl !== ''" class="form-group">
+          <label for="collectionUrl">Collection URL</label>
+          <input
+            type="url"
+            id="collectionUrl"
+            name="collectionUrl"
+            [(ngModel)]="importCollectionUrl"
+            placeholder="https://example.com/collection.json"
+            pattern="https?://.*"
+          >
+          <div class="file-format-info">
+            <mat-icon>info</mat-icon>
+            <span>Enter a URL that points to a valid JSON collection file</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeImportCollectionModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!importCollectionUrl && (!fileInputRef || !fileInputRef.nativeElement || !fileInputRef.nativeElement.files || fileInputRef.nativeElement.files.length === 0)">Import</button>
         </div>
       </form>
     </div>

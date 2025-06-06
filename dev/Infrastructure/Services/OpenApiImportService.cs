@@ -155,7 +155,7 @@ public class OpenApiImportService : IOpenApiImportService
                     Name = SwaggerUtil.GenerateRequestName(pathItem.Key),
                     Url = SwaggerUtil.GenerateFullUrl(openApiDocument, pathItem.Key),
                     HttpMethod = SwaggerUtil.MapHttpMethod(operation.Key),
-                    CollectionId = collectionId,
+                   // CollectionId = collectionId,
                     FolderId = foldersByTag[primaryTag],  
                     Headers = SwaggerUtil.ExtractHeaders(operation.Value),
                     Body = SwaggerUtil.GenerateBodyFromSchema(operation.Value.RequestBody),

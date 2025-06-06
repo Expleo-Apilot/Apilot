@@ -1,5 +1,7 @@
 // src/app/layout/sidebar/sidebar.component.ts
-import {Component, OnInit, OnDestroy} from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
+import { CollectionImportService } from '../../core/services/collection-import.service';
+import {EnvironmentService} from '../../core/services/environment.service';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
@@ -43,6 +45,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   showNewFolderModal = false;
   showEditFolderModal = false;
   showDeleteFolderModal = false;
+  showImportCollectionModal = false;
+  importCollectionUrl = '';
+  isImporting = false;
+  importError = '';
   currentCollection: Collection | null = null;
   currentCollectionId: number | null = null;
   currentFolder: Folder | null = null;
@@ -66,12 +72,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
   collections!: Collection[];
   sharedCollections!: Collection[];
   collectionForm! : CreateCollectionRequest;
-  workspaceId! : number
+  workspaceId: number = 1; // You should get this from your workspace service or route
 
   expandedItems: Set<number> = new Set();
   expandedCollections: Set<number> = new Set();
   expandedFolders: Set<number> = new Set();
   draggedItem: any = null;
+  
+  // ViewChild reference to file input element
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   
   // Subscription to handle cleanup
   private subscriptions: Subscription = new Subscription();
@@ -83,6 +92,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
               private folderService: FolderService,
               private requestService: RequestService,
               private collaborationService: CollaborationService,
+              private environmentService: EnvironmentService,
+              private collectionImportService: CollectionImportService,
               private tabService: TabService) {}
 
   ngOnInit() {
@@ -118,24 +129,65 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Toggle the collections dropdown menu
   toggleCollectionsMenu(event: MouseEvent) {
-    event.stopPropagation(); // Prevent event bubbling
+    event.preventDefault();
+    event.stopPropagation();
 
-    // Calculate position based on the button that was clicked
-    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
-    if (buttonRect) {
-      this.menuPosition = {
-        top: `${buttonRect.bottom + 5}px`,
-        left: `${buttonRect.left}px`
-      };
+    // Get the button element that was clicked
+    const button = (event.currentTarget || event.target) as HTMLElement;
+    if (!button) return;
+
+    // Get the button's position relative to the viewport
+    const buttonRect = button.getBoundingClientRect();
+    const sidebarContainer = document.querySelector('.sidebar-container');
+    if (!sidebarContainer) return;
+
+    const sidebarRect = sidebarContainer.getBoundingClientRect();
+
+    // Calculate available space
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceRight = viewportWidth - buttonRect.left;
+
+    // Menu dimensions
+    const menuWidth = 220; // Width from CSS
+    const menuHeight = 200; // Approximate height
+
+    // Calculate optimal position
+    let top = buttonRect.bottom;
+    let left = Math.max(sidebarRect.left, buttonRect.left);
+
+    // Adjust vertical position if needed
+    if (spaceBelow < menuHeight) {
+      top = Math.max(0, buttonRect.top - menuHeight);
     }
 
+    // Adjust horizontal position if needed
+    if (spaceRight < menuWidth) {
+      left = Math.max(sidebarRect.left, buttonRect.right - menuWidth);
+    }
+
+    // Ensure menu stays within sidebar bounds
+    left = Math.max(sidebarRect.left, Math.min(left, sidebarRect.right - menuWidth));
+
+    // Update menu position
+    this.menuPosition = {
+      top: `${top}px`,
+      left: `${left}px`
+    };
+
+    // Toggle menu visibility
     this.showCollectionsMenu = !this.showCollectionsMenu;
 
-    // Add a click listener to close the menu when clicking outside
+    // Handle click outside
     if (this.showCollectionsMenu) {
+      // Remove any existing listener first
+      document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+      
+      // Add new listener with a slight delay to avoid immediate closure
       setTimeout(() => {
         document.addEventListener('click', this.closeCollectionsMenuOnClickOutside);
-      }, 10);
+      }, 100);
     } else {
       document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
     }
@@ -149,16 +201,52 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Toggle item menu (for collection, folder, or request)
   toggleItemMenu(event: MouseEvent, itemType: 'collection' | 'folder' | 'request', itemId: number) {
-    event.stopPropagation(); // Prevent event bubbling
+    event.preventDefault();
+    event.stopPropagation();
 
-    // Calculate position based on the button that was clicked
-    const buttonRect = (event.target as HTMLElement).closest('button')?.getBoundingClientRect();
-    if (buttonRect) {
-      this.itemMenuPosition = {
-        top: `${buttonRect.bottom + 5}px`,
-        left: `${buttonRect.left}px`
-      };
+    // Get the button element that was clicked
+    const button = (event.currentTarget || event.target) as HTMLElement;
+    if (!button) return;
+
+    // Get the button's position relative to the viewport
+    const buttonRect = button.getBoundingClientRect();
+    const sidebarContainer = document.querySelector('.sidebar-container');
+    if (!sidebarContainer) return;
+
+    const sidebarRect = sidebarContainer.getBoundingClientRect();
+
+    // Calculate available space
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceRight = viewportWidth - buttonRect.left;
+
+    // Menu dimensions
+    const menuWidth = 220; // Width from CSS
+    const menuHeight = 200; // Approximate height
+
+    // Calculate optimal position
+    let top = buttonRect.bottom;
+    let left = Math.max(sidebarRect.left, buttonRect.left);
+
+    // Adjust vertical position if needed
+    if (spaceBelow < menuHeight) {
+      top = Math.max(0, buttonRect.top - menuHeight);
     }
+
+    // Adjust horizontal position if needed
+    if (spaceRight < menuWidth) {
+      left = Math.max(sidebarRect.left, buttonRect.right - menuWidth);
+    }
+
+    // Ensure menu stays within sidebar bounds
+    left = Math.max(sidebarRect.left, Math.min(left, sidebarRect.right - menuWidth));
+
+    // Update menu position
+    this.itemMenuPosition = {
+      top: `${top}px`,
+      left: `${left}px`
+    };
 
     // If the same item menu is already open, close it
     if (this.showItemMenu && this.activeItemType === itemType && this.activeItemId === itemId) {
@@ -174,10 +262,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.activeItemId = itemId;
     this.showItemMenu = true;
 
-    // Add a click listener to close the menu when clicking outside
+    // Handle click outside
+    // Remove any existing listener first
+    document.removeEventListener('click', this.closeItemMenuOnClickOutside);
+    
+    // Add new listener with a slight delay to avoid immediate closure
     setTimeout(() => {
       document.addEventListener('click', this.closeItemMenuOnClickOutside);
-    }, 10);
+    }, 100);
   }
 
   // Close the item menu
@@ -190,16 +282,26 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Event handler to close item menu when clicking outside
   closeItemMenuOnClickOutside = (event: MouseEvent) => {
-    if (!(event.target as HTMLElement).closest('.item-menu-wrapper') &&
-        !(event.target as HTMLElement).closest('button[mat-icon-button]')) {
+    const target = event.target as HTMLElement;
+    const menuWrapper = target.closest('.item-menu-wrapper');
+    const button = target.closest('button[mat-icon-button]');
+    const isClickInsideMenu = menuWrapper !== null;
+    const isClickOnButton = button !== null && button.contains(target);
+
+    if (!isClickInsideMenu && !isClickOnButton) {
       this.closeItemMenu();
     }
   }
 
   // Event handler to close menu when clicking outside
   closeCollectionsMenuOnClickOutside = (event: MouseEvent) => {
-    if (!(event.target as HTMLElement).closest('.collections-menu-wrapper') &&
-        !(event.target as HTMLElement).closest('button[mat-icon-button]')) {
+    const target = event.target as HTMLElement;
+    const menuWrapper = target.closest('.collections-menu-wrapper');
+    const button = target.closest('button[mat-icon-button]');
+    const isClickInsideMenu = menuWrapper !== null;
+    const isClickOnButton = button !== null && button.contains(target);
+
+    if (!isClickInsideMenu && !isClickOnButton) {
       this.closeCollectionsMenu();
     }
   }
@@ -513,14 +615,32 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // Handle importing a collection
   importCollection() {
-    // Implement the import functionality
-    console.log('Import collection');
+    // Open the import collection modal
+    console.log('Opening import collection modal');
     this.closeCollectionsMenu();
-    // You would typically open a file picker or import dialog here
+    this.showImportCollectionModal = true;
+  }
+
+  closeImportCollectionModal() {
+    this.showImportCollectionModal = false;
+    this.importCollectionUrl = '';
+    this.isImporting = false;
+    this.importError = '';
   }
 
   setActiveNavItem(item: NavItem) {
     this.activeNavItem = item;
+    if (item === 'environments') {
+      this.environmentService.getEnvironmentsByWorkspaceId(this.workspaceId)
+        .subscribe({
+          next: (response) => {
+            console.log('Environments:', response);
+          },
+          error: (error) => {
+            console.error('Error fetching environments:', error);
+          }
+        });
+    }
   }
 
   toggleExpand(id: number, itemType: 'collection' | 'folder' = 'collection') {
@@ -869,6 +989,87 @@ export class SidebarComponent implements OnInit, OnDestroy {
     });
   }
   
+  // Handle collection import submission
+  submitImportCollection() {
+    // Check if URL is provided
+    if (this.importCollectionUrl && this.importCollectionUrl.trim() !== '') {
+      this.importCollectionFromUrl();
+      return;
+    }
+    
+    // Otherwise proceed with file import
+    const fileInput = this.fileInputRef?.nativeElement;
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      console.error('No file selected');
+      this.importError = 'Please select a file to import';
+      return;
+    }
+    
+    const file = fileInput.files[0];
+    
+    // Check if the file is a JSON file
+    if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+      console.error('Invalid file type. Please select a JSON file.');
+      this.importError = 'Invalid file type. Please select a JSON file';
+      return;
+    }
+    
+    // Show loading state
+    this.isImporting = true;
+    this.importError = '';
+    
+    // Import the collection using the service
+    this.collectionImportService.importFromFile(file, this.workspaceId)
+      .subscribe({
+        next: (collection) => {
+          console.log('Collection imported successfully:', collection);
+          this.closeImportCollectionModal();
+          // Refresh collections list
+          this.loadCollections();
+        },
+        error: (error) => {
+          console.error('Error importing collection:', error);
+          this.importError = error.message || 'Failed to import collection';
+          this.isImporting = false;
+        },
+        complete: () => {
+          this.isImporting = false;
+        }
+      });
+  }
+  
+  // Import collection from URL
+  importCollectionFromUrl() {
+    if (!this.importCollectionUrl || this.importCollectionUrl.trim() === '') {
+      console.error('No URL provided');
+      this.importError = 'Please enter a valid URL';
+      return;
+    }
+    
+    // Show loading state
+    this.isImporting = true;
+    this.importError = '';
+    
+    // Import the collection using the service
+    this.collectionImportService.importFromUrl(this.importCollectionUrl, this.workspaceId)
+      .subscribe({
+        next: (collection) => {
+          console.log('Collection imported successfully:', collection);
+          this.closeImportCollectionModal();
+          // Refresh collections list
+          this.loadCollections();
+        },
+        error: (error) => {
+          console.error('Error importing collection from URL:', error);
+          this.importError = error.message || 'Failed to import collection from URL';
+          this.isImporting = false;
+        },
+        complete: () => {
+          this.isImporting = false;
+        }
+      });
+  }
+
   ngOnDestroy() {
     // Clean up subscriptions when the component is destroyed
     this.subscriptions.unsubscribe();
