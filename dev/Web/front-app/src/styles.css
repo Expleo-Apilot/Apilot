@@ -343,6 +343,24 @@ body {
   border-bottom: none;
 }
 
+/* Error Snackbar Styling */
+.error-snackbar {
+  background-color: var(--status-client-error) !important;
+  color: white !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.3) !important;
+}
+
+.dark-theme .error-snackbar {
+  background-color: var(--status-client-error) !important;
+  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.4) !important;
+}
+
+.error-snackbar .mat-simple-snackbar-action {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
 /* Responsive tweaks for mobile */
 @media (max-width: 600px) {
   .mat-menu-panel.workspace-mat-menu {

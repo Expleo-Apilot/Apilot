@@ -30,6 +30,7 @@ export interface Request {
   createdAt?: Date;
   updatedBy?: string;
   updatedAt?: Date;
+  isShared?: boolean;
 }
 
 // Create request interface matching the backend CreateRequestDto
@@ -44,6 +45,7 @@ export interface CreateRequestDto {
   Parameters?: { [key: string]: string };
   FolderId?: number | null;
   CollectionId?: number | null;
+  IsShared?: boolean;
 }
 
 // Helper interfaces for frontend use
@@ -58,7 +60,7 @@ export interface RequestFormData {
 }
 
 // Converter functions to transform between frontend and backend models
-export function convertFormDataToRequest(formData: RequestFormData, name: string, collectionId?: number, folderId?: number): CreateRequestDto {
+export function convertFormDataToRequest(formData: RequestFormData, name: string, collectionId?: number, folderId?: number, isShared?: boolean): CreateRequestDto {
   // Convert KeyValuePair arrays to dictionaries
   const headers: { [key: string]: string } = {};
   formData.headers
@@ -100,6 +102,7 @@ export function convertFormDataToRequest(formData: RequestFormData, name: string
     Authentication: authentication,
     Body: parsedBody,
     CollectionId: collectionId || null,
-    FolderId: folderId || null
+    FolderId: folderId || null,
+    IsShared: isShared || false
   };
 }

@@ -23,8 +23,17 @@
           </button>
         </div>
         <div class="search-area">
-          <mat-icon class="filter-icon">filter_list</mat-icon>
-          <input type="text" placeholder="Filter" class="search-input">
+          <mat-icon class="filter-icon">search</mat-icon>
+          <input type="text" placeholder="Search collections..." 
+                 class="search-input" 
+                 [(ngModel)]="searchTerm" 
+                 (ngModelChange)="filterCollections($event)">
+          <button *ngIf="searchTerm" 
+                  mat-icon-button 
+                  class="clear-search-btn" 
+                  (click)="filterCollections('')">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
       </div>
 
@@ -85,10 +94,6 @@
 
           <!-- Request-specific options -->
           <ng-container *ngIf="activeItemType === 'request'">
-            <div class="menu-item" (click)="editItem('request', activeItemId!)">
-              <mat-icon>edit</mat-icon>
-              <span>Edit</span>
-            </div>
             <div class="menu-item danger" (click)="deleteItem('request', activeItemId!)">
               <mat-icon>delete</mat-icon>
               <span>Delete</span>
@@ -104,7 +109,11 @@
           <div class="section-header">
             <span class="section-title">My Collections</span>
           </div>
-          <div *ngFor="let collection of collections" class="collection-item">
+          <div *ngIf="filteredCollections.length === 0 && searchTerm" class="empty-search-result">
+            <mat-icon>search_off</mat-icon>
+            <span>No collections found</span>
+          </div>
+          <div *ngFor="let collection of filteredCollections" class="collection-item">
             <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
               <div class="collection-icon">
                 <mat-icon>{{ isExpanded(collection.id, 'collection') ? 'inventory_2' : 'inventory' }}</mat-icon>
@@ -132,9 +141,15 @@
                    (cdkDragStarted)="onDragStarted(request)"
                    (cdkDragEnded)="onDragEnded()">
                 <div class="request-header">
-                  <mat-icon>subdirectory_arrow_right</mat-icon>
-                  <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
-                  <span>{{ request.name }}</span>
+                  <div class="request-icon">
+                    <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                  </div>
+                  <span class="request-name">{{ request.name }}</span>
+                  <div class="request-actions">
+                    <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0)">
+                      <mat-icon class="small-icon">more_horiz</mat-icon>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -201,11 +216,15 @@
         </div>
 
         <!-- Shared Collections Section -->
-        <div class="collections-section" *ngIf="sharedCollections && sharedCollections.length > 0">
+        <div class="collections-section" *ngIf="filteredSharedCollections && filteredSharedCollections.length > 0">
           <div class="section-header">
             <span class="section-title">Shared With Me</span>
           </div>
-          <div *ngFor="let collection of sharedCollections" class="collection-item shared-collection">
+          <div *ngIf="filteredSharedCollections.length === 0 && searchTerm" class="empty-search-result">
+            <mat-icon>search_off</mat-icon>
+            <span>No shared collections found</span>
+          </div>
+          <div *ngFor="let collection of filteredSharedCollections" class="collection-item shared-collection">
             <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
               <div class="collection-icon">
                 <mat-icon>folder_shared</mat-icon>
@@ -233,9 +252,15 @@
                      (cdkDragStarted)="onDragStarted(request)"
                      (cdkDragEnded)="onDragEnded()">
                   <div class="request-header">
-                    <mat-icon>subdirectory_arrow_right</mat-icon>
-                    <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
-                    <span>{{ request.name }}</span>
+                    <div class="request-icon">
+                      <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                    </div>
+                    <span class="request-name">{{ request.name }}</span>
+                    <div class="request-actions">
+                      <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0)">
+                        <mat-icon class="small-icon">more_horiz</mat-icon>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -367,6 +392,31 @@
 </div>
 
 <!-- Modals -->
+
+<!-- Delete Request Confirmation Modal -->
+<div *ngIf="showDeleteRequestModal && currentRequest" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Request</h2>
+      <button mat-icon-button (click)="closeDeleteRequestModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the request <strong>"{{ currentRequest.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteRequestModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteRequest()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Other Modals -->
 <div *ngIf="showNewCollectionModal" class="modal-overlay">
   <div class="modal-container">
     <div class="modal-header">

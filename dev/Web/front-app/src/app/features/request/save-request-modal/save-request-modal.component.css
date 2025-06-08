@@ -162,6 +162,47 @@
   border-bottom: none;
 }
 
+/* Shared Collections */
+.collections-section-header {
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.03);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.collections-section-header mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  opacity: 0.8;
+}
+
+.shared-section {
+  margin-top: 8px;
+  background-color: rgba(63, 81, 181, 0.05);
+}
+
+.shared-collection .collection-header {
+  background-color: rgba(63, 81, 181, 0.03);
+}
+
+.shared-badge {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.shared-badge mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: #3f51b5;
+  opacity: 0.7;
+}
+
 .collection-header {
   display: flex;
   align-items: center;
