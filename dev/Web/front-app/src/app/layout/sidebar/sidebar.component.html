@@ -141,9 +141,15 @@
                    (cdkDragStarted)="onDragStarted(request)"
                    (cdkDragEnded)="onDragEnded()">
                 <div class="request-header">
-                  <mat-icon>subdirectory_arrow_right</mat-icon>
-                  <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
-                  <span>{{ request.name }}</span>
+                  <div class="request-icon">
+                    <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                  </div>
+                  <span class="request-name">{{ request.name }}</span>
+                  <div class="request-actions">
+                    <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0)">
+                      <mat-icon class="small-icon">more_horiz</mat-icon>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -246,9 +252,15 @@
                      (cdkDragStarted)="onDragStarted(request)"
                      (cdkDragEnded)="onDragEnded()">
                   <div class="request-header">
-                    <mat-icon>subdirectory_arrow_right</mat-icon>
-                    <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
-                    <span>{{ request.name }}</span>
+                    <div class="request-icon">
+                      <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                    </div>
+                    <span class="request-name">{{ request.name }}</span>
+                    <div class="request-actions">
+                      <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0)">
+                        <mat-icon class="small-icon">more_horiz</mat-icon>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

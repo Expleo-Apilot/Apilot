@@ -2,6 +2,7 @@
 import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
 import { CollectionImportService } from '../../core/services/collection-import.service';
 import {EnvironmentService} from '../../core/services/environment.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
@@ -99,7 +100,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
               private collaborationService: CollaborationService,
               private environmentService: EnvironmentService,
               private collectionImportService: CollectionImportService,
-              private tabService: TabService) {}
+              private tabService: TabService,
+              private snackBar: MatSnackBar) {}
 
   ngOnInit() {
     // Subscribe to route params to get workspace ID
@@ -802,7 +804,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       if (collection.requests) {
         const request = collection.requests.find(r => r.id === requestId);
         if (request) {
-          this.currentRequest = request;
+          this.currentRequest = { ...request, isShared: collection.isShared };
           this.showDeleteRequestModal = true;
           return;
         }
@@ -814,7 +816,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           if (folder.requests) {
             const request = folder.requests.find(r => r.id === requestId);
             if (request) {
-              this.currentRequest = request;
+              this.currentRequest = { ...request, isShared: collection.isShared };
               this.showDeleteRequestModal = true;
               return;
             }
@@ -825,70 +827,84 @@ export class SidebarComponent implements OnInit, OnDestroy {
     
     console.error(`Request with ID ${requestId} not found`);
   }
-  
+
   // Close the delete request modal
   closeDeleteRequestModal() {
     this.showDeleteRequestModal = false;
     this.currentRequest = null;
   }
-  
-  // Confirm and delete the request
+
+  // Confirm and execute the request deletion
   confirmDeleteRequest() {
-    if (!this.currentRequest || !this.currentRequest.id) {
-      return; // Don't proceed if no request is selected or ID is missing
-    }
+    if (!this.currentRequest || !this.currentRequest.id) return;
     
     const requestId = this.currentRequest.id;
+    const isShared = this.currentRequest.isShared;
     
-    // Call the API to delete the request
-    this.requestService.deleteRequest(requestId).subscribe({
-      next: (response) => {
+    this.requestService.deleteRequest(requestId).subscribe(
+      response => {
         if (response.isSuccess) {
-          console.log('Request deleted successfully');
-          
           // Remove the request from the UI
           this.removeRequestFromUI(requestId);
+          this.closeDeleteRequestModal();
+          
+          // Show success message
+          this.snackBar.open('Request deleted successfully', 'Close', {
+            duration: 3000
+          });
         } else {
-          console.error('Failed to delete request:', response.error);
+          // Show error message from the API
+          this.snackBar.open(response.error || 'Failed to delete request', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.closeDeleteRequestModal();
         }
       },
-      error: (error) => {
-        console.error('Error deleting request:', error);
-      },
-      complete: () => {
-        // Close the modal
+      error => {
+        // Handle HTTP error
+        let errorMessage = 'Failed to delete request';
+        
+        // Check if this is a shared collection permission error
+        if (isShared && error.status === 403) {
+          errorMessage = 'You do not have permission to delete requests from shared collections';
+        } else if (error.error && error.error.error) {
+          // Extract specific error message from the API response if available
+          errorMessage = error.error.error;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', {
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
         this.closeDeleteRequestModal();
       }
-    });
+    );
   }
   
-  // Helper method to remove a request from the UI after deletion
+  // Remove the deleted request from the UI
   private removeRequestFromUI(requestId: number) {
-    // Check all collections and their folders
+    // Remove from collections
     for (const collection of [...this.collections, ...(this.sharedCollections || [])]) {
-      // Check requests directly in the collection
+      // Remove from direct collection requests
       if (collection.requests) {
-        const index = collection.requests.findIndex(r => r.id === requestId);
-        if (index !== -1) {
-          collection.requests.splice(index, 1);
-          return;
-        }
+        collection.requests = collection.requests.filter(r => r.id !== requestId);
       }
       
-      // Check requests in folders
+      // Remove from folder requests
       if (collection.folders) {
         for (const folder of collection.folders) {
           if (folder.requests) {
-            const index = folder.requests.findIndex(r => r.id === requestId);
-            if (index !== -1) {
-              folder.requests.splice(index, 1);
-              return;
-            }
+            folder.requests = folder.requests.filter(r => r.id !== requestId);
           }
         }
       }
     }
   }
+  
+  // This section intentionally left empty as the duplicate functions were removed
+  // The enhanced versions of confirmDeleteRequest and removeRequestFromUI with proper error handling
+  // for shared collections are kept above
   
   findCollectionById(collectionId: string): Collection | undefined {
     // Convert collection.id (number) to string for comparison

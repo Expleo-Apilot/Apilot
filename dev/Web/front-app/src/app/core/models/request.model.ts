@@ -30,6 +30,7 @@ export interface Request {
   createdAt?: Date;
   updatedBy?: string;
   updatedAt?: Date;
+  isShared?: boolean;
 }
 
 // Create request interface matching the backend CreateRequestDto
