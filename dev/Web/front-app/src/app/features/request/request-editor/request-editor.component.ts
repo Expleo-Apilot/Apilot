@@ -664,47 +664,69 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         };
       }
 
-      // Set collection or folder ID based on the selected location
-      let collectionId: number | undefined;
-      let folderId: number | undefined;
+      // Handle collection or folder selection
+      let collectionId: number | null = null;
+      let folderId: number | null = null;
+      let isShared: boolean = false;
 
       if (result.location) {
         const location: SaveLocation = result.location;
+        isShared = location.isShared || false;
+        
         if (location.type === 'collection') {
           collectionId = location.id;
-          // Update the tab's parent information
           this.tabService.updateTabData(this.currentTabId!, {
             parentType: 'collection',
             parentId: location.id,
-            name: requestName
+            name: requestName,
+            isShared: isShared
           });
         } else if (location.type === 'folder') {
           folderId = location.id;
-          // Update the tab's parent information
           this.tabService.updateTabData(this.currentTabId!, {
             parentType: 'folder',
             parentId: location.id,
-            name: requestName
+            name: requestName,
+            isShared: isShared
           });
         }
       }
 
-      // Convert the form data to a request object compatible with the backend
-      const requestToSave = convertFormDataToRequest(requestFormData, requestName, collectionId, folderId);
-
-      // Call the API to save the request
-      this.requestService.saveRequest(requestToSave).subscribe({
+      // Convert form data to request DTO
+      const requestDto = convertFormDataToRequest(requestFormData, requestName, collectionId || undefined, folderId || undefined, isShared);
+      
+      // Save the request to the database
+      this.requestService.saveRequest(requestDto).subscribe({
         next: (response) => {
           if (response.isSuccess) {
             this.snackBar.open('Request saved successfully', 'Close', { duration: 3000 });
             console.log('Request saved:', response.data);
           } else {
-            this.snackBar.open(`Failed to save request: ${response.error}`, 'Close', { duration: 5000 });
-            console.error('Failed to save request:', response.error);
+            // Display only the specific error message from the backend without prefix
+            const errorMessage = response.error || 'An unknown error occurred';
+            this.snackBar.open(errorMessage, 'Dismiss', { 
+              duration: 7000,
+              panelClass: ['error-snackbar']
+            });
+            console.error('Failed to save request:', errorMessage);
           }
         },
         error: (error) => {
-          this.snackBar.open('Error saving request', 'Close', { duration: 5000 });
+          // Handle HTTP errors or other exceptions
+          let errorMessage = 'An error occurred while communicating with the server';
+          
+          if (error.error && error.error.error) {
+            // Extract error message from API response if available
+            errorMessage = error.error.error;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
+          // Display only the specific error message without prefix
+          this.snackBar.open(errorMessage, 'Dismiss', { 
+            duration: 7000,
+            panelClass: ['error-snackbar']
+          });
           console.error('Error saving request:', error);
         }
       });

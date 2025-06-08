@@ -36,13 +36,22 @@
       </div>
       
       <div *ngIf="!isLoading && !error" class="collections-container">
-        <div *ngIf="collections.length === 0" class="no-collections">
+        <!-- No collections message when both owned and shared collections are empty -->
+        <div *ngIf="collections.length === 0 && sharedCollections.length === 0" class="no-collections">
           <mat-icon class="empty-icon">folder_off</mat-icon>
           <p>No collections available</p>
           <span class="empty-hint">Please create a collection first to save your request</span>
         </div>
         
-        <div *ngIf="collections.length > 0" class="collections-list">
+        <!-- Owned Collections Section -->
+        <div *ngIf="collections.length > 0 || sharedCollections.length > 0" class="collections-list">
+          <!-- Owned Collections Header -->
+          <div *ngIf="collections.length > 0" class="collections-section-header">
+            <mat-icon>inventory_2</mat-icon>
+            <span>My Collections</span>
+          </div>
+          
+          <!-- Owned Collections List -->
           <div *ngFor="let collection of collections" class="collection-item">
             <div class="collection-header" 
                  [class.selected]="isSelected('collection', collection.id)"
@@ -67,7 +76,53 @@
               <div *ngFor="let folder of collection.folders" 
                    class="folder-item"
                    [class.selected]="isSelected('folder', folder.id)"
-                   (click)="selectFolder(folder, $event)">
+                   (click)="selectFolder(folder, $event, false)">
+                <div class="folder-icon">
+                  <mat-icon>folder</mat-icon>
+                </div>
+                <span class="folder-name">{{ folder.name }}</span>
+                <div *ngIf="isSelected('folder', folder.id)" class="selected-indicator">
+                  <mat-icon>check_circle</mat-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Shared Collections Header -->
+          <div *ngIf="sharedCollections.length > 0" class="collections-section-header shared-section">
+            <mat-icon>share</mat-icon>
+            <span>Shared Collections</span>
+          </div>
+          
+          <!-- Shared Collections List -->
+          <div *ngFor="let collection of sharedCollections" class="collection-item shared-collection">
+            <div class="collection-header" 
+                 [class.selected]="isSelected('collection', collection.id)"
+                 (click)="selectCollection(collection, $event)">
+              <div class="expand-icon" (click)="toggleCollectionExpand(collection.id, $event)">
+                <mat-icon>{{ isCollectionExpanded(collection.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+              </div>
+              <div class="collection-icon">
+                <mat-icon>inventory_2</mat-icon>
+              </div>
+              <span class="collection-name">{{ collection.name }}</span>
+              <div class="shared-badge">
+                <mat-icon>people</mat-icon>
+              </div>
+              <div *ngIf="isSelected('collection', collection.id)" class="selected-indicator">
+                <mat-icon>check_circle</mat-icon>
+              </div>
+            </div>
+            
+            <div *ngIf="isCollectionExpanded(collection.id)" class="folders-list">
+              <div *ngIf="collection.folders.length === 0" class="no-folders">
+                <p class="empty-message">No folders in this collection</p>
+              </div>
+              
+              <div *ngFor="let folder of collection.folders" 
+                   class="folder-item"
+                   [class.selected]="isSelected('folder', folder.id)"
+                   (click)="selectFolder(folder, $event, true)">
                 <div class="folder-icon">
                   <mat-icon>folder</mat-icon>
                 </div>

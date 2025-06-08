@@ -4,6 +4,8 @@ import { Collection } from '../../../core/models/collection.model';
 import { Folder } from '../../../core/models/folder.model';
 import { CollectionService } from '../../../core/services/collection.service';
 import { ActivatedRoute } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
 
 export interface SaveRequestDialogData {
   workspaceId: number;
@@ -13,6 +15,7 @@ export interface SaveRequestDialogData {
 export interface SaveLocation {
   type: 'collection' | 'folder';
   id: number;
+  isShared?: boolean;
 }
 
 @Component({
@@ -23,12 +26,16 @@ export interface SaveLocation {
 })
 export class SaveRequestModalComponent implements OnInit {
   collections: Collection[] = [];
+  sharedCollections: Collection[] = [];
   expandedCollections: Set<number> = new Set();
   selectedLocation: SaveLocation | null = null;
   requestName: string = '';
   isLoading: boolean = true;
   error: string | null = null;
   workspaceId: number = 0;
+  
+  // Track if we're displaying shared collections
+  showSharedCollections: boolean = true;
 
   constructor(
     public dialogRef: MatDialogRef<SaveRequestModalComponent>,
@@ -59,32 +66,72 @@ export class SaveRequestModalComponent implements OnInit {
   loadCollections(): void {
     this.isLoading = true;
     this.error = null;
-
-
-    this.collectionService.getCollectionsByWorkspaceId(this.workspaceId).subscribe({
-      next: (response) => {
-        if (response.isSuccess && response.data) {
-          this.collections = response.data;
-          console.log(response.data)
+    
+    // Use forkJoin to load both owned and shared collections concurrently
+    forkJoin([
+      this.collectionService.getCollectionsByWorkspaceId(this.workspaceId).pipe(
+        catchError(error => {
+          console.error('Error loading owned collections:', error);
+          return of({ isSuccess: false, data: [], error: 'Failed to load owned collections' });
+        })
+      ),
+      this.collectionService.getSharedCollections().pipe(
+        catchError(error => {
+          console.error('Error loading shared collections:', error);
+          return of({ isSuccess: false, data: [], error: 'Failed to load shared collections' });
+        })
+      )
+    ])
+    .pipe(
+      finalize(() => {
+        this.isLoading = false;
+      })
+    )
+    .subscribe({
+      next: ([ownedResponse, sharedResponse]) => {
+        // Process owned collections
+        if (ownedResponse.isSuccess && ownedResponse.data) {
+          this.collections = ownedResponse.data;
+          
           // Initialize folders array if it doesn't exist
           this.collections.forEach(collection => {
             if (!collection.folders) {
               collection.folders = [];
             }
           });
-
+          
           // If there's at least one collection, expand it by default
           if (this.collections.length > 0) {
             this.expandedCollections.add(this.collections[0].id);
           }
-        } else {
-          this.error = response.error || 'Failed to load collections';
+        } else if (ownedResponse.error) {
+          this.error = ownedResponse.error;
         }
-        this.isLoading = false;
+        
+        // Process shared collections
+        if (sharedResponse.isSuccess && sharedResponse.data) {
+          this.sharedCollections = sharedResponse.data;
+          
+          // Initialize folders array if it doesn't exist and mark as shared
+          this.sharedCollections.forEach(collection => {
+            if (!collection.folders) {
+              collection.folders = [];
+            }
+            collection.isShared = true;
+          });
+          
+          // If there are shared collections but no owned ones, expand the first shared collection
+          if (this.sharedCollections.length > 0 && this.collections.length === 0) {
+            this.expandedCollections.add(this.sharedCollections[0].id);
+          }
+        } else if (sharedResponse.error && !this.error) {
+          // Only set error if we don't already have one from owned collections
+          this.error = sharedResponse.error;
+        }
       },
       error: (error) => {
+        console.error('Error in forkJoin:', error);
         this.error = 'Error loading collections. Please try again.';
-        this.isLoading = false;
       }
     });
   }
@@ -106,15 +153,17 @@ export class SaveRequestModalComponent implements OnInit {
     event.stopPropagation();
     this.selectedLocation = {
       type: 'collection',
-      id: collection.id
+      id: collection.id,
+      isShared: collection.isShared || false
     };
   }
 
-  selectFolder(folder: Folder, event: Event): void {
+  selectFolder(folder: Folder, event: Event, isShared: boolean = false): void {
     event.stopPropagation();
     this.selectedLocation = {
       type: 'folder',
-      id: folder.id
+      id: folder.id,
+      isShared: isShared
     };
   }
 
