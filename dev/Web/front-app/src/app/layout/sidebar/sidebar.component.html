@@ -85,10 +85,6 @@
 
           <!-- Request-specific options -->
           <ng-container *ngIf="activeItemType === 'request'">
-            <div class="menu-item" (click)="editItem('request', activeItemId!)">
-              <mat-icon>edit</mat-icon>
-              <span>Edit</span>
-            </div>
             <div class="menu-item danger" (click)="deleteItem('request', activeItemId!)">
               <mat-icon>delete</mat-icon>
               <span>Delete</span>
@@ -367,6 +363,31 @@
 </div>
 
 <!-- Modals -->
+
+<!-- Delete Request Confirmation Modal -->
+<div *ngIf="showDeleteRequestModal && currentRequest" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Request</h2>
+      <button mat-icon-button (click)="closeDeleteRequestModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the request <strong>"{{ currentRequest.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteRequestModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteRequest()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Other Modals -->
 <div *ngIf="showNewCollectionModal" class="modal-overlay">
   <div class="modal-container">
     <div class="modal-header">

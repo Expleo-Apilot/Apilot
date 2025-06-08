@@ -45,6 +45,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   showNewFolderModal = false;
   showEditFolderModal = false;
   showDeleteFolderModal = false;
+  showDeleteRequestModal = false;
   showImportCollectionModal = false;
   importCollectionUrl = '';
   isImporting = false;
@@ -52,6 +53,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   currentCollection: Collection | null = null;
   currentCollectionId: number | null = null;
   currentFolder: Folder | null = null;
+  currentRequest: Request | null = null;
   newCollection = {
     name: '',
     description: ''
@@ -608,8 +610,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
       }
     } else if (itemType === 'request') {
-      console.log(`Delete request with ID: ${itemId}`);
-      // TODO: Implement request delete functionality
+      // Find the request in collections or folders
+      this.findRequestById(itemId);
     }
   }
 
@@ -789,6 +791,102 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return undefined;
   }
 
+  // Find a request by its ID and show the delete confirmation modal
+  findRequestById(requestId: number) {
+    // Search in direct collection requests
+    for (const collection of [...this.collections, ...(this.sharedCollections || [])]) {
+      // Check requests directly in the collection
+      if (collection.requests) {
+        const request = collection.requests.find(r => r.id === requestId);
+        if (request) {
+          this.currentRequest = request;
+          this.showDeleteRequestModal = true;
+          return;
+        }
+      }
+      
+      // Check requests in folders
+      if (collection.folders) {
+        for (const folder of collection.folders) {
+          if (folder.requests) {
+            const request = folder.requests.find(r => r.id === requestId);
+            if (request) {
+              this.currentRequest = request;
+              this.showDeleteRequestModal = true;
+              return;
+            }
+          }
+        }
+      }
+    }
+    
+    console.error(`Request with ID ${requestId} not found`);
+  }
+  
+  // Close the delete request modal
+  closeDeleteRequestModal() {
+    this.showDeleteRequestModal = false;
+    this.currentRequest = null;
+  }
+  
+  // Confirm and delete the request
+  confirmDeleteRequest() {
+    if (!this.currentRequest || !this.currentRequest.id) {
+      return; // Don't proceed if no request is selected or ID is missing
+    }
+    
+    const requestId = this.currentRequest.id;
+    
+    // Call the API to delete the request
+    this.requestService.deleteRequest(requestId).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          console.log('Request deleted successfully');
+          
+          // Remove the request from the UI
+          this.removeRequestFromUI(requestId);
+        } else {
+          console.error('Failed to delete request:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting request:', error);
+      },
+      complete: () => {
+        // Close the modal
+        this.closeDeleteRequestModal();
+      }
+    });
+  }
+  
+  // Helper method to remove a request from the UI after deletion
+  private removeRequestFromUI(requestId: number) {
+    // Check all collections and their folders
+    for (const collection of [...this.collections, ...(this.sharedCollections || [])]) {
+      // Check requests directly in the collection
+      if (collection.requests) {
+        const index = collection.requests.findIndex(r => r.id === requestId);
+        if (index !== -1) {
+          collection.requests.splice(index, 1);
+          return;
+        }
+      }
+      
+      // Check requests in folders
+      if (collection.folders) {
+        for (const folder of collection.folders) {
+          if (folder.requests) {
+            const index = folder.requests.findIndex(r => r.id === requestId);
+            if (index !== -1) {
+              folder.requests.splice(index, 1);
+              return;
+            }
+          }
+        }
+      }
+    }
+  }
+  
   findCollectionById(collectionId: string): Collection | undefined {
     // Convert collection.id (number) to string for comparison
     
