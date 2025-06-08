@@ -403,6 +403,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return; // Don't submit if name is empty or no folder is selected
     }
     
+    // Determine if this folder is in a shared collection
+    const isShared = this.sharedCollections?.some(c => c.id === this.editFolder.collectionId) || false;
+    
     // Prepare the update request
     const updateRequest = {
       id: this.editFolder.id,
@@ -411,27 +414,47 @@ export class SidebarComponent implements OnInit, OnDestroy {
     };
     
     // Call the API to update the folder
-    this.folderService.updateFolder(updateRequest).subscribe({
-      next: (response: ApiResponse<any>) => {
+    this.folderService.updateFolder(updateRequest).subscribe(
+      response => {
         if (response.isSuccess) {
-          console.log('Folder updated successfully');
-          
           // Update the folder in the UI
           if (this.currentFolder) {
             this.currentFolder.name = this.editFolder.name.trim();
           }
+          
+          // Close the modal and show success message
+          this.closeEditFolderModal();
+          this.snackBar.open('Folder updated successfully', 'Close', {
+            duration: 3000
+          });
         } else {
-          console.error('Failed to update folder:', response.error);
+          // Show error message from the API
+          this.snackBar.open(response.error || 'Failed to update folder', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.closeEditFolderModal();
         }
       },
-      error: (error) => {
-        console.error('Error updating folder:', error);
-      },
-      complete: () => {
-        // Close the modal
+      error => {
+        // Handle HTTP error
+        let errorMessage = 'Failed to update folder';
+        
+        // Check if this is a shared collection permission error
+        if (isShared && error.status === 403) {
+          errorMessage = 'You do not have permission to update folders in shared collections';
+        } else if (error.error && error.error.error) {
+          // Extract specific error message from the API response if available
+          errorMessage = error.error.error;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', {
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
         this.closeEditFolderModal();
       }
-    });
+    );
   }
   
   // Confirm and delete the folder
@@ -440,34 +463,60 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return; // Don't proceed if no folder is selected
     }
     
+    // Determine if this folder is in a shared collection
+    const isShared = this.sharedCollections?.some(c => c.id === this.currentFolder?.collectionId) || false;
+    
     // Call the API to delete the folder
-    this.folderService.deleteFolder(this.currentFolder.id).subscribe({
-      next: (response: ApiResponse<any>) => {
+    this.folderService.deleteFolder(this.currentFolder.id).subscribe(
+      response => {
         if (response.isSuccess) {
-          console.log('Folder deleted successfully');
-          
           // Remove the folder from the UI
-          for (const collection of this.collections) {
-            if (collection.folders && collection.id === this.currentFolder?.collectionId) {
-              const index = collection.folders.findIndex(f => f.id === this.currentFolder?.id);
-              if (index !== -1) {
-                collection.folders.splice(index, 1);
-                break;
-              }
-            }
-          }
+          this.removeFolderFromUI(this.currentFolder!.id, this.currentFolder!.collectionId);
+          this.closeDeleteFolderModal();
+          
+          // Show success message
+          this.snackBar.open('Folder deleted successfully', 'Close', {
+            duration: 3000
+          });
         } else {
-          console.error('Failed to delete folder:', response.error);
+          // Show error message from the API
+          this.snackBar.open(response.error || 'Failed to delete folder', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.closeDeleteFolderModal();
         }
       },
-      error: (error) => {
-        console.error('Error deleting folder:', error);
-      },
-      complete: () => {
-        // Close the modal
+      error => {
+        // Handle HTTP error
+        let errorMessage = 'Failed to delete folder';
+        
+        // Check if this is a shared collection permission error
+        if (isShared && error.status === 403) {
+          errorMessage = 'You do not have permission to delete folders from shared collections';
+        } else if (error.error && error.error.error) {
+          // Extract specific error message from the API response if available
+          errorMessage = error.error.error;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', {
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
         this.closeDeleteFolderModal();
       }
-    });
+    );
+  }
+  
+  // Helper method to remove a folder from the UI after deletion
+  private removeFolderFromUI(folderId: number, collectionId: number) {
+    // Check all collections
+    for (const collection of [...this.collections, ...(this.sharedCollections || [])]) {
+      if (collection.id === collectionId && collection.folders) {
+        collection.folders = collection.folders.filter(f => f.id !== folderId);
+        return;
+      }
+    }
   }
   
   // Submit the new folder form
@@ -476,6 +525,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return; // Don't submit if name is empty or no collection is selected
     }
     
+    // Determine if this is a shared collection
+    const isShared = this.sharedCollections?.some(c => c.id === this.currentCollectionId) || false;
+    
     // Prepare the folder creation request
     const folderRequest: CreateFolderRequest = {
       name: this.newFolder.name.trim(),
@@ -483,13 +535,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
     };
     
     // Call the API to create the folder
-    this.folderService.createFolder(folderRequest).subscribe({
-      next: (response: ApiResponse<Folder>) => {
+    this.folderService.createFolder(folderRequest).subscribe(
+      response => {
         if (response.isSuccess && response.data) {
-          console.log('Folder created successfully:', response.data);
-          
           // Find the collection and add the new folder to it
-          const collection = this.collections.find(c => c.id === this.currentCollectionId);
+          const collections = [...this.collections, ...(this.sharedCollections || [])];
+          const collection = collections.find(c => c.id === this.currentCollectionId);
+          
           if (collection) {
             if (!collection.folders) {
               collection.folders = [];
@@ -498,21 +550,43 @@ export class SidebarComponent implements OnInit, OnDestroy {
             
             // Ensure the collection is expanded to show the new folder
             if (this.currentCollectionId) {
-              this.expandedItems.add(this.currentCollectionId);
+              this.expandedCollections.add(this.currentCollectionId);
             }
           }
+          
+          // Close the modal and show success message
+          this.closeNewFolderModal();
+          this.snackBar.open('Folder created successfully', 'Close', {
+            duration: 3000
+          });
         } else {
-          console.error('Failed to create folder:', response.error);
+          // Show error message from the API
+          this.snackBar.open(response.error || 'Failed to create folder', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.closeNewFolderModal();
         }
       },
-      error: (error) => {
-        console.error('Error creating folder:', error);
-      },
-      complete: () => {
-        // Close the modal
+      error => {
+        // Handle HTTP error
+        let errorMessage = 'Failed to create folder';
+        
+        // Check if this is a shared collection permission error
+        if (isShared && error.status === 403) {
+          errorMessage = 'You do not have permission to create folders in shared collections';
+        } else if (error.error && error.error.error) {
+          // Extract specific error message from the API response if available
+          errorMessage = error.error.error;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', {
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
         this.closeNewFolderModal();
       }
-    });
+    );
   }
 
   // Edit an item (collection, folder, or request)
@@ -993,6 +1067,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return; // Don't submit if name is empty or no collection is selected
     }
     
+    // Determine if this is a shared collection
+    const isShared = this.currentCollection.isShared || false;
+    
     // Prepare the update request
     const updateRequest = {
       id: this.editCollection.id,
@@ -1002,23 +1079,45 @@ export class SidebarComponent implements OnInit, OnDestroy {
     };
     
     // Call the API to update the collection
-    this.collectionService.updateCollection(updateRequest).subscribe({
-      next: (response: ApiResponse<Collection>) => {
+    this.collectionService.updateCollection(updateRequest).subscribe(
+      response => {
         if (response.isSuccess) {
-          console.log('Collection updated successfully:', response.data);
           // Reload collections to get the updated list
           this.loadCollections();
+          this.closeEditCollectionModal();
+          
+          // Show success message
+          this.snackBar.open('Collection updated successfully', 'Close', {
+            duration: 3000
+          });
         } else {
-          console.error('Failed to update collection:', response.error);
+          // Show error message from the API
+          this.snackBar.open(response.error || 'Failed to update collection', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.closeEditCollectionModal();
         }
       },
-      error: (error) => {
-        console.error('Error updating collection:', error);
+      error => {
+        // Handle HTTP error
+        let errorMessage = 'Failed to update collection';
+        
+        // Check if this is a shared collection permission error
+        if (isShared && error.status === 403) {
+          errorMessage = 'You do not have permission to update this shared collection';
+        } else if (error.error && error.error.error) {
+          // Extract specific error message from the API response if available
+          errorMessage = error.error.error;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', {
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
+        this.closeEditCollectionModal();
       }
-    });
-    
-    // Close the modal
-    this.closeEditCollectionModal();
+    );
   }
   
   // Confirm and delete the collection
@@ -1027,24 +1126,49 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return; // Don't proceed if no collection is selected
     }
     
+    // Determine if this is a shared collection
+    const isShared = this.currentCollection.isShared || false;
+    
     // Call the API to delete the collection
-    this.collectionService.deleteCollection(this.currentCollection.id).subscribe({
-      next: (response: ApiResponse<any>) => {
+    this.collectionService.deleteCollection(this.currentCollection.id).subscribe(
+      response => {
         if (response.isSuccess) {
-          console.log('Collection deleted successfully');
           // Reload collections to get the updated list
           this.loadCollections();
+          this.closeDeleteConfirmModal();
+          
+          // Show success message
+          this.snackBar.open('Collection deleted successfully', 'Close', {
+            duration: 3000
+          });
         } else {
-          console.error('Failed to delete collection:', response.error);
+          // Show error message from the API
+          this.snackBar.open(response.error || 'Failed to delete collection', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.closeDeleteConfirmModal();
         }
       },
-      error: (error) => {
-        console.error('Error deleting collection:', error);
+      error => {
+        // Handle HTTP error
+        let errorMessage = 'Failed to delete collection';
+        
+        // Check if this is a shared collection permission error
+        if (isShared && error.status === 403) {
+          errorMessage = 'You do not have permission to delete this shared collection';
+        } else if (error.error && error.error.error) {
+          // Extract specific error message from the API response if available
+          errorMessage = error.error.error;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', {
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
+        this.closeDeleteConfirmModal();
       }
-    });
-    
-    // Close the modal
-    this.closeDeleteConfirmModal();
+    );
   }
 
 
