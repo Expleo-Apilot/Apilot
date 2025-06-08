@@ -72,9 +72,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     description: ''
   };
   collections!: Collection[];
+  filteredCollections!: Collection[];
   sharedCollections!: Collection[];
+  filteredSharedCollections!: Collection[];
   collectionForm! : CreateCollectionRequest;
   workspaceId: number = 1; // You should get this from your workspace service or route
+  searchTerm: string = '';
 
   expandedItems: Set<number> = new Set();
   expandedCollections: Set<number> = new Set();
@@ -1042,6 +1045,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         if (results.owned.isSuccess && results.owned.data) {
           console.log('Owned collections loaded:', results.owned.data);
           this.collections = results.owned.data;
+          this.filteredCollections = [...this.collections]; // Initialize filtered collections
 
           // Initialize folders array if it doesn't exist
           this.collections.forEach(collection => {
@@ -1055,12 +1059,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
         } else {
           console.error('Failed to load owned collections:', results.owned.error);
           this.collections = [];
+          this.filteredCollections = [];
         }
-
+        
         // Process shared collections
         if (results.shared.isSuccess && results.shared.data) {
           console.log('Shared collections loaded:', results.shared.data);
           this.sharedCollections = results.shared.data;
+          this.filteredSharedCollections = [...this.sharedCollections]; // Initialize filtered shared collections
 
           // Initialize folders array if it doesn't exist
           this.sharedCollections.forEach(collection => {
@@ -1077,12 +1083,20 @@ export class SidebarComponent implements OnInit, OnDestroy {
         } else {
           console.error('Failed to load shared collections:', results.shared.error);
           this.sharedCollections = [];
+          this.filteredSharedCollections = [];
+        }
+
+        // Apply any existing search filter
+        if (this.searchTerm) {
+          this.filterCollections(this.searchTerm);
         }
       },
       error: (error) => {
         console.error('Error loading collections:', error);
         this.collections = [];
         this.sharedCollections = [];
+        this.filteredCollections = [];
+        this.filteredSharedCollections = [];
       }
     });
   }
@@ -1171,5 +1185,128 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     // Clean up subscriptions when the component is destroyed
     this.subscriptions.unsubscribe();
+  }
+
+  /**
+   * Advanced search functionality to filter collections, folders, and requests
+   * @param searchTerm - The search term to filter items by
+   */
+  filterCollections(searchTerm: string) {
+    this.searchTerm = searchTerm.toLowerCase().trim();
+    
+    if (!this.searchTerm) {
+      // If search term is empty, show all collections
+      this.filteredCollections = [...this.collections];
+      this.filteredSharedCollections = [...this.sharedCollections];
+      return;
+    }
+    
+    // Auto-expand collections with matching items for better UX
+    const matchingCollectionIds = new Set<number>();
+    const matchingFolderIds = new Set<number>();
+    
+    // Filter owned collections with matching name, description, folders, or requests
+    this.filteredCollections = this.collections.filter(collection => {
+      // Check if collection matches
+      const collectionNameMatch = collection.name.toLowerCase().includes(this.searchTerm);
+      const collectionDescMatch = collection.description?.toLowerCase().includes(this.searchTerm);
+      
+      // Check if any folder in the collection matches
+      const hasFolderMatch = collection.folders?.some(folder => {
+        const folderMatch = folder.name.toLowerCase().includes(this.searchTerm);
+        if (folderMatch) {
+          // Auto-expand parent collection and folder when there's a match
+          matchingCollectionIds.add(collection.id);
+          matchingFolderIds.add(folder.id);
+        }
+        return folderMatch;
+      });
+      
+      // Check if any request in the collection matches
+      const hasRequestMatch = collection.requests?.some(request => {
+        const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+                            request.url?.toLowerCase().includes(this.searchTerm);
+        if (requestMatch) {
+          // Auto-expand parent collection when there's a match
+          matchingCollectionIds.add(collection.id);
+        }
+        return requestMatch;
+      });
+      
+      // Check if any request in any folder matches
+      const hasFolderRequestMatch = collection.folders?.some(folder => 
+        folder.requests?.some(request => {
+          const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+                              request.url?.toLowerCase().includes(this.searchTerm);
+          if (requestMatch) {
+            // Auto-expand parent collection and folder when there's a match
+            matchingCollectionIds.add(collection.id);
+            matchingFolderIds.add(folder.id);
+          }
+          return requestMatch;
+        })
+      );
+      
+      // If this collection or any of its contents match, return true
+      const matches = collectionNameMatch || collectionDescMatch || hasFolderMatch || hasRequestMatch || hasFolderRequestMatch;
+      if (matches) {
+        matchingCollectionIds.add(collection.id);
+      }
+      return matches;
+    });
+    
+    // Filter shared collections with matching name, description, folders, or requests
+    this.filteredSharedCollections = this.sharedCollections.filter(collection => {
+      // Check if collection matches
+      const collectionNameMatch = collection.name.toLowerCase().includes(this.searchTerm);
+      const collectionDescMatch = collection.description?.toLowerCase().includes(this.searchTerm);
+      
+      // Check if any folder in the collection matches
+      const hasFolderMatch = collection.folders?.some(folder => {
+        const folderMatch = folder.name.toLowerCase().includes(this.searchTerm);
+        if (folderMatch) {
+          // Auto-expand parent collection and folder when there's a match
+          matchingCollectionIds.add(collection.id);
+          matchingFolderIds.add(folder.id);
+        }
+        return folderMatch;
+      });
+      
+      // Check if any request in the collection matches
+      const hasRequestMatch = collection.requests?.some(request => {
+        const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+                            request.url?.toLowerCase().includes(this.searchTerm);
+        if (requestMatch) {
+          // Auto-expand parent collection when there's a match
+          matchingCollectionIds.add(collection.id);
+        }
+        return requestMatch;
+      });
+      
+      // Check if any request in any folder matches
+      const hasFolderRequestMatch = collection.folders?.some(folder => 
+        folder.requests?.some(request => {
+          const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+                              request.url?.toLowerCase().includes(this.searchTerm);
+          if (requestMatch) {
+            // Auto-expand parent collection and folder when there's a match
+            matchingCollectionIds.add(collection.id);
+            matchingFolderIds.add(folder.id);
+          }
+          return requestMatch;
+        })
+      );
+      
+      // If this collection or any of its contents match, return true
+      const matches = collectionNameMatch || collectionDescMatch || hasFolderMatch || hasRequestMatch || hasFolderRequestMatch;
+      if (matches) {
+        matchingCollectionIds.add(collection.id);
+      }
+      return matches;
+    });
+    
+    // Auto-expand matching collections and folders for better UX
+    matchingCollectionIds.forEach(id => this.expandedCollections.add(id));
+    matchingFolderIds.forEach(id => this.expandedFolders.add(id));
   }
 }

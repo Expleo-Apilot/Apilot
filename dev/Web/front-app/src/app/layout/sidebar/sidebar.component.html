@@ -23,8 +23,17 @@
           </button>
         </div>
         <div class="search-area">
-          <mat-icon class="filter-icon">filter_list</mat-icon>
-          <input type="text" placeholder="Filter" class="search-input">
+          <mat-icon class="filter-icon">search</mat-icon>
+          <input type="text" placeholder="Search collections..." 
+                 class="search-input" 
+                 [(ngModel)]="searchTerm" 
+                 (ngModelChange)="filterCollections($event)">
+          <button *ngIf="searchTerm" 
+                  mat-icon-button 
+                  class="clear-search-btn" 
+                  (click)="filterCollections('')">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
       </div>
 
@@ -100,7 +109,11 @@
           <div class="section-header">
             <span class="section-title">My Collections</span>
           </div>
-          <div *ngFor="let collection of collections" class="collection-item">
+          <div *ngIf="filteredCollections.length === 0 && searchTerm" class="empty-search-result">
+            <mat-icon>search_off</mat-icon>
+            <span>No collections found</span>
+          </div>
+          <div *ngFor="let collection of filteredCollections" class="collection-item">
             <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
               <div class="collection-icon">
                 <mat-icon>{{ isExpanded(collection.id, 'collection') ? 'inventory_2' : 'inventory' }}</mat-icon>
@@ -197,11 +210,15 @@
         </div>
 
         <!-- Shared Collections Section -->
-        <div class="collections-section" *ngIf="sharedCollections && sharedCollections.length > 0">
+        <div class="collections-section" *ngIf="filteredSharedCollections && filteredSharedCollections.length > 0">
           <div class="section-header">
             <span class="section-title">Shared With Me</span>
           </div>
-          <div *ngFor="let collection of sharedCollections" class="collection-item shared-collection">
+          <div *ngIf="filteredSharedCollections.length === 0 && searchTerm" class="empty-search-result">
+            <mat-icon>search_off</mat-icon>
+            <span>No shared collections found</span>
+          </div>
+          <div *ngFor="let collection of filteredSharedCollections" class="collection-item shared-collection">
             <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
               <div class="collection-icon">
                 <mat-icon>folder_shared</mat-icon>
