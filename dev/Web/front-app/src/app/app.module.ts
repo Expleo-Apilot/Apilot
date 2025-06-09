@@ -19,6 +19,9 @@ import { CollaborationModule } from './features/collaboration/collaboration.modu
 import { CollaborationService } from './core/services/collaboration.service';
 import { SignalRService } from './core/services/signalr.service';
 import { AuthInterceptor } from './auth/auth.interceptor';
+import { GeminiService } from './core/services/gemini.service';
+import { OllamaService } from './core/services/ollama.service';
+import { LlmFactoryService } from './core/services/llm-factory.service';
 
 @NgModule({
   declarations: [
@@ -48,7 +51,10 @@ import { AuthInterceptor } from './auth/auth.interceptor';
     provideClientHydration(withEventReplay()),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     CollaborationService,
-    SignalRService
+    SignalRService,
+    GeminiService,
+    OllamaService,
+    LlmFactoryService
   ],
   bootstrap: [AppComponent]
 })

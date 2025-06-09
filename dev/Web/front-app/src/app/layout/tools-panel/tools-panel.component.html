@@ -44,6 +44,50 @@
         {{ isRunning ? 'Running...' : 'Run Tests' }}
       </button>
     </div>
+    
+    <!-- AI Prompt Input with Model Selection -->
+    <div class="prompt-container">
+      <!-- Model Selection -->
+      <div class="model-selection">
+        <span class="model-label">Model:</span>
+        <mat-button-toggle-group [value]="selectedLlmType" (change)="changeLlmType($event.value)">
+          <mat-button-toggle *ngFor="let type of availableLlmTypes" [value]="type">
+            {{ type }}
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+        <span class="current-model">{{ currentModelName }}</span>
+      </div>
+      
+      <!-- Prompt Input -->
+      <div class="prompt-input-wrapper">
+        <textarea
+          class="prompt-input"
+          placeholder="Enter a prompt to generate test code..."
+          [(ngModel)]="promptInput"
+          (keydown)="handlePromptKeyEvent($event)"
+          [disabled]="isProcessingPrompt"
+        ></textarea>
+        <div class="prompt-actions">
+          <div class="spinner-container" *ngIf="isProcessingPrompt">
+            <mat-spinner diameter="20"></mat-spinner>
+          </div>
+          <button
+            mat-icon-button
+            color="primary"
+            (click)="processPrompt()"
+            [disabled]="isProcessingPrompt || !promptInput.trim()"
+            matTooltip="Send prompt"
+          >
+            <mat-icon>send</mat-icon>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+    </div>
   </div>
 
   <!-- Test results tab -->
