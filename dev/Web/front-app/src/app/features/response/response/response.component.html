@@ -27,6 +27,11 @@
                 title="Copy response body to clipboard">
           <mat-icon>content_copy</mat-icon>
         </button>
+        <button class="save-button"
+                (click)="saveResponse()"
+                [disabled]="(!formattedBody && !statusCode) || isLoading || isSaving">
+          <mat-icon>{{ isSaving ? 'hourglass_empty' : 'save' }}</mat-icon> {{ isSaving ? 'Saving...' : 'Save' }}
+        </button>
       </div>
     </div>
 

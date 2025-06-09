@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +12,9 @@ export class ResponseService {
   private responseMap = new Map<string, any>();
   private currentTabIdSubject = new BehaviorSubject<string | null>(null);
   private responseDataSubject = new BehaviorSubject<any>(null);
+  private baseUrl = environment.apiUrl || 'http://localhost:5051';
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
   get responseData$(): Observable<any> {
     return this.responseDataSubject.asObservable();
@@ -90,5 +93,41 @@ export class ResponseService {
     return {
       headers: this.getAuthHeaders()
     };
+  }
+  
+  /**
+   * Save a response to the database
+   * @param responseData The response data to save
+   * @param requestId The ID of the request this response belongs to
+   * @returns Observable of the API response
+   */
+  saveResponse(responseData: any, requestId: number): Observable<any> {
+    // Convert headers from array to dictionary format as required by the backend
+    const headers: { [key: string]: string } = {};
+    if (Array.isArray(responseData.headers)) {
+      responseData.headers.forEach((header: any) => {
+        if (header.key && header.value) {
+          headers[header.key] = header.value;
+        }
+      });
+    }
+    
+    // Format the response according to the backend's CreateResponseDto
+    const payload = {
+      StatusCode: responseData.statusCode,
+      StatusText: responseData.statusText || '',
+      Headers: headers,
+      ResponseTime: responseData.responseTime || 0,
+      ResponseSize: responseData.responseSize || 0,
+      Body: responseData.body || '',
+      RequestId: requestId
+    };
+    
+    return this.http.post<any>(`${this.baseUrl}/SaveResponse`, payload, this.getHttpOptions())
+      .pipe(
+        tap(response => {
+          console.log('Response saved:', response);
+        })
+      );
   }
 }

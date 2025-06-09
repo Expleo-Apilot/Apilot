@@ -433,7 +433,7 @@
     }
   }
   
-  .copy-button {
+  .copy-button, .save-button {
     display: flex;
     align-items: center;
     background-color: transparent;
@@ -447,22 +447,21 @@
     font-size: 13px;
   }
   
-  .copy-button:hover {
+  .copy-button:hover, .save-button:hover {
     background-color: var(--primary-color);
     color: white;
     transform: translateY(-1px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
   
-  .copy-button:disabled {
+  .copy-button:disabled, .save-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
   
-  .copy-button mat-icon {
+  .copy-button mat-icon, .save-button mat-icon {
     font-size: 16px;
     height: 16px;
     width: 16px;
     margin-right: 6px;
   }
-  

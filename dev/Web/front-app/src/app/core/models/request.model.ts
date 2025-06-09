@@ -46,6 +46,17 @@ export interface CreateRequestDto {
   FolderId?: number | null;
   CollectionId?: number | null;
   IsShared?: boolean;
+  WorkspaceId?: string;
+  Description?: string;
+  SavedResponse?: {
+    statusCode: number;
+    statusText: string;
+    headers: { key: string, value: string }[];
+    cookies: any[];
+    body: string;
+    responseTime: number;
+    responseSize: number;
+  };
 }
 
 // Helper interfaces for frontend use

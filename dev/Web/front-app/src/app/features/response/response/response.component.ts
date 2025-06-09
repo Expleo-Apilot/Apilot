@@ -4,6 +4,11 @@ import { HttpHeaders } from '@angular/common/http';
 import { ResponseService } from '../../../core/services/response.service';
 import { ClipboardService, ClipboardNotification } from '../../../core/services/clipboard.service';
 import { Subscription } from 'rxjs';
+import { RequestService } from '../../../core/services/request.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { CreateRequestDto, convertFormDataToRequest, RequestFormData, Authentication } from '../../../core/models/request.model';
+import { HttpMethod } from '../../../core/models/http-method.enum';
+import { AuthType } from '../../../core/models/auth-type.enum';
 
 // More specific interface for cookie properties
 interface ResponseCookieProperties {
@@ -31,9 +36,19 @@ declare const monaco: any;
   templateUrl: './response.component.html',
   styleUrl: './response.component.css'
 })
-export class ResponseComponent {
+export class ResponseComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() responseData: any; // Still keep the input for flexibility
+  @Input() isLoading: boolean = false;
+  @Input() tabId: string = '';
+  @Input() requestUrl: string = '';
+  @Input() requestMethod: string = '';
+  @Input() requestHeaders: any[] = [];
+  @Input() requestParams: any[] = [];
+  @Input() requestBody: string = '';
+  @Input() authData: any;
+  @Input() workspaceId: string = '';
+  isSaving: boolean = false;
 
   private subscription: Subscription = new Subscription();
 
@@ -63,7 +78,9 @@ export class ResponseComponent {
 
   constructor(
     private responseService: ResponseService,
-    private clipboardService: ClipboardService
+    private clipboardService: ClipboardService,
+    private requestService: RequestService,
+    private snackBar: MatSnackBar
   ) { }
 
   ngOnInit(): void {
@@ -132,6 +149,96 @@ export class ResponseComponent {
    */
   removeNotification(id: number): void {
     this.clipboardService.removeNotification(id);
+  }
+
+  copyToClipboard(content: string): void {
+    this.clipboardService.copyToClipboard(content);
+  }
+
+  saveResponse(): void {
+    if (!this.formattedBody && !this.statusCode) {
+      return;
+    }
+
+    this.isSaving = true;
+
+    // First, save a minimal request to get a request ID
+    const urlPath = this.requestUrl?.split('?')[0] || 'unknown';
+    const requestName = `${this.requestMethod || 'GET'} ${urlPath}`;
+    
+    // Create a minimal request DTO
+    const requestDto: CreateRequestDto = {
+      Name: requestName,
+      Url: this.requestUrl || '',
+      HttpMethod: this.requestMethod as HttpMethod || HttpMethod.GET,
+      Headers: {},
+      Parameters: {},
+      WorkspaceId: this.workspaceId
+    };
+
+    // First save the request to get an ID
+    this.requestService.saveRequest(requestDto).subscribe({
+      next: (requestResponse) => {
+        if (requestResponse.isSuccess && requestResponse.data && requestResponse.data.id) {
+          // Now save the response with the request ID
+          const requestId = requestResponse.data.id;
+          
+          // Create response data object
+          const responseData = {
+            statusCode: this.statusCode,
+            statusText: this.statusText,
+            headers: this.responseHeaders || [],
+            cookies: this.cookies || [],
+            body: this.formattedBody || '',
+            responseTime: this.responseTime || 0,
+            responseSize: this.responseSize || 0
+          };
+          
+          // Save the response using the dedicated endpoint
+          this.responseService.saveResponse(responseData, requestId).subscribe({
+            next: (response) => {
+              this.isSaving = false;
+              if (response.isSuccess) {
+                this.snackBar.open('Response saved successfully', 'Close', { duration: 3000 });
+              } else {
+                const errorMessage = response.error || 'Failed to save response';
+                this.snackBar.open(errorMessage, 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+              }
+            },
+            error: (error) => {
+              this.isSaving = false;
+              let errorMessage = 'An error occurred while saving the response';
+              
+              if (error.error && error.error.error) {
+                errorMessage = error.error.error;
+              } else if (error.message) {
+                errorMessage = error.message;
+              }
+              
+              this.snackBar.open(errorMessage, 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+              console.error('Error saving response:', error);
+            }
+          });
+        } else {
+          this.isSaving = false;
+          const errorMessage = requestResponse.error || 'Failed to create request for response';
+          this.snackBar.open(errorMessage, 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+        }
+      },
+      error: (error) => {
+        this.isSaving = false;
+        let errorMessage = 'An error occurred while creating request for response';
+        
+        if (error.error && error.error.error) {
+          errorMessage = error.error.error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        this.snackBar.open(errorMessage, 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+        console.error('Error creating request for response:', error);
+      }
+    });
   }
 
   private resetView(): void {
