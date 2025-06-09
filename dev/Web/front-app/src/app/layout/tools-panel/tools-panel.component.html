@@ -1,1 +1,141 @@
-<p>tools-panel works!</p>
+<div class="test-script-panel">
+  <!-- Tab navigation -->
+  <div class="tab-navigation">
+    <button 
+      class="tab-button" 
+      [class.active]="activeTab === 'script'" 
+      (click)="switchTab('script')"
+    >
+      <mat-icon>code</mat-icon>
+      Test Script
+    </button>
+    <button 
+      class="tab-button" 
+      [class.active]="activeTab === 'results'" 
+      [class.has-results]="hasRun"
+      [class.all-passed]="hasRun && allTestsPassed"
+      [class.has-failures]="hasRun && !allTestsPassed"
+      (click)="switchTab('results')"
+    >
+      <mat-icon>{{ hasRun ? (allTestsPassed ? 'check_circle' : 'error') : 'analytics' }}</mat-icon>
+      Test Results
+      <span class="results-badge" *ngIf="hasRun">
+        {{ passedTests }}/{{ totalTests }}
+      </span>
+    </button>
+  </div>
+
+  <!-- Script editor tab -->
+  <div class="tab-content" [class.active]="activeTab === 'script'">
+    <div class="editor-container">
+      <ngx-monaco-editor
+        class="code-editor"
+        [options]="editorOptions"
+        [(ngModel)]="testScript"
+      ></ngx-monaco-editor>
+    </div>
+    <div class="editor-actions">
+      <button 
+        class="run-button" 
+        (click)="runTests()"
+        [disabled]="isRunning"
+      >
+        <mat-icon>{{ isRunning ? 'hourglass_top' : 'play_arrow' }}</mat-icon>
+        {{ isRunning ? 'Running...' : 'Run Tests' }}
+      </button>
+    </div>
+    
+    <!-- AI Prompt Input with Model Selection -->
+    <div class="prompt-container">
+      <!-- Model Selection -->
+      <div class="model-selection">
+        <span class="model-label">Model:</span>
+        <mat-button-toggle-group [value]="selectedLlmType" (change)="changeLlmType($event.value)">
+          <mat-button-toggle *ngFor="let type of availableLlmTypes" [value]="type">
+            {{ type }}
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+        <span class="current-model">{{ currentModelName }}</span>
+      </div>
+      
+      <!-- Prompt Input -->
+      <div class="prompt-input-wrapper">
+        <textarea
+          class="prompt-input"
+          placeholder="Enter a prompt to generate test code..."
+          [(ngModel)]="promptInput"
+          (keydown)="handlePromptKeyEvent($event)"
+          [disabled]="isProcessingPrompt"
+        ></textarea>
+        <div class="prompt-actions">
+          <div class="spinner-container" *ngIf="isProcessingPrompt">
+            <mat-spinner diameter="20"></mat-spinner>
+          </div>
+          <button
+            mat-icon-button
+            color="primary"
+            (click)="processPrompt()"
+            [disabled]="isProcessingPrompt || !promptInput.trim()"
+            matTooltip="Send prompt"
+          >
+            <mat-icon>send</mat-icon>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Test results tab -->
+  <div class="tab-content" [class.active]="activeTab === 'results'">
+    <div class="results-container" *ngIf="hasRun">
+      <div class="results-summary">
+        <div class="summary-icon" [class.passed]="allTestsPassed" [class.failed]="!allTestsPassed">
+          <mat-icon>{{ allTestsPassed ? 'check_circle' : 'error' }}</mat-icon>
+        </div>
+        <div class="summary-text">
+          <h3>{{ allTestsPassed ? 'All Tests Passed' : 'Tests Failed' }}</h3>
+          <p>{{ passedTests }} of {{ totalTests }} tests passed</p>
+        </div>
+      </div>
+
+      <div class="results-list">
+        <div 
+          *ngFor="let result of testResults" 
+          class="result-item"
+          [class.passed]="result.passed"
+          [class.failed]="!result.passed"
+        >
+          <div class="result-status">
+            <mat-icon>{{ result.passed ? 'check_circle' : 'cancel' }}</mat-icon>
+          </div>
+          <div class="result-details">
+            <h4>{{ result.name }}</h4>
+            <p *ngIf="!result.passed && result.message" class="error-message">
+              {{ result.message }}
+            </p>
+          </div>
+          <div class="result-time" *ngIf="result.duration !== undefined">
+            {{ result.duration }}ms
+          </div>
+        </div>
+      </div>
+
+      <div class="results-actions">
+        <button class="clear-button" (click)="clearResults()">
+          <mat-icon>delete</mat-icon>
+          Clear Results
+        </button>
+      </div>
+    </div>
+
+    <div class="no-results" *ngIf="!hasRun">
+      <mat-icon>science</mat-icon>
+      <p>No test results yet. Run your tests to see results here.</p>
+    </div>
+  </div>
+</div>
