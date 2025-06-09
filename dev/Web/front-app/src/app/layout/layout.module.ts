@@ -21,6 +21,9 @@ import {MatTabsModule} from '@angular/material/tabs';
 import {FormsModule} from '@angular/forms';
 import {DragDropModule} from '@angular/cdk/drag-drop';
 import {MatMenuModule} from '@angular/material/menu';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatBadgeModule} from '@angular/material/badge';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import { CollaborationModule } from '../features/collaboration/collaboration.module';
 
 @NgModule({
@@ -49,6 +52,9 @@ import { CollaborationModule } from '../features/collaboration/collaboration.mod
     DragDropModule,
     MonacoEditorModule,
     MatMenuModule,
+    MatProgressSpinnerModule,
+    MatBadgeModule,
+    MatTooltipModule,
     WorkspaceMenuComponent,
     CollaborationModule,
   ],
