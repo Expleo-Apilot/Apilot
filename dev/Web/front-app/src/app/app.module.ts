@@ -22,6 +22,7 @@ import { AuthInterceptor } from './auth/auth.interceptor';
 import { GeminiService } from './core/services/gemini.service';
 import { OllamaService } from './core/services/ollama.service';
 import { LlmFactoryService } from './core/services/llm-factory.service';
+import { TestRunnerService } from './core/services/test-runner.service';
 
 @NgModule({
   declarations: [
@@ -54,7 +55,8 @@ import { LlmFactoryService } from './core/services/llm-factory.service';
     SignalRService,
     GeminiService,
     OllamaService,
-    LlmFactoryService
+    LlmFactoryService,
+    TestRunnerService
   ],
   bootstrap: [AppComponent]
 })

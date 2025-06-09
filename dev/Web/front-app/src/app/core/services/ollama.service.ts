@@ -62,15 +62,19 @@ export class OllamaService implements LlmService {
    * @returns Observable with the generated test code
    */
   generateTestCode(prompt: string): Observable<LlmResponse> {
-    // Enhance the prompt to specifically request test code in the Postman format
-    const enhancedPrompt = `Generate JavaScript test code for API testing in Postman format. 
-The tests should use the pm.test() function and follow Postman's syntax.
-Based on this request: "${prompt}"
-Only return the code, no explanations.
-Example format:
-pm.test("Status code is 200", function() {
-    pm.response.to.have.status(200);
-});`;
+    // Enhance the prompt to specifically generate C# test code
+    const enhancedPrompt = `Generate C# test code for API testing. 
+    The tests should use the Test() method and follow this format:
+    
+    Test("Test Name", () => {
+        // Test code here
+        var response = HttpClient.GetAsync("api/endpoint").Result;
+        Assert.AreEqual(200, (int)response.StatusCode);
+        // More assertions
+    });
+    
+    Based on this request: "${prompt}"
+    Only return the code, no explanations.`;
 
     return this.generateText(enhancedPrompt);
   }
