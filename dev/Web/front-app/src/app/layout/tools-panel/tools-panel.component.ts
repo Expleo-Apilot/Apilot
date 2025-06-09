@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import { catchError, finalize, of } from 'rxjs';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { LlmFactoryService, LlmType } from '../../core/services/llm-factory.service';
 import { LlmService } from '../../core/services/llm.service';
+import { TestRunnerService, TestResult, TestResponse } from '../../core/services/test-runner.service';
 import { NgIf } from '@angular/common';
+import { catchError, finalize, of } from 'rxjs';
 
 // Monaco editor options interface
 interface EditorOptions {
@@ -16,13 +17,7 @@ interface EditorOptions {
   wordWrap: string;
 }
 
-// Test result interface
-interface TestResult {
-  name: string;
-  passed: boolean;
-  message?: string;
-  duration?: number;
-}
+// TestResult interface is now imported from test-runner.service.ts
 
 @Component({
   selector: 'app-tools-panel',
@@ -33,8 +28,8 @@ interface TestResult {
 export class ToolsPanelComponent implements OnInit {
   // Editor configuration
   editorOptions: EditorOptions = {
-    theme: 'vs',
-    language: 'javascript',
+    theme: 'vs-light',
+    language: 'csharp',
     automaticLayout: true,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -45,7 +40,7 @@ export class ToolsPanelComponent implements OnInit {
 
   // Test script code
   testScript: string = '';
-  
+
   // Test results
   testResults: TestResult[] = [];
   isRunning: boolean = false;
@@ -53,22 +48,22 @@ export class ToolsPanelComponent implements OnInit {
   allTestsPassed: boolean = true;
   totalTests: number = 0;
   passedTests: number = 0;
-  
+
   // Selected tab
   activeTab: 'script' | 'results' = 'script';
-  
+
   // Prompt input
   promptInput: string = '';
   isProcessingPrompt: boolean = false;
   promptHistory: string[] = [];
   currentHistoryIndex: number = -1;
   errorMessage: string = '';
-  
+
   // LLM selection
   availableLlmTypes: LlmType[] = [];
   selectedLlmType: LlmType = LlmType.OLLAMA;
   currentModelName: string = '';
-  
+
   // Real-time typing effect
   private typingInterval: any;
   private typingSpeed: number = 10; // ms per character
@@ -77,15 +72,15 @@ export class ToolsPanelComponent implements OnInit {
   private typingPosition: number = 0;
   private typingPrompt: string = '';
 
-  constructor(private llmFactoryService: LlmFactoryService) { }
+  constructor(private llmFactoryService: LlmFactoryService, private testRunnerService: TestRunnerService) { }
 
   ngOnInit(): void {
     // Initialize with a sample test script
     this.testScript = this.getSampleTestScript();
-    
+
     // Load prompt history from localStorage if available
     this.loadPromptHistory();
-    
+
     // Initialize LLM types and selection
     this.availableLlmTypes = this.llmFactoryService.getAllLlmTypes();
     this.selectedLlmType = this.llmFactoryService.getCurrentLlmType();
@@ -96,38 +91,67 @@ export class ToolsPanelComponent implements OnInit {
    * Run the test script
    */
   runTests(): void {
+    if (!this.testScript || this.testScript.trim() === '') {
+      this.errorMessage = 'Please enter a test script before running tests.';
+      setTimeout(() => this.errorMessage = '', 3000);
+      return;
+    }
+
     this.isRunning = true;
     this.hasRun = true;
     this.testResults = [];
-    
-    // Simulate test execution delay
-    setTimeout(() => {
-      try {
-        // In a real implementation, this would execute the test script against the actual response
-        // For now, we'll simulate some test results
-        this.testResults = this.simulateTestResults();
-        
-        // Calculate test statistics
-        this.totalTests = this.testResults.length;
-        this.passedTests = this.testResults.filter(test => test.passed).length;
-        this.allTestsPassed = this.passedTests === this.totalTests;
-        
-        // Switch to results tab
+    this.errorMessage = '';
+
+    this.testRunnerService.runTests(this.testScript).subscribe(
+      (response: TestResponse) => {
+        if (response.success) {
+          this.testResults = response.results;
+          this.totalTests = response.totalTests;
+          this.passedTests = response.passedTests;
+          this.allTestsPassed = this.passedTests === this.totalTests;
+        } else {
+          // Handle server-side error with the test execution
+          this.testResults = [{
+            name: 'Test Execution Error',
+            passed: false,
+            message: response.errorMessage || 'The server encountered an error while executing tests',
+            duration: 0
+          }];
+          this.totalTests = 1;
+          this.passedTests = 0;
+          this.allTestsPassed = false;
+        }
         this.activeTab = 'results';
-      } catch (error) {
-        // Handle script execution errors
+      },
+      (error) => {
+        console.error('Error running tests:', error);
+
+        // Determine if it's a connection error or other HTTP error
+        let errorMessage = 'Failed to run tests';
+
+        if (error.status === 0) {
+          errorMessage = 'Cannot connect to the test runner service. Please make sure the backend API is running.';
+        } else if (error.status >= 400) {
+          errorMessage = `Server error (${error.status}): ${error.error?.message || error.statusText || 'Unknown error'}`;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
         this.testResults = [{
-          name: 'Script Error',
+          name: 'Test Runner Error',
           passed: false,
-          message: error instanceof Error ? error.message : 'Unknown error occurred'
+          message: errorMessage,
+          duration: 0
         }];
         this.totalTests = 1;
         this.passedTests = 0;
         this.allTestsPassed = false;
-      } finally {
+        this.activeTab = 'results';
+      },
+      () => {
         this.isRunning = false;
       }
-    }, 500);
+    );
   }
 
   /**
@@ -148,93 +172,47 @@ export class ToolsPanelComponent implements OnInit {
   }
 
   /**
-   * Simulate test results for demonstration
-   */
-  private simulateTestResults(): TestResult[] {
-    // This is just for demonstration - in a real implementation,
-    // we would actually execute the test script against the response
-    return [
-      {
-        name: 'Status code is 200',
-        passed: true,
-        duration: 5
-      },
-      {
-        name: 'Response time is less than 200ms',
-        passed: true,
-        duration: 3
-      },
-      {
-        name: 'Response has valid JSON format',
-        passed: true,
-        duration: 2
-      },
-      {
-        name: 'Response contains user data',
-        passed: false,
-        message: 'Expected property "user" to exist in response',
-        duration: 4
-      },
-      {
-        name: 'Authentication token is present',
-        passed: true,
-        duration: 1
-      }
-    ];
-  }
-
-  /**
    * Get a sample test script for demonstration
    */
   private getSampleTestScript(): string {
-    return `// Example test script
-// Similar to Postman tests
-pm.test("Status code is 200", function() {
-    pm.response.to.have.status(200);
+    return `Test("Simple Math Test", () => {
+  // A simple test that performs basic math
+  int result = 2 + 2;
+  Assert(result == 4, "2 + 2 should equal 4");
+  return true;
 });
 
-pm.test("Response time is less than 200ms", function() {
-    pm.expect(pm.response.responseTime).to.be.below(200);
-});
-
-pm.test("Response has valid JSON format", function() {
-    pm.response.to.be.json;
-});
-
-pm.test("Response contains user data", function() {
-    const responseJson = pm.response.json();
-    pm.expect(responseJson).to.have.property('user');
-});
-
-pm.test("Authentication token is present", function() {
-    const responseJson = pm.response.json();
-    pm.expect(responseJson.token).to.exist;
+Test("String Test", () => {
+  // A simple test that checks string operations
+  string test = "Hello" + " " + "World";
+  Assert(test == "Hello World", "String concatenation should work correctly");
+  return true;
 });`;
   }
-  
+
   /**
    * Process the prompt input and generate code using selected LLM
    */
   processPrompt(): void {
     if (!this.promptInput.trim()) return;
-    
+
     this.isProcessingPrompt = true;
     this.errorMessage = '';
     const prompt = this.promptInput.trim();
     this.typingPrompt = prompt;
-    
+
     // Add to history
     this.addToPromptHistory(prompt);
-    
+
     // Clear input field
     this.promptInput = '';
-    
+
     // Stop any ongoing typing animation
     this.stopTypingAnimation();
-    
+
     // Get the current LLM service
     const llmService = this.llmFactoryService.getCurrentLlm();
-    
+
     // Call the LLM service to generate test code
     llmService.generateTestCode(prompt)
       .pipe(
@@ -251,7 +229,7 @@ pm.test("Authentication token is present", function() {
         if (response) {
           // Extract and clean the generated code
           const generatedCode = this.cleanGeneratedCode(response.response);
-          
+
           // Prepare the text to be typed
           let newContent = '';
           if (this.testScript && this.testScript.trim()) {
@@ -261,13 +239,13 @@ pm.test("Authentication token is present", function() {
             // Set as new code
             newContent = '// Generated from prompt: "' + prompt + '" using ' + llmService.getModelName() + '\n' + generatedCode;
           }
-          
+
           // Start the typing animation
           this.startTypingAnimation(newContent);
         }
       });
   }
-  
+
   /**
    * Handle key events in the prompt input
    */
@@ -277,7 +255,7 @@ pm.test("Authentication token is present", function() {
       event.preventDefault();
       this.processPrompt();
     }
-    
+
     // Handle Up arrow for history navigation
     if (event.key === 'ArrowUp') {
       if (this.currentHistoryIndex < this.promptHistory.length - 1) {
@@ -286,7 +264,7 @@ pm.test("Authentication token is present", function() {
         event.preventDefault();
       }
     }
-    
+
     // Handle Down arrow for history navigation
     if (event.key === 'ArrowDown') {
       if (this.currentHistoryIndex > 0) {
@@ -300,26 +278,26 @@ pm.test("Authentication token is present", function() {
       }
     }
   }
-  
+
   /**
    * Add a prompt to the history
    */
   private addToPromptHistory(prompt: string): void {
     // Add to the beginning of the array
     this.promptHistory.push(prompt);
-    
+
     // Limit history size
     if (this.promptHistory.length > 20) {
       this.promptHistory.shift();
     }
-    
+
     // Reset current index
     this.currentHistoryIndex = -1;
-    
+
     // Save to localStorage
     this.savePromptHistory();
   }
-  
+
   /**
    * Save prompt history to localStorage
    */
@@ -330,7 +308,7 @@ pm.test("Authentication token is present", function() {
       console.error('Error saving prompt history:', error);
     }
   }
-  
+
   /**
    * Load prompt history from localStorage
    */
@@ -344,7 +322,7 @@ pm.test("Authentication token is present", function() {
       console.error('Error loading prompt history:', error);
     }
   }
-  
+
   /**
    * Start the typing animation effect
    * @param targetText The complete text that should be displayed when animation completes
@@ -354,11 +332,11 @@ pm.test("Authentication token is present", function() {
     this.currentTypingText = this.testScript;
     this.targetTypingText = targetText;
     this.typingPosition = this.currentTypingText.length;
-    
+
     // Start the interval to add characters one by one
     this.typingInterval = setInterval(() => this.typeNextCharacter(), this.typingSpeed);
   }
-  
+
   /**
    * Type the next character in the animation sequence
    */
@@ -368,12 +346,12 @@ pm.test("Authentication token is present", function() {
       this.stopTypingAnimation();
       return;
     }
-    
+
     // Add the next character
     this.typingPosition++;
     this.testScript = this.targetTypingText.substring(0, this.typingPosition);
   }
-  
+
   /**
    * Stop the typing animation
    */
@@ -381,14 +359,14 @@ pm.test("Authentication token is present", function() {
     if (this.typingInterval) {
       clearInterval(this.typingInterval);
       this.typingInterval = null;
-      
+
       // Ensure the full text is displayed
       if (this.targetTypingText) {
         this.testScript = this.targetTypingText;
       }
     }
   }
-  
+
   /**
    * Change the selected LLM type
    * @param llmType The LLM type to switch to
@@ -398,7 +376,7 @@ pm.test("Authentication token is present", function() {
     this.llmFactoryService.setCurrentLlmType(llmType);
     this.updateCurrentModelName();
   }
-  
+
   /**
    * Update the current model name display
    */
@@ -406,27 +384,27 @@ pm.test("Authentication token is present", function() {
     const currentLlm = this.llmFactoryService.getCurrentLlm();
     this.currentModelName = currentLlm.getModelName();
   }
-  
+
   private cleanGeneratedCode(response: string): string {
-    // Try to extract code blocks if they exist (markdown format ```js...```)  
+    // Try to extract code blocks if they exist (markdown format ```js...```)
     const codeBlockRegex = /```(?:javascript|js)?([\s\S]*?)```/g;
     const codeBlocks = [];
     let match;
-    
+
     while ((match = codeBlockRegex.exec(response)) !== null) {
       // Add the content inside the code block
       codeBlocks.push(match[1].trim());
     }
-    
+
     // If we found code blocks, join them
     if (codeBlocks.length > 0) {
       return codeBlocks.join('\n\n');
     }
-    
+
     // If no code blocks, try to clean up the response as best as possible
     // Remove any explanatory text before or after the code
     let cleanedCode = response;
-    
+
     // Remove common prefixes that LLMs might add
     const prefixesToRemove = [
       'Here is the code:',
@@ -436,13 +414,13 @@ pm.test("Authentication token is present", function() {
       'Here is the test code:',
       'Here\'s the test code:'
     ];
-    
+
     for (const prefix of prefixesToRemove) {
       if (cleanedCode.includes(prefix)) {
         cleanedCode = cleanedCode.substring(cleanedCode.indexOf(prefix) + prefix.length).trim();
       }
     }
-    
+
     // Look for pm.test patterns to identify the actual code
     if (cleanedCode.includes('pm.test(')) {
       // Find the first occurrence of pm.test
@@ -450,7 +428,7 @@ pm.test("Authentication token is present", function() {
       if (firstTestIndex > 0) {
         cleanedCode = cleanedCode.substring(firstTestIndex);
       }
-      
+
       // Try to find where the code ends (if there's explanatory text after)
       const possibleEndMarkers = ['Note:', 'This code', 'These tests', 'The above', 'This test'];
       for (const marker of possibleEndMarkers) {
@@ -461,7 +439,7 @@ pm.test("Authentication token is present", function() {
         }
       }
     }
-    
+
     return cleanedCode;
   }
 }

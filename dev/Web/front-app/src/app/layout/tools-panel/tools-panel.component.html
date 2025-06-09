@@ -40,9 +40,18 @@
         (click)="runTests()"
         [disabled]="isRunning"
       >
-        <mat-icon>{{ isRunning ? 'hourglass_top' : 'play_arrow' }}</mat-icon>
-        {{ isRunning ? 'Running...' : 'Run Tests' }}
+        <div class="button-content">
+          <mat-spinner *ngIf="isRunning" diameter="20" class="spinner"></mat-spinner>
+          <mat-icon *ngIf="!isRunning">play_arrow</mat-icon>
+          {{ isRunning ? 'Running Tests...' : 'Run Tests' }}
+        </div>
       </button>
+    </div>
+    
+    <!-- Error message for test script -->
+    <div class="error-message test-script-error" *ngIf="errorMessage">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage }}</span>
     </div>
     
     <!-- AI Prompt Input with Model Selection -->
@@ -118,6 +127,7 @@
             <p *ngIf="!result.passed && result.message" class="error-message">
               {{ result.message }}
             </p>
+            <pre *ngIf="!result.passed && result.message && result.message.includes('\n')" class="stack-trace">{{ result.message }}</pre>
           </div>
           <div class="result-time" *ngIf="result.duration !== undefined">
             {{ result.duration }}ms
