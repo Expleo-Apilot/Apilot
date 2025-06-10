@@ -24,13 +24,13 @@
         </div>
         <div class="search-area">
           <mat-icon class="filter-icon">search</mat-icon>
-          <input type="text" placeholder="Search collections..." 
-                 class="search-input" 
-                 [(ngModel)]="searchTerm" 
+          <input type="text" placeholder="Search collections..."
+                 class="search-input"
+                 [(ngModel)]="searchTerm"
                  (ngModelChange)="filterCollections($event)">
-          <button *ngIf="searchTerm" 
-                  mat-icon-button 
-                  class="clear-search-btn" 
+          <button *ngIf="searchTerm"
+                  mat-icon-button
+                  class="clear-search-btn"
                   (click)="filterCollections('')">
             <mat-icon>close</mat-icon>
           </button>
@@ -109,7 +109,7 @@
           <div class="section-header">
             <span class="section-title">My Collections</span>
           </div>
-          <div *ngIf="filteredCollections.length === 0 && searchTerm" class="empty-search-result">
+          <div *ngIf="filteredCollections?.length === 0 && searchTerm" class="empty-search-result">
             <mat-icon>search_off</mat-icon>
             <span>No collections found</span>
           </div>
@@ -479,7 +479,7 @@
             <span>Import from URL</span>
           </div>
         </div>
-        
+
         <div *ngIf="!importCollectionUrl" class="form-group">
           <label for="collectionFile">Collection File</label>
           <div class="file-input-container">
@@ -496,7 +496,7 @@
             <span>Please select a valid JSON collection file</span>
           </div>
         </div>
-        
+
         <div *ngIf="importCollectionUrl !== ''" class="form-group">
           <label for="collectionUrl">Collection URL</label>
           <input
