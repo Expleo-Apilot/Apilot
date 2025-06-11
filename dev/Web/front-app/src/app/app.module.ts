@@ -21,6 +21,7 @@ import { SignalRService } from './core/services/signalr.service';
 import { AuthInterceptor } from './auth/auth.interceptor';
 import { GeminiService } from './core/services/gemini.service';
 import { OllamaService } from './core/services/ollama.service';
+import { MistralService } from './core/services/mistral.service';
 import { LlmFactoryService } from './core/services/llm-factory.service';
 import { TestRunnerService } from './core/services/test-runner.service';
 
@@ -55,6 +56,7 @@ import { TestRunnerService } from './core/services/test-runner.service';
     SignalRService,
     GeminiService,
     OllamaService,
+    MistralService,
     LlmFactoryService,
     TestRunnerService
   ],

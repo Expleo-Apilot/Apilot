@@ -2,10 +2,12 @@ import { Injectable } from '@angular/core';
 import { LlmService } from './llm.service';
 import { OllamaService } from './ollama.service';
 import { GeminiService } from './gemini.service';
+import { MistralService } from './mistral.service';
 
 export enum LlmType {
   OLLAMA = 'ollama',
-  GEMINI = 'gemini'
+  GEMINI = 'gemini',
+  MISTRAL = 'mistral'
 }
 
 @Injectable({
@@ -16,7 +18,8 @@ export class LlmFactoryService {
 
   constructor(
     private ollamaService: OllamaService,
-    private geminiService: GeminiService
+    private geminiService: GeminiService,
+    private mistralService: MistralService
   ) { }
 
   /**
@@ -36,6 +39,8 @@ export class LlmFactoryService {
     switch (type) {
       case LlmType.GEMINI:
         return this.geminiService;
+      case LlmType.MISTRAL:
+        return this.mistralService;
       case LlmType.OLLAMA:
       default:
         return this.ollamaService;
