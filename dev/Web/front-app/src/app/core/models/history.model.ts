@@ -1,4 +1,4 @@
-﻿import {Environment} from './environment.model';
+import {Environment} from './environment.model';
 import {Authentication, KeyValuePair, Request} from './request.model';
 import {HttpMethod} from './http-method.enum';
 
@@ -26,7 +26,7 @@ export interface HistoryResponse {
 
 export interface HistoriesResponse {
   isSuccess: boolean;
-  data: Environment[];
+  data: History[];
   error: string | null;
 }
 
@@ -35,6 +35,9 @@ export interface PerformRequestDto {
   url: string;
   params:  { [key: string]: string };
   headers: { [key: string]: string };
+  rawParams?: KeyValuePair[];
+  rawHeaders?: KeyValuePair[];
   authentication?: Authentication;
   body?: any;
+  bodyType?: string;
 }

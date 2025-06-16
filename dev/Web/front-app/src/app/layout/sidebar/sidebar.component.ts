@@ -3,6 +3,7 @@ import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core
 import { CollectionImportService } from '../../core/services/collection-import.service';
 import {EnvironmentService} from '../../core/services/environment.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { HistoryService } from '../../core/services/history.service';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
@@ -26,12 +27,17 @@ import {CollaborationStatus} from '../../core/models/collaboration.model';
   selector: 'app-sidebar',
   standalone: false,
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.css'
+  styleUrls: ['./sidebar.component.css']
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   activeNavItem: NavItem = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
+
+  // History properties
+  histories: any[] = [];
+  filteredHistories: any[] = [];
+  historySearchTerm: string = '';
 
   // Item context menu properties
   showItemMenu = false;
@@ -84,10 +90,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   expandedCollections: Set<number> = new Set();
   expandedFolders: Set<number> = new Set();
   draggedItem: any = null;
-  
+
   // ViewChild reference to file input element
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
-  
+
   // Subscription to handle cleanup
   private subscriptions: Subscription = new Subscription();
 
@@ -101,6 +107,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
               private environmentService: EnvironmentService,
               private collectionImportService: CollectionImportService,
               private tabService: TabService,
+              private historyService: HistoryService,
               private snackBar: MatSnackBar) {}
 
   ngOnInit() {
@@ -110,7 +117,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       if (id) {
         this.workspaceId = id;
         console.log('Workspace ID from route:', this.workspaceId);
+        // Load collections and histories for this workspace
         this.loadCollections();
+        this.loadHistories();
       }
     });
     this.subscriptions.add(routeSub);
@@ -190,7 +199,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.showCollectionsMenu) {
       // Remove any existing listener first
       document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
-      
+
       // Add new listener with a slight delay to avoid immediate closure
       setTimeout(() => {
         document.addEventListener('click', this.closeCollectionsMenuOnClickOutside);
@@ -272,7 +281,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Handle click outside
     // Remove any existing listener first
     document.removeEventListener('click', this.closeItemMenuOnClickOutside);
-    
+
     // Add new listener with a slight delay to avoid immediate closure
     setTimeout(() => {
       document.addEventListener('click', this.closeItemMenuOnClickOutside);
@@ -327,10 +336,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   createNewRequest(parentType: 'collection' | 'folder', parentId: number) {
     this.closeItemMenu();
     console.log(`Create new request in ${parentType} with ID: ${parentId}`);
-    
+
     // Check if this is a shared collection or folder
     let isShared = false;
-    
+
     if (parentType === 'collection') {
       const collection = this.findCollectionById(parentId.toString());
       isShared = collection ? !!(collection as any).isShared : false;
@@ -338,7 +347,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       const collection = this.findCollectionByFolderId(parentId);
       isShared = collection ? !!(collection as any).isShared : false;
     }
-    
+
     // Create a new tab with default values and parent information
     const newTab = this.tabService.createNewTab({
       method: HttpMethod.GET,
@@ -348,12 +357,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
       parentType: parentType,     // Store the parent type
       isShared: isShared          // Indicate if this is in a shared collection
     });
-    
+
     console.log(`Created new tab with parent ${parentType} ID: ${parentId}, isShared: ${isShared}`);
-    
+
     // The request editor is already integrated in the workspace layout,
     // so we don't need to navigate to a different route
-    
+
     // This parent information can now be used later when saving the request
     // to associate it with the correct collection or folder
   }
@@ -361,58 +370,58 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Create a new folder in a collection
   createNewFolder(collectionId: number) {
     console.log('Creating new folder in collection:', collectionId);
-    
+
     // Check if this is a shared collection
     const collection = this.findCollectionById(collectionId.toString());
     const isShared = collection ? !!(collection as any).isShared : false;
-    
+
     // If it's a shared collection, check if the user has edit permission
     if (isShared) {
       // For now, we'll allow folder creation in shared collections
       // In a real implementation, you would check the user's permission level
       console.log('Creating folder in a shared collection');
     }
-    
+
     this.currentCollectionId = collectionId;
     this.newFolder.name = ''; // Reset the form
     this.showNewFolderModal = true;
     this.closeItemMenu();
   }
-  
+
   // Close the new folder modal
   closeNewFolderModal() {
     this.showNewFolderModal = false;
     this.currentCollectionId = null;
   }
-  
+
   // Close the edit folder modal
   closeEditFolderModal() {
     this.showEditFolderModal = false;
     this.currentFolder = null;
   }
-  
+
   // Close the delete folder modal
   closeDeleteFolderModal() {
     this.showDeleteFolderModal = false;
     this.currentFolder = null;
   }
-  
+
   // Submit the edit folder form
   submitEditFolder() {
     if (!this.editFolder.name.trim() || !this.currentFolder) {
       return; // Don't submit if name is empty or no folder is selected
     }
-    
+
     // Determine if this folder is in a shared collection
     const isShared = this.sharedCollections?.some(c => c.id === this.editFolder.collectionId) || false;
-    
+
     // Prepare the update request
     const updateRequest = {
       id: this.editFolder.id,
       name: this.editFolder.name.trim(),
       collectionId: this.editFolder.collectionId
     };
-    
+
     // Call the API to update the folder
     this.folderService.updateFolder(updateRequest).subscribe(
       response => {
@@ -421,7 +430,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           if (this.currentFolder) {
             this.currentFolder.name = this.editFolder.name.trim();
           }
-          
+
           // Close the modal and show success message
           this.closeEditFolderModal();
           this.snackBar.open('Folder updated successfully', 'Close', {
@@ -439,7 +448,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       error => {
         // Handle HTTP error
         let errorMessage = 'Failed to update folder';
-        
+
         // Check if this is a shared collection permission error
         if (isShared && error.status === 403) {
           errorMessage = 'You do not have permission to update folders in shared collections';
@@ -447,7 +456,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Extract specific error message from the API response if available
           errorMessage = error.error.error;
         }
-        
+
         this.snackBar.open(errorMessage, 'Close', {
           duration: 5000,
           panelClass: ['error-snackbar']
@@ -456,16 +465,16 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     );
   }
-  
+
   // Confirm and delete the folder
   confirmDeleteFolder() {
     if (!this.currentFolder) {
       return; // Don't proceed if no folder is selected
     }
-    
+
     // Determine if this folder is in a shared collection
     const isShared = this.sharedCollections?.some(c => c.id === this.currentFolder?.collectionId) || false;
-    
+
     // Call the API to delete the folder
     this.folderService.deleteFolder(this.currentFolder.id).subscribe(
       response => {
@@ -473,7 +482,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Remove the folder from the UI
           this.removeFolderFromUI(this.currentFolder!.id, this.currentFolder!.collectionId);
           this.closeDeleteFolderModal();
-          
+
           // Show success message
           this.snackBar.open('Folder deleted successfully', 'Close', {
             duration: 3000
@@ -490,7 +499,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       error => {
         // Handle HTTP error
         let errorMessage = 'Failed to delete folder';
-        
+
         // Check if this is a shared collection permission error
         if (isShared && error.status === 403) {
           errorMessage = 'You do not have permission to delete folders from shared collections';
@@ -498,7 +507,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Extract specific error message from the API response if available
           errorMessage = error.error.error;
         }
-        
+
         this.snackBar.open(errorMessage, 'Close', {
           duration: 5000,
           panelClass: ['error-snackbar']
@@ -507,7 +516,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     );
   }
-  
+
   // Helper method to remove a folder from the UI after deletion
   private removeFolderFromUI(folderId: number, collectionId: number) {
     // Check all collections
@@ -518,22 +527,22 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     }
   }
-  
+
   // Submit the new folder form
   submitNewFolder() {
     if (!this.newFolder.name.trim() || !this.currentCollectionId) {
       return; // Don't submit if name is empty or no collection is selected
     }
-    
+
     // Determine if this is a shared collection
     const isShared = this.sharedCollections?.some(c => c.id === this.currentCollectionId) || false;
-    
+
     // Prepare the folder creation request
     const folderRequest: CreateFolderRequest = {
       name: this.newFolder.name.trim(),
       collectionId: this.currentCollectionId
     };
-    
+
     // Call the API to create the folder
     this.folderService.createFolder(folderRequest).subscribe(
       response => {
@@ -541,19 +550,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Find the collection and add the new folder to it
           const collections = [...this.collections, ...(this.sharedCollections || [])];
           const collection = collections.find(c => c.id === this.currentCollectionId);
-          
+
           if (collection) {
             if (!collection.folders) {
               collection.folders = [];
             }
             collection.folders.push(response.data);
-            
+
             // Ensure the collection is expanded to show the new folder
             if (this.currentCollectionId) {
               this.expandedCollections.add(this.currentCollectionId);
             }
           }
-          
+
           // Close the modal and show success message
           this.closeNewFolderModal();
           this.snackBar.open('Folder created successfully', 'Close', {
@@ -571,7 +580,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       error => {
         // Handle HTTP error
         let errorMessage = 'Failed to create folder';
-        
+
         // Check if this is a shared collection permission error
         if (isShared && error.status === 403) {
           errorMessage = 'You do not have permission to create folders in shared collections';
@@ -579,7 +588,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Extract specific error message from the API response if available
           errorMessage = error.error.error;
         }
-        
+
         this.snackBar.open(errorMessage, 'Close', {
           duration: 5000,
           panelClass: ['error-snackbar']
@@ -592,7 +601,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Edit an item (collection, folder, or request)
   editItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
     this.closeItemMenu();
-    
+
     if (itemType === 'collection') {
       // Find the collection to edit
       const collection = this.findCollectionById(itemId.toString());
@@ -624,7 +633,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           }
         }
       }
-      
+
       // If folder not found in owned collections, check shared collections
       if (!folderFound && this.sharedCollections) {
         for (const collection of this.sharedCollections) {
@@ -652,7 +661,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Delete an item (collection, folder, or request)
   deleteItem(itemType: 'collection' | 'folder' | 'request', itemId: number) {
     this.closeItemMenu();
-    
+
     if (itemType === 'collection') {
       // Find the collection to delete
       const collection = this.findCollectionById(itemId.toString());
@@ -674,7 +683,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           }
         }
       }
-      
+
       // If folder not found in owned collections, check shared collections
       if (!folderFound && this.sharedCollections) {
         for (const collection of this.sharedCollections) {
@@ -721,14 +730,176 @@ export class SidebarComponent implements OnInit, OnDestroy {
             console.error('Error fetching environments:', error);
           }
         });
+    } else if (item === 'history') {
+      // Load histories when the history tab is selected
+      this.loadHistories();
     }
   }
 
+  /**
+   * Load histories for the current workspace
+   * Each workspace has its own history items
+   */
+  loadHistories() {
+    // Use workspace ID from route to get workspace-specific history
+    if (!this.workspaceId) {
+      // If no workspace ID is available yet, get it from the route
+      const routeSub = this.route.params.subscribe(params => {
+        const id = +params['id'];
+        if (id) {
+          this.workspaceId = id;
+          this.fetchHistoriesByWorkspaceId(this.workspaceId);
+        } else {
+          console.error('No workspace ID available');
+          this.snackBar.open('No workspace ID available', 'Close', { duration: 3000 });
+        }
+      });
+      this.subscriptions.add(routeSub);
+    } else {
+      // If workspace ID is already available, use it directly
+      this.fetchHistoriesByWorkspaceId(this.workspaceId);
+    }
+  }
+
+  /**
+   * Fetch histories by workspace ID
+   * @param workspaceId The ID of the workspace to get history for
+   */
+  private fetchHistoriesByWorkspaceId(workspaceId: number) {
+    console.log(`Fetching histories for workspace ID: ${workspaceId}`);
+    this.historyService.GetHistoryByWorkspaceId(workspaceId).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.histories = response.data;
+          this.filteredHistories = [...this.histories];
+          console.log(`Loaded ${this.histories.length} histories for workspace ID ${workspaceId}:`, this.histories);
+          
+          // Debug the structure of the first history item
+          if (this.histories.length > 0) {
+            console.log('First history item structure:', JSON.stringify(this.histories[0], null, 2));
+            console.log('URL from first history:', this.histories[0].Requests?.url);
+            console.log('Method from first history:', this.histories[0].Requests?.method);
+          }
+        } else {
+          console.error(`Error loading histories for workspace ID ${workspaceId}:`, response.error);
+          this.snackBar.open('Failed to load histories', 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error(`Error loading histories for workspace ID ${workspaceId}:`, error);
+        this.snackBar.open('Failed to load histories', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  // Filter histories based on search term
+  filterHistories(searchTerm: string) {
+    this.historySearchTerm = searchTerm.toLowerCase();
+
+    if (!this.historySearchTerm) {
+      this.filteredHistories = [...this.histories];
+      return;
+    }
+
+    this.filteredHistories = this.histories.filter(history => {
+      // Filter by URL or method
+      return history.Requests?.url?.toLowerCase().includes(this.historySearchTerm) ||
+             history.Requests?.method?.toLowerCase().includes(this.historySearchTerm);
+    });
+  }
+
+  /**
+   * Open a history item in a new tab
+   * @param history The history item to open
+   */
+  openHistoryItem(history: any) {
+    // Get domain for tab name display
+    const domain = this.getDomainFromUrl(history.Requests.url);
+    
+    // Create a new tab with the history request data
+    this.tabService.createNewTab({
+      name: `${history.Requests.method} ${domain}`,
+      url: history.Requests.url,
+      method: history.Requests.method,
+      body: history.Requests.body || '',
+      headers: history.Requests.headers ? Object.entries(history.Requests.headers).map(([key, value]) => ({
+        key,
+        value: value as string,
+        enabled: true
+      })) : [],
+      params: history.Requests.params ? Object.entries(history.Requests.params).map(([key, value]) => ({
+        key,
+        value: value as string,
+        enabled: true
+      })) : []
+    });
+  }
+
+  /**
+   * Extract domain from URL for professional history display
+   * @param url The full URL
+   * @returns Domain part of the URL
+   */
+  getDomainFromUrl(url: string): string {
+    if (!url) return 'No URL';
+    
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch (e) {
+      // For invalid URLs, try to extract domain-like part
+      const domainMatch = url.match(/^(?:https?:\/\/)?([^\/]+)/i);
+      return domainMatch ? domainMatch[1] : url.substring(0, 30);
+    }
+  }
+
+  /**
+   * Extract path from URL for professional history display
+   * @param url The full URL
+   * @returns Path part of the URL
+   */
+  getPathFromUrl(url: string): string {
+    if (!url) return '/path';
+    
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname + urlObj.search;
+    } catch (e) {
+      // For invalid URLs, try to extract path-like part
+      const pathMatch = url.match(/^(?:https?:\/\/)?[^\/]+(\/.+)/i);
+      return pathMatch ? pathMatch[1] : '/path';
+    }
+  }
+
+  // Delete a history item
+  deleteHistoryItem(id: number, event: Event) {
+    event.stopPropagation(); // Prevent opening the history item
+
+    this.historyService.DeleteHistory(id).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          // Remove from local arrays
+          this.histories = this.histories.filter(h => h.id !== id);
+          this.filteredHistories = this.filteredHistories.filter(h => h.id !== id);
+          this.snackBar.open('History item deleted', 'Close', { duration: 3000 });
+        } else {
+          console.error('Error deleting history:', response.error);
+          this.snackBar.open('Failed to delete history item', 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting history:', error);
+        this.snackBar.open('Failed to delete history item', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  // Toggle expand state of an item (collection or folder)
   toggleExpand(id: number, itemType: 'collection' | 'folder' = 'collection') {
     if (itemType === 'collection') {
       if (this.expandedCollections.has(id)) {
         this.expandedCollections.delete(id);
-        
+
         // When a collection is collapsed, also collapse all its folders
         if (this.collections) {
           const collection = this.collections.find(c => c.id === id);
@@ -745,7 +916,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       // For folders, toggle only the folder's expanded state
       // Find the parent collection to ensure it stays expanded
       let parentCollectionId: number | null = null;
-      
+
       if (this.collections) {
         for (const collection of this.collections) {
           if (collection.folders && collection.folders.some(f => f.id === id)) {
@@ -754,12 +925,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
           }
         }
       }
-      
+
       // Ensure the parent collection stays expanded
       if (parentCollectionId !== null) {
         this.expandedCollections.add(parentCollectionId);
       }
-      
+
       // Toggle the folder's expanded state
       if (this.expandedFolders.has(id)) {
         this.expandedFolders.delete(id);
@@ -767,7 +938,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.expandedFolders.add(id);
       }
     }
-    
+
     // Update the combined expandedItems set for backward compatibility
     this.expandedItems = new Set([...this.expandedCollections, ...this.expandedFolders]);
   }
@@ -848,7 +1019,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   findCollectionByFolderId(folderId: number): Collection | undefined {
     // Find the collection that contains the folder with the given ID
-    
+
     // First check owned collections
     const ownedCollection = this.collections.find(collection =>
       collection.folders && collection.folders.some(folder => folder.id === folderId)
@@ -856,7 +1027,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (ownedCollection) {
       return ownedCollection;
     }
-    
+
     // If not found, check shared collections
     if (this.sharedCollections) {
       const sharedCollection = this.sharedCollections.find(collection =>
@@ -866,7 +1037,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return sharedCollection;
       }
     }
-    
+
     return undefined;
   }
 
@@ -883,7 +1054,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           return;
         }
       }
-      
+
       // Check requests in folders
       if (collection.folders) {
         for (const folder of collection.folders) {
@@ -898,7 +1069,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
+
     console.error(`Request with ID ${requestId} not found`);
   }
 
@@ -911,17 +1082,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Confirm and execute the request deletion
   confirmDeleteRequest() {
     if (!this.currentRequest || !this.currentRequest.id) return;
-    
+
     const requestId = this.currentRequest.id;
     const isShared = this.currentRequest.isShared;
-    
+
     this.requestService.deleteRequest(requestId).subscribe(
       response => {
         if (response.isSuccess) {
           // Remove the request from the UI
           this.removeRequestFromUI(requestId);
           this.closeDeleteRequestModal();
-          
+
           // Show success message
           this.snackBar.open('Request deleted successfully', 'Close', {
             duration: 3000
@@ -938,7 +1109,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       error => {
         // Handle HTTP error
         let errorMessage = 'Failed to delete request';
-        
+
         // Check if this is a shared collection permission error
         if (isShared && error.status === 403) {
           errorMessage = 'You do not have permission to delete requests from shared collections';
@@ -946,7 +1117,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Extract specific error message from the API response if available
           errorMessage = error.error.error;
         }
-        
+
         this.snackBar.open(errorMessage, 'Close', {
           duration: 5000,
           panelClass: ['error-snackbar']
@@ -955,7 +1126,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     );
   }
-  
+
   // Remove the deleted request from the UI
   private removeRequestFromUI(requestId: number) {
     // Remove from collections
@@ -964,7 +1135,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       if (collection.requests) {
         collection.requests = collection.requests.filter(r => r.id !== requestId);
       }
-      
+
       // Remove from folder requests
       if (collection.folders) {
         for (const folder of collection.folders) {
@@ -975,20 +1146,20 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     }
   }
-  
+
   // This section intentionally left empty as the duplicate functions were removed
   // The enhanced versions of confirmDeleteRequest and removeRequestFromUI with proper error handling
   // for shared collections are kept above
-  
+
   findCollectionById(collectionId: string): Collection | undefined {
     // Convert collection.id (number) to string for comparison
-    
+
     // First check owned collections
     const ownedCollection = this.collections.find(collection => collection.id.toString() === collectionId);
     if (ownedCollection) {
       return ownedCollection;
     }
-    
+
     // If not found, check shared collections
     if (this.sharedCollections) {
       const sharedCollection = this.sharedCollections.find(collection => collection.id.toString() === collectionId);
@@ -996,7 +1167,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return sharedCollection;
       }
     }
-    
+
     return undefined;
   }
 
@@ -1015,13 +1186,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
   closeNewCollectionModal() {
     this.showNewCollectionModal = false;
   }
-  
+
   // Close the edit collection modal
   closeEditCollectionModal() {
     this.showEditCollectionModal = false;
     this.currentCollection = null;
   }
-  
+
   // Close the delete confirmation modal
   closeDeleteConfirmModal() {
     this.showDeleteConfirmModal = false;
@@ -1060,16 +1231,16 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Close the modal
     this.closeNewCollectionModal();
   }
-  
+
   // Submit the edit collection form
   submitEditCollection() {
     if (!this.editCollection.name.trim() || !this.currentCollection) {
       return; // Don't submit if name is empty or no collection is selected
     }
-    
+
     // Determine if this is a shared collection
     const isShared = this.currentCollection.isShared || false;
-    
+
     // Prepare the update request
     const updateRequest = {
       id: this.editCollection.id,
@@ -1077,7 +1248,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       description: this.editCollection.description.trim(),
       workSpaceId: this.workspaceId
     };
-    
+
     // Call the API to update the collection
     this.collectionService.updateCollection(updateRequest).subscribe(
       response => {
@@ -1085,7 +1256,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Reload collections to get the updated list
           this.loadCollections();
           this.closeEditCollectionModal();
-          
+
           // Show success message
           this.snackBar.open('Collection updated successfully', 'Close', {
             duration: 3000
@@ -1102,7 +1273,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       error => {
         // Handle HTTP error
         let errorMessage = 'Failed to update collection';
-        
+
         // Check if this is a shared collection permission error
         if (isShared && error.status === 403) {
           errorMessage = 'You do not have permission to update this shared collection';
@@ -1110,7 +1281,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Extract specific error message from the API response if available
           errorMessage = error.error.error;
         }
-        
+
         this.snackBar.open(errorMessage, 'Close', {
           duration: 5000,
           panelClass: ['error-snackbar']
@@ -1119,16 +1290,16 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     );
   }
-  
+
   // Confirm and delete the collection
   confirmDeleteCollection() {
     if (!this.currentCollection) {
       return; // Don't proceed if no collection is selected
     }
-    
+
     // Determine if this is a shared collection
     const isShared = this.currentCollection.isShared || false;
-    
+
     // Call the API to delete the collection
     this.collectionService.deleteCollection(this.currentCollection.id).subscribe(
       response => {
@@ -1136,7 +1307,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Reload collections to get the updated list
           this.loadCollections();
           this.closeDeleteConfirmModal();
-          
+
           // Show success message
           this.snackBar.open('Collection deleted successfully', 'Close', {
             duration: 3000
@@ -1153,7 +1324,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       error => {
         // Handle HTTP error
         let errorMessage = 'Failed to delete collection';
-        
+
         // Check if this is a shared collection permission error
         if (isShared && error.status === 403) {
           errorMessage = 'You do not have permission to delete this shared collection';
@@ -1161,7 +1332,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Extract specific error message from the API response if available
           errorMessage = error.error.error;
         }
-        
+
         this.snackBar.open(errorMessage, 'Close', {
           duration: 5000,
           panelClass: ['error-snackbar']
@@ -1174,7 +1345,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   loadCollections() {
     console.log('Loading collections for workspace:', this.workspaceId);
-    
+
     // Load both owned collections and shared collections
     forkJoin({
       owned: this.collectionService.getCollectionsByWorkspaceId(this.workspaceId),
@@ -1201,7 +1372,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           this.collections = [];
           this.filteredCollections = [];
         }
-        
+
         // Process shared collections
         if (results.shared.isSuccess && results.shared.data) {
           console.log('Shared collections loaded:', results.shared.data);
@@ -1216,7 +1387,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
             if (!collection.requests) {
               collection.requests = [];
             }
-            
+
             // Mark as shared for UI display
             collection.isShared = true;
           });
@@ -1240,7 +1411,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   // Handle collection import submission
   submitImportCollection() {
     // Check if URL is provided
@@ -1248,7 +1419,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.importCollectionFromUrl();
       return;
     }
-    
+
     // Otherwise proceed with file import
     const fileInput = this.fileInputRef?.nativeElement;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
@@ -1256,20 +1427,20 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.importError = 'Please select a file to import';
       return;
     }
-    
+
     const file = fileInput.files[0];
-    
+
     // Check if the file is a JSON file
     if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
       console.error('Invalid file type. Please select a JSON file.');
       this.importError = 'Invalid file type. Please select a JSON file';
       return;
     }
-    
+
     // Show loading state
     this.isImporting = true;
     this.importError = '';
-    
+
     // Import the collection using the service
     this.collectionImportService.importFromFile(file, this.workspaceId)
       .subscribe({
@@ -1289,7 +1460,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
       });
   }
-  
+
   // Import collection from URL
   importCollectionFromUrl() {
     if (!this.importCollectionUrl || this.importCollectionUrl.trim() === '') {
@@ -1297,11 +1468,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.importError = 'Please enter a valid URL';
       return;
     }
-    
+
     // Show loading state
     this.isImporting = true;
     this.importError = '';
-    
+
     // Import the collection using the service
     this.collectionImportService.importFromUrl(this.importCollectionUrl, this.workspaceId)
       .subscribe({
@@ -1333,24 +1504,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   filterCollections(searchTerm: string) {
     this.searchTerm = searchTerm.toLowerCase().trim();
-    
+
     if (!this.searchTerm) {
       // If search term is empty, show all collections
       this.filteredCollections = [...this.collections];
       this.filteredSharedCollections = [...this.sharedCollections];
       return;
     }
-    
+
     // Auto-expand collections with matching items for better UX
     const matchingCollectionIds = new Set<number>();
     const matchingFolderIds = new Set<number>();
-    
+
     // Filter owned collections with matching name, description, folders, or requests
     this.filteredCollections = this.collections.filter(collection => {
       // Check if collection matches
       const collectionNameMatch = collection.name.toLowerCase().includes(this.searchTerm);
       const collectionDescMatch = collection.description?.toLowerCase().includes(this.searchTerm);
-      
+
       // Check if any folder in the collection matches
       const hasFolderMatch = collection.folders?.some(folder => {
         const folderMatch = folder.name.toLowerCase().includes(this.searchTerm);
@@ -1361,10 +1532,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
         return folderMatch;
       });
-      
+
       // Check if any request in the collection matches
       const hasRequestMatch = collection.requests?.some(request => {
-        const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+        const requestMatch = request.name.toLowerCase().includes(this.searchTerm) ||
                             request.url?.toLowerCase().includes(this.searchTerm);
         if (requestMatch) {
           // Auto-expand parent collection when there's a match
@@ -1372,11 +1543,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
         return requestMatch;
       });
-      
+
       // Check if any request in any folder matches
-      const hasFolderRequestMatch = collection.folders?.some(folder => 
+      const hasFolderRequestMatch = collection.folders?.some(folder =>
         folder.requests?.some(request => {
-          const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+          const requestMatch = request.name.toLowerCase().includes(this.searchTerm) ||
                               request.url?.toLowerCase().includes(this.searchTerm);
           if (requestMatch) {
             // Auto-expand parent collection and folder when there's a match
@@ -1386,7 +1557,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           return requestMatch;
         })
       );
-      
+
       // If this collection or any of its contents match, return true
       const matches = collectionNameMatch || collectionDescMatch || hasFolderMatch || hasRequestMatch || hasFolderRequestMatch;
       if (matches) {
@@ -1394,13 +1565,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
       return matches;
     });
-    
+
     // Filter shared collections with matching name, description, folders, or requests
     this.filteredSharedCollections = this.sharedCollections.filter(collection => {
       // Check if collection matches
       const collectionNameMatch = collection.name.toLowerCase().includes(this.searchTerm);
       const collectionDescMatch = collection.description?.toLowerCase().includes(this.searchTerm);
-      
+
       // Check if any folder in the collection matches
       const hasFolderMatch = collection.folders?.some(folder => {
         const folderMatch = folder.name.toLowerCase().includes(this.searchTerm);
@@ -1411,10 +1582,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
         return folderMatch;
       });
-      
+
       // Check if any request in the collection matches
       const hasRequestMatch = collection.requests?.some(request => {
-        const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+        const requestMatch = request.name.toLowerCase().includes(this.searchTerm) ||
                             request.url?.toLowerCase().includes(this.searchTerm);
         if (requestMatch) {
           // Auto-expand parent collection when there's a match
@@ -1422,11 +1593,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
         return requestMatch;
       });
-      
+
       // Check if any request in any folder matches
-      const hasFolderRequestMatch = collection.folders?.some(folder => 
+      const hasFolderRequestMatch = collection.folders?.some(folder =>
         folder.requests?.some(request => {
-          const requestMatch = request.name.toLowerCase().includes(this.searchTerm) || 
+          const requestMatch = request.name.toLowerCase().includes(this.searchTerm) ||
                               request.url?.toLowerCase().includes(this.searchTerm);
           if (requestMatch) {
             // Auto-expand parent collection and folder when there's a match
@@ -1436,7 +1607,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           return requestMatch;
         })
       );
-      
+
       // If this collection or any of its contents match, return true
       const matches = collectionNameMatch || collectionDescMatch || hasFolderMatch || hasRequestMatch || hasFolderRequestMatch;
       if (matches) {
@@ -1444,7 +1615,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
       return matches;
     });
-    
+
     // Auto-expand matching collections and folders for better UX
     matchingCollectionIds.forEach(id => this.expandedCollections.add(id));
     matchingFolderIds.forEach(id => this.expandedFolders.add(id));

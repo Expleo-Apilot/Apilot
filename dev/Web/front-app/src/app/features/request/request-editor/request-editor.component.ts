@@ -1,5 +1,6 @@
 // request-editor.component.ts
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { take } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpMethod } from '../../../core/models/http-method.enum';
 import { AuthType } from '../../../core/models/auth-type.enum';
@@ -12,7 +13,7 @@ import { Subscription } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { SaveRequestModalComponent, SaveLocation } from '../save-request-modal/save-request-modal.component';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 
 @Component({
   selector: 'app-request-editor',
@@ -24,7 +25,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
   requestForm!: FormGroup;
   httpMethods = Object.values(HttpMethod);
   authTypes = Object.values(AuthType);
-  workspaceIdRoute! : number;
+  workspaceIdRoute!: number;
 
   headers: KeyValuePair[] = [{ key: '', value: '', enabled: true }];
   params: KeyValuePair[] = [{ key: '', value: '', enabled: true }];
@@ -761,11 +762,21 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     if (this.requestForm.invalid) {
       return;
     }
-    this.route.paramMap.subscribe(params => {
-      const workspaceId = params.get('id');
-      this.workspaceIdRoute = Number(workspaceId);
-    });
 
+    // Get the workspace ID from the route parameters first
+    this.route.paramMap.pipe(
+      take(1) // Take only the first emission and complete
+    ).subscribe((params: ParamMap) => {
+      const workspaceId = params.get('id');
+      this.workspaceIdRoute = Number(workspaceId || '0');
+      
+      // Continue with the request after we have the workspace ID
+      this.executeRequest(this.workspaceIdRoute);
+    });
+  }
+
+  // Execute the actual HTTP request with the workspace ID
+  private executeRequest(workspaceId: number): void {
     this.isLoading = true;
     this.responseData = null;
 
@@ -840,8 +851,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       validHeaders,
       this.params.filter(p => p.key.trim() !== '' && p.enabled),
       body,
-      authData ,
-      this.workspaceIdRoute// Include authentication data in the request
+      authData,
+      workspaceId, // Pass the workspace ID from the route
+      this.bodyType // Pass the body type
     ).subscribe({
       next: (response) => {
         this.responseData = response;

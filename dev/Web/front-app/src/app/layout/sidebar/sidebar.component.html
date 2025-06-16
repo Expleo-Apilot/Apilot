@@ -15,6 +15,66 @@
   </div>
 
   <div class="sidebar-content" [ngSwitch]="activeNavItem">
+    <!-- History Section -->
+    <div *ngSwitchCase="'history'" class="content-area history-area">
+      <div class="content-header">
+        <div class="search-area">
+          <mat-icon class="filter-icon">search</mat-icon>
+          <input type="text" placeholder="Search histories..."
+                 class="search-input"
+                 [(ngModel)]="historySearchTerm"
+                 (ngModelChange)="filterHistories($event)">
+          <button *ngIf="historySearchTerm"
+                  mat-icon-button
+                  class="clear-search-btn"
+                  (click)="filterHistories('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="history-container">
+        <!-- Empty state when no history items are found -->
+        <div *ngIf="filteredHistories?.length === 0" class="empty-search-result">
+          <mat-icon>history</mat-icon>
+          <span>No history items found</span>
+        </div>
+
+        <!-- History items list -->
+        <div *ngFor="let history of filteredHistories" class="history-item" (click)="openHistoryItem(history)">
+          <div class="history-content">
+            <!-- Method badge -->
+            <div class="method-badge">
+              <span class="request-method" [ngClass]="history.Requests?.method?.toLowerCase()">{{ history.Requests?.method }}</span>
+            </div>
+
+            <!-- Request details -->
+            <div class="history-details">
+              <!-- URL with tooltip showing full URL -->
+              <div class="history-url-container" [title]="history.Requests?.url || 'No URL'">
+                <span class="history-domain">{{ getDomainFromUrl(history.Requests?.url) }}</span>
+                <span class="history-path">{{ getPathFromUrl(history.Requests?.url) }}</span>
+              </div>
+
+              <!-- Timestamp with relative time format -->
+              <div class="history-meta">
+                <span class="history-timestamp" [title]="history.timeStamp | date:'medium'">
+                  {{ history.timeStamp | date:'MMM d, h:mm a' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="history-actions">
+              <button mat-icon-button class="action-button" (click)="deleteHistoryItem(history.id, $event)" title="Delete history item">
+                <mat-icon class="small-icon">delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div *ngSwitchCase="'collections'" class="content-area collections-area">
       <div class="content-header">
         <div class="action-buttons">

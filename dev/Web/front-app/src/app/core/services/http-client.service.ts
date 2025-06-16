@@ -38,7 +38,8 @@ export class HttpClientService {
     params: { key: string, value: string, description?: string, enabled: boolean }[],
     body?: any,
     auth?: any,
-    workspaceId : number  = 0
+    workspaceId : number  = 0,
+    bodyType: string = 'json'
   ): Observable<any> {
     // Convert the headers array to a dictionary format expected by the backend
     const headersDict = this.convertArrayToDictionary(
@@ -68,8 +69,11 @@ export class HttpClientService {
         url: url,
         params: paramsDict,
         headers: headersDict,
-        authentication : auth,
-        body : body
+        rawParams: params,  // Store the original params array with all metadata
+        rawHeaders: headers, // Store the original headers array with all metadata
+        authentication: auth,
+        body: body,
+        bodyType: bodyType // Use the provided bodyType
       }
     }
     this.historyService.SaveHistory(createHistory).subscribe({
