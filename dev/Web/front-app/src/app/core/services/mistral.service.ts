@@ -1,36 +1,34 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { LlmService, LlmResponse } from './llm.service';
 
-export interface GeminiRequest {
+export interface MistralRequest {
   model: string;
   prompt: string;
 }
 
-export interface GeminiResponse {
+export interface MistralResponse {
   response: string;
 }
-
-// No need for custom interfaces as we're using the SDK
 
 @Injectable({
   providedIn: 'root'
 })
-export class GeminiService implements LlmService {
-  private apiUrl = '/api/gemini/generate';
-  private model = 'gemini-2.0-flash-lite';
+export class MistralService implements LlmService {
+  private apiUrl = '/api/mistral/chat/completions';
+  private model = 'mistral-large-latest';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   /**
-   * Generate text using the Gemini API
+   * Generate text using the Mistral API
    * @param prompt The prompt to send to the model
-   * @returns Observable with the response from the Gemini API
+   * @returns Observable with the response from the Mistral API
    */
   generateText(prompt: string): Observable<LlmResponse> {
-    const request: GeminiRequest = {
+    const request: MistralRequest = {
       model: this.model,
       prompt: prompt
     };
@@ -40,12 +38,8 @@ export class GeminiService implements LlmService {
       'Content-Type': 'application/json'
     });
 
-    return this.http.post<GeminiResponse>(this.apiUrl, request, { headers }).pipe(
-      map(response => ({ response: response.response })),
-      catchError(error => {
-        console.error('Gemini API error:', error);
-        return throwError(() => new Error(`Gemini API error: ${error.message || 'Unknown error'}`));
-      })
+    return this.http.post<MistralResponse>(this.apiUrl, request, { headers }).pipe(
+      map(response => ({ response: response.response }))
     );
   }
 
@@ -55,7 +49,7 @@ export class GeminiService implements LlmService {
    * @returns Observable with the generated test code
    */
   generateTestCode(prompt: string): Observable<LlmResponse> {
-    // Enhanced prompt for Gemini to generate code compatible with our dynamic test runner
+    // Enhanced prompt for Mistral to generate code compatible with our dynamic test runner
     const enhancedPrompt = `You are generating C# test code for an ASP.NET Core test runner that dynamically compiles and executes tests. Follow these rules:
 
 1. Use TestAsync("Test Name", async () => { ... }) for all API tests. Always use async/await for HTTP calls.
@@ -92,6 +86,7 @@ TestAsync("Verify Simple Books API Status", async () => {
 
 Based on this request: "${prompt}"
 Generate ONLY the C# test code.`;
+
     return this.generateText(enhancedPrompt);
   }
 
@@ -100,6 +95,6 @@ Generate ONLY the C# test code.`;
    * @returns The model name
    */
   getModelName(): string {
-    return `Gemini (${this.model})`;
+    return `Mistral (${this.model})`;
   }
 }

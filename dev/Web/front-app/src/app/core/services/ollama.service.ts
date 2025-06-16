@@ -48,7 +48,12 @@ export class OllamaService implements LlmService {
     const request: OllamaRequest = {
       model: this.model,
       prompt: prompt,
-      stream: false
+      stream: false,
+      options: {
+        temperature: 0.2,  // Lower temperature for more deterministic/focused output
+        top_p: 0.9,        // Slightly constrained sampling for better code quality
+        top_k: 40          // Limit token selection to improve coherence
+      }
     };
 
     return this.http.post<OllamaResponse>(this.apiUrl, request).pipe(
@@ -62,19 +67,67 @@ export class OllamaService implements LlmService {
    * @returns Observable with the generated test code
    */
   generateTestCode(prompt: string): Observable<LlmResponse> {
-    // Enhance the prompt to specifically generate C# test code
-    const enhancedPrompt = `Generate C# test code for API testing. 
-    The tests should use the Test() method and follow this format:
-    
-    Test("Test Name", () => {
-        // Test code here
-        var response = HttpClient.GetAsync("api/endpoint").Result;
-        Assert.AreEqual(200, (int)response.StatusCode);
-        // More assertions
-    });
-    
-    Based on this request: "${prompt}"
-    Only return the code, no explanations.`;
+    // Enhance the prompt to specifically generate C# test code compatible with our test framework
+    const enhancedPrompt = `Generate C# API test code using our custom test framework. Follow these guidelines exactly:
+
+1. Use TestAsync for API calls (not Test) and always include the async/await pattern:
+
+TestAsync("Descriptive Test Name", async () => {
+    // Test code here with await for all async calls
+    // Return true at the end if test passes
+    return true;
+});
+
+2. Available helper methods:
+   - ConfigureClient(baseUrl, headers, timeoutSeconds) - Creates an HttpClient
+   - AssertStatusCode(response, HttpStatusCode.OK) - Checks exact status code
+   - AssertStatusCodeRange(response, minCode, maxCode) - Checks status code in range
+   - JsonPropertyExists(jsonElement, "propertyName") - Checks if property exists
+   - JsonPropertyEquals(jsonElement, "propertyName", value) - Checks property value
+   - ParseJsonResponse(response) - Returns JsonElement for JSON processing
+
+3. For JSON handling, use System.Text.Json.JsonElement methods:
+   - Access properties: jsonElement.TryGetProperty("name", out JsonElement prop)
+   - Get values: prop.GetString(), prop.GetInt32(), etc.
+   - Check array: jsonElement.ValueKind == JsonValueKind.Array
+   - Iterate array: foreach (JsonElement item in jsonElement.EnumerateArray())
+
+4. Always include proper error handling with try/catch blocks
+
+5. API-specific information:
+   - Simple Books API (https://simple-books-api.glitch.me) status endpoint returns: {"status":"OK"}
+   - Books endpoint (/books) returns an array of book objects with properties: id, name, type, available
+   - Authentication requires a POST to /api-clients with clientName and clientEmail
+
+Example test for reference:
+
+TestAsync("Verify User API", async () => {
+    try {
+        // Configure client with base URL and headers
+        var client = ConfigureClient("https://api.example.com", new Dictionary<string, string> {
+            { "Authorization", "Bearer token" }
+        });
+        
+        // Make API request
+        var response = await client.GetAsync("/users/1");
+        
+        // Verify status code
+        AssertStatusCode(response, HttpStatusCode.OK);
+        
+        // Parse and verify JSON response
+        var jsonResult = ParseJsonResponse(response);
+        Assert(JsonPropertyExists(jsonResult, "name"), "User should have name property");
+        Assert(JsonPropertyEquals(jsonResult, "active", true), "User should be active");
+        
+        return true;
+    } catch (Exception ex) {
+        Assert(false, $"Test failed with error: {ex.Message}");
+        return false;
+    }
+});
+
+Based on this request: "${prompt}"
+Generate ONLY the test code, no explanations or markdown formatting.`;
 
     return this.generateText(enhancedPrompt);
   }
