@@ -4,6 +4,7 @@ import { CollectionImportService } from '../../core/services/collection-import.s
 import {EnvironmentService} from '../../core/services/environment.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HistoryService } from '../../core/services/history.service';
+import { Environment, CreateEnvironmentRequest, UpdateEnvironmentRequest } from '../../core/models/environment.model';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
@@ -19,7 +20,7 @@ import {HttpMethod} from '../../core/models/http-method.enum';
 import {Request} from '../../core/models/request.model';
 import {Subscription, forkJoin} from 'rxjs';
 import {CollaborationService} from '../../core/services/collaboration.service';
-import {CollaborationStatus} from '../../core/models/collaboration.model';
+
 
 
 
@@ -30,6 +31,9 @@ import {CollaborationStatus} from '../../core/models/collaboration.model';
   styleUrls: ['./sidebar.component.css']
 })
 export class SidebarComponent implements OnInit, OnDestroy {
+  // Subscription management
+  private subscriptions = new Subscription();
+
   activeNavItem: NavItem = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
@@ -38,6 +42,23 @@ export class SidebarComponent implements OnInit, OnDestroy {
   histories: any[] = [];
   filteredHistories: any[] = [];
   historySearchTerm: string = '';
+
+  // Environment properties
+  environments: Environment[] = [];
+  filteredEnvironments: Environment[] = [];
+  environmentSearchTerm = '';
+  showEnvironmentsMenu = false;
+  showNewEnvironmentModal = false;
+  showEditEnvironmentModal = false;
+  showDeleteEnvironmentModal = false;
+  currentEnvironment: Environment | null = null;
+  newEnvironment = {
+    name: '',
+    workSpaceId: 0
+  };
+
+  // Make Object available to the template
+  Object = Object;
 
   // Item context menu properties
   showItemMenu = false;
@@ -93,9 +114,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   // ViewChild reference to file input element
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
-
-  // Subscription to handle cleanup
-  private subscriptions: Subscription = new Subscription();
 
 
   constructor(private route: ActivatedRoute,
@@ -183,29 +201,45 @@ export class SidebarComponent implements OnInit, OnDestroy {
       left = Math.max(sidebarRect.left, buttonRect.right - menuWidth);
     }
 
-    // Ensure menu stays within sidebar bounds
-    left = Math.max(sidebarRect.left, Math.min(left, sidebarRect.right - menuWidth));
-
-    // Update menu position
-    this.menuPosition = {
-      top: `${top}px`,
-      left: `${left}px`
-    };
-
-    // Toggle menu visibility
     this.showCollectionsMenu = !this.showCollectionsMenu;
-
-    // Handle click outside
+    this.showItemMenu = false;
+    this.showEnvironmentsMenu = false;
+    
     if (this.showCollectionsMenu) {
-      // Remove any existing listener first
-      document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
-
-      // Add new listener with a slight delay to avoid immediate closure
+      // Position the menu relative to the click
+      this.menuPosition = {
+        top: `${event.clientY}px`,
+        left: `${event.clientX}px`
+      };
+      
+      // Add a click listener to close the menu when clicking outside
       setTimeout(() => {
-        document.addEventListener('click', this.closeCollectionsMenuOnClickOutside);
-      }, 100);
+        document.addEventListener('click', this.closeCollectionsMenu);
+      });
     } else {
-      document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+      document.removeEventListener('click', this.closeCollectionsMenu);
+    }
+  }
+  
+  toggleEnvironmentsMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showEnvironmentsMenu = !this.showEnvironmentsMenu;
+    this.showCollectionsMenu = false;
+    this.showItemMenu = false;
+    
+    if (this.showEnvironmentsMenu) {
+      // Position the menu relative to the click
+      this.menuPosition = {
+        top: `${event.clientY}px`,
+        left: `${event.clientX}px`
+      };
+      
+      // Add a click listener to close the menu when clicking outside
+      setTimeout(() => {
+        document.addEventListener('click', this.closeEnvironmentsMenu);
+      });
+    } else {
+      document.removeEventListener('click', this.closeEnvironmentsMenu);
     }
   }
 
@@ -213,6 +247,20 @@ export class SidebarComponent implements OnInit, OnDestroy {
   closeCollectionsMenu() {
     this.showCollectionsMenu = false;
     document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+  }
+
+  // Close the environments menu
+  closeEnvironmentsMenu = () => {
+    this.showEnvironmentsMenu = false;
+    document.removeEventListener('click', this.closeEnvironmentsMenu);
+  };
+  
+  importEnvironment(): void {
+    // Placeholder for environment import functionality
+    // This would be implemented similar to importCollection
+    this.snackBar.open('Environment import functionality coming soon', 'Close', {
+      duration: 3000
+    });
   }
 
   // Toggle item menu (for collection, folder, or request)
@@ -698,38 +746,32 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
       }
     } else if (itemType === 'request') {
-      // Find the request in collections or folders
-      this.findRequestById(itemId);
+      console.log(`Delete request with ID: ${itemId}`);
+      // TODO: Implement request delete functionality
     }
   }
 
-  // Handle importing a collection
-  importCollection() {
-    // Open the import collection modal
-    console.log('Opening import collection modal');
-    this.closeCollectionsMenu();
+  importCollection(): void {
     this.showImportCollectionModal = true;
+    this.importCollectionUrl = '';
+    this.isImporting = false;
+    this.importError = '';
   }
 
-  closeImportCollectionModal() {
+  closeImportCollectionModal(): void {
     this.showImportCollectionModal = false;
     this.importCollectionUrl = '';
     this.isImporting = false;
     this.importError = '';
   }
 
-  setActiveNavItem(item: NavItem) {
+  /**
+   * Set the active navigation item and load corresponding data
+   */
+  setActiveNavItem(item: NavItem): void {
     this.activeNavItem = item;
     if (item === 'environments') {
-      this.environmentService.getEnvironmentsByWorkspaceId(this.workspaceId)
-        .subscribe({
-          next: (response) => {
-            console.log('Environments:', response);
-          },
-          error: (error) => {
-            console.error('Error fetching environments:', error);
-          }
-        });
+      this.loadEnvironments();
     } else if (item === 'history') {
       // Load histories when the history tab is selected
       this.loadHistories();
@@ -738,10 +780,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   /**
    * Load histories for the current workspace
-   * Each workspace has its own history items
    */
-  loadHistories() {
-    // Use workspace ID from route to get workspace-specific history
+  loadHistories(): void {
+    // Use workspace ID from route to get workspace-specific histories
     if (!this.workspaceId) {
       // If no workspace ID is available yet, get it from the route
       const routeSub = this.route.params.subscribe(params => {
@@ -762,10 +803,226 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fetch histories by workspace ID
-   * @param workspaceId The ID of the workspace to get history for
+   * Load environments for the current workspace
    */
-  private fetchHistoriesByWorkspaceId(workspaceId: number) {
+  loadEnvironments(): void {
+    // Use workspace ID from route to get workspace-specific environments
+    if (!this.workspaceId) {
+      // If no workspace ID is available yet, get it from the route
+      const routeSub = this.route.params.subscribe(params => {
+        const id = +params['id'];
+        if (id) {
+          this.workspaceId = id;
+          this.fetchEnvironmentsByWorkspaceId(this.workspaceId);
+        } else {
+          console.error('No workspace ID available');
+          this.snackBar.open('No workspace ID available', 'Close', { duration: 3000 });
+        }
+      });
+      this.subscriptions.add(routeSub);
+    } else {
+      // If workspace ID is already available, use it directly
+      this.fetchEnvironmentsByWorkspaceId(this.workspaceId);
+    }
+  }
+
+  /**
+   * Fetch environments by workspace ID
+   * @param workspaceId The ID of the workspace to get environments for
+   */
+  private fetchEnvironmentsByWorkspaceId(workspaceId: number): void {
+    console.log(`Fetching environments for workspace ID: ${workspaceId}`);
+    this.environmentService.getEnvironmentsByWorkspaceId(workspaceId).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.environments = response.data;
+          this.filteredEnvironments = [...this.environments];
+          console.log(`Loaded ${this.environments.length} environments for workspace ID ${workspaceId}:`, this.environments);
+        } else {
+          console.error(`Error loading environments for workspace ID ${workspaceId}:`, response.error);
+          this.snackBar.open('Failed to load environments', 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error(`Error loading environments for workspace ID ${workspaceId}:`, error);
+        this.snackBar.open('Failed to load environments', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Filter environments based on search term
+   * @param searchTerm The search term to filter environments by
+   */
+  filterEnvironments(searchTerm: string): void {
+    this.environmentSearchTerm = searchTerm;
+    if (!searchTerm) {
+      // If search term is empty, show all environments
+      this.filteredEnvironments = [...this.environments];
+    } else {
+      // Filter environments by name (case-insensitive)
+      const term = searchTerm.toLowerCase();
+      this.filteredEnvironments = this.environments.filter(env =>
+        env.name.toLowerCase().includes(term)
+      );
+    }
+    console.log(`Filtered environments by "${searchTerm}": ${this.filteredEnvironments.length} results`);
+  }
+
+  /**
+   * Open the new environment modal
+   */
+  openNewEnvironmentModal(): void {
+    this.newEnvironment = {
+      name: '',
+      workSpaceId: this.workspaceId
+    };
+    this.showNewEnvironmentModal = true;
+  }
+
+  /**
+   * Close the new environment modal
+   */
+  closeNewEnvironmentModal(): void {
+    this.showNewEnvironmentModal = false;
+  }
+
+  /**
+   * Create a new environment
+   */
+  createNewEnvironment(): void {
+    if (!this.newEnvironment.name.trim()) {
+      this.snackBar.open('Environment name is required', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const request: CreateEnvironmentRequest = {
+      name: this.newEnvironment.name.trim(),
+      workSpaceId: this.workspaceId
+    };
+
+    this.environmentService.createEnvironment(request).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          console.log('Environment created successfully:', response.data);
+          this.snackBar.open('Environment created successfully', 'Close', { duration: 3000 });
+          this.closeNewEnvironmentModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          console.error('Error creating environment:', response.error);
+          this.snackBar.open(`Failed to create environment: ${response.error}`, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error creating environment:', error);
+        this.snackBar.open('Failed to create environment', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Open the edit environment modal
+   * @param environment The environment to edit
+   */
+  openEditEnvironmentModal(environment: Environment): void {
+    this.currentEnvironment = { ...environment };
+    this.showEditEnvironmentModal = true;
+  }
+
+  /**
+   * Close the edit environment modal
+   */
+  closeEditEnvironmentModal(): void {
+    this.showEditEnvironmentModal = false;
+    this.currentEnvironment = null;
+  }
+
+  /**
+   * Update an environment
+   */
+  updateEnvironment(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+
+    if (!this.currentEnvironment.name.trim()) {
+      this.snackBar.open('Environment name is required', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const request: UpdateEnvironmentRequest = {
+      id: this.currentEnvironment.id,
+      name: this.currentEnvironment.name.trim()
+    };
+
+    this.environmentService.updateEnvironment(request).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          console.log('Environment updated successfully');
+          this.snackBar.open('Environment updated successfully', 'Close', { duration: 3000 });
+          this.closeEditEnvironmentModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          console.error('Error updating environment:', response.error);
+          this.snackBar.open(`Failed to update environment: ${response.error}`, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error updating environment:', error);
+        this.snackBar.open('Failed to update environment', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Open the delete environment confirmation modal
+   * @param environment The environment to delete
+   */
+  openDeleteEnvironmentModal(environment: Environment): void {
+    this.currentEnvironment = environment;
+    this.showDeleteEnvironmentModal = true;
+  }
+
+  /**
+   * Close the delete environment modal
+   */
+  closeDeleteEnvironmentModal(): void {
+    this.showDeleteEnvironmentModal = false;
+    this.currentEnvironment = null;
+  }
+
+  /**
+   * Delete an environment
+   */
+  deleteEnvironment(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+
+    this.environmentService.deleteEnvironment(this.currentEnvironment.id).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          console.log('Environment deleted successfully');
+          this.snackBar.open('Environment deleted successfully', 'Close', { duration: 3000 });
+          this.closeDeleteEnvironmentModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          console.error('Error deleting environment:', response.error);
+          this.snackBar.open(`Failed to delete environment: ${response.error}`, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting environment:', error);
+        this.snackBar.open('Failed to delete environment', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Fetch histories by workspace ID
+   * @param workspaceId The ID of the workspace to get histories for
+   */
+  private fetchHistoriesByWorkspaceId(workspaceId: number): void {
     console.log(`Fetching histories for workspace ID: ${workspaceId}`);
     this.historyService.GetHistoryByWorkspaceId(workspaceId).subscribe({
       next: (response) => {
@@ -773,7 +1030,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           this.histories = response.data;
           this.filteredHistories = [...this.histories];
           console.log(`Loaded ${this.histories.length} histories for workspace ID ${workspaceId}:`, this.histories);
-          
+
           // Debug the structure of the first history item
           if (this.histories.length > 0) {
             console.log('First history item structure:', JSON.stringify(this.histories[0], null, 2));
@@ -809,20 +1066,26 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Filter environments based on search term
+   * @param searchTerm The search term to filter by
+   */
+
+
+  /**
    * Open a history item in a new tab
    * @param history The history item to open
    */
   openHistoryItem(history: any) {
     // Get domain for tab name display
     const domain = this.getDomainFromUrl(history.requests.url);
-    
+
     // Convert the string method to the HttpMethod enum
     const methodString = history.requests.httpMethod || 'GET';
     const method = HttpMethod[methodString as keyof typeof HttpMethod] || HttpMethod.GET;
-    
+
     console.log('Opening history item with method:', methodString, 'converted to:', method);
     console.log('History item details:', history);
-    
+
     // Create a new tab with the history request data
     this.tabService.createNewTab({
       name: `${methodString} ${domain}`,
@@ -849,7 +1112,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   getDomainFromUrl(url: string): string {
     if (!url) return 'No URL';
-    
+
     try {
       const urlObj = new URL(url);
       return urlObj.hostname;
@@ -867,7 +1130,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   getPathFromUrl(url: string): string {
     if (!url) return '/path';
-    
+
     try {
       const urlObj = new URL(url);
       return urlObj.pathname + urlObj.search;
@@ -1500,10 +1763,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       });
   }
 
-  ngOnDestroy() {
-    // Clean up subscriptions when the component is destroyed
-    this.subscriptions.unsubscribe();
-  }
+  // ngOnDestroy method is implemented at the end of the class
 
   /**
    * Advanced search functionality to filter collections, folders, and requests
@@ -1626,5 +1886,16 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Auto-expand matching collections and folders for better UX
     matchingCollectionIds.forEach(id => this.expandedCollections.add(id));
     matchingFolderIds.forEach(id => this.expandedFolders.add(id));
+  }
+
+  /**
+   * Implement OnDestroy interface to clean up subscriptions
+   */
+  ngOnDestroy(): void {
+    // Unsubscribe from all subscriptions to prevent memory leaks
+    if (this.subscriptions) {
+      this.subscriptions.unsubscribe();
+      console.log('Sidebar component destroyed, all subscriptions cleaned up');
+    }
   }
 }
