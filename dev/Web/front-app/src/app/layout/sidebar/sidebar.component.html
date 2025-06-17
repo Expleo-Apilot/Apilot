@@ -41,19 +41,18 @@
         </div>
 
         <!-- History items list -->
-        <div *ngFor="let history of filteredHistories" class="history-item" (click)="openHistoryItem(history)">
+        <div *ngFor="let history of filteredHistories" class="history-item">
           <div class="history-content">
             <!-- Method badge -->
             <div class="method-badge">
-              <span class="request-method" [ngClass]="history.Requests?.method?.toLowerCase()">{{ history.Requests?.method }}</span>
+              <span class="request-method" [ngClass]="history.requests?.httpMethod?.toLowerCase()">{{ history.requests?.httpMethod }}</span>
             </div>
 
             <!-- Request details -->
             <div class="history-details">
-              <!-- URL with tooltip showing full URL -->
-              <div class="history-url-container" [title]="history.Requests?.url || 'No URL'">
-                <span class="history-domain">{{ getDomainFromUrl(history.Requests?.url) }}</span>
-                <span class="history-path">{{ getPathFromUrl(history.Requests?.url) }}</span>
+              <!-- Full URL display -->
+              <div class="history-url-container" [title]="history.requests?.url || 'No URL'">
+                <span class="history-full-url">{{ history.requests?.url || 'No URL' }}</span>
               </div>
 
               <!-- Timestamp with relative time format -->

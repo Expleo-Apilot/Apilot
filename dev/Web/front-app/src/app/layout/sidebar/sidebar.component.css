@@ -1516,7 +1516,7 @@
   min-width: 0; /* Ensures text truncation works properly */
 }
 
-/* URL container with domain and path */
+/* URL container with full URL */
 .history-url-container {
   display: flex;
   flex-direction: column;
@@ -1525,8 +1525,8 @@
   margin-bottom: 4px;
 }
 
-/* Domain styling - bold and prominent */
-.history-domain {
+/* Full URL styling - clear and readable */
+.history-full-url {
   font-size: 13px;
   font-weight: 500;
   color: #333;
@@ -1535,18 +1535,7 @@
   text-overflow: ellipsis;
   max-width: 100%;
   line-height: 1.3;
-}
-
-/* Path styling - lighter and smaller */
-.history-path {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  margin-top: 2px;
-  line-height: 1.2;
+  margin-bottom: 4px;
 }
 
 /* Metadata container for timestamp */

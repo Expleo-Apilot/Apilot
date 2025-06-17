@@ -777,8 +777,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Debug the structure of the first history item
           if (this.histories.length > 0) {
             console.log('First history item structure:', JSON.stringify(this.histories[0], null, 2));
-            console.log('URL from first history:', this.histories[0].Requests?.url);
-            console.log('Method from first history:', this.histories[0].Requests?.method);
+            console.log('URL from first history:', this.histories[0].requests?.url);
+            console.log('Method from first history:', this.histories[0].requests?.httpMethod);
           }
         } else {
           console.error(`Error loading histories for workspace ID ${workspaceId}:`, response.error);
@@ -803,8 +803,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
     this.filteredHistories = this.histories.filter(history => {
       // Filter by URL or method
-      return history.Requests?.url?.toLowerCase().includes(this.historySearchTerm) ||
-             history.Requests?.method?.toLowerCase().includes(this.historySearchTerm);
+      return history.requests?.url?.toLowerCase().includes(this.historySearchTerm) ||
+             history.requests?.httpMethod?.toLowerCase().includes(this.historySearchTerm);
     });
   }
 
@@ -814,20 +814,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   openHistoryItem(history: any) {
     // Get domain for tab name display
-    const domain = this.getDomainFromUrl(history.Requests.url);
+    const domain = this.getDomainFromUrl(history.requests.url);
+    
+    // Convert the string method to the HttpMethod enum
+    const methodString = history.requests.httpMethod || 'GET';
+    const method = HttpMethod[methodString as keyof typeof HttpMethod] || HttpMethod.GET;
+    
+    console.log('Opening history item with method:', methodString, 'converted to:', method);
+    console.log('History item details:', history);
     
     // Create a new tab with the history request data
     this.tabService.createNewTab({
-      name: `${history.Requests.method} ${domain}`,
-      url: history.Requests.url,
-      method: history.Requests.method,
-      body: history.Requests.body || '',
-      headers: history.Requests.headers ? Object.entries(history.Requests.headers).map(([key, value]) => ({
+      name: `${methodString} ${domain}`,
+      url: history.requests.url,
+      method: method, // Use the converted enum value
+      body: history.requests.body || '',
+      headers: history.requests.headers ? Object.entries(history.requests.headers).map(([key, value]) => ({
         key,
         value: value as string,
         enabled: true
       })) : [],
-      params: history.Requests.params ? Object.entries(history.Requests.params).map(([key, value]) => ({
+      params: history.requests.parameters ? Object.entries(history.requests.parameters).map(([key, value]) => ({
         key,
         value: value as string,
         enabled: true
