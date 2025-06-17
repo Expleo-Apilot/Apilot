@@ -40,12 +40,19 @@ export class WorkspaceComponent implements OnInit{
     if (this.isBrowser) {
       this.loadSplitSizes();
       
-      // Extract workspace ID from route parameters
+      // Extract workspace ID and environment ID from route parameters
       this.route.paramMap.subscribe(params => {
         const workspaceId = params.get('id');
+        const environmentId = params.get('environmentId');
+        
         if (workspaceId) {
           // Load workspace data by ID
           this.loadWorkspaceById(Number(workspaceId));
+          
+          // If environment ID is present, handle it without changing the view
+          if (environmentId) {
+            this.handleEnvironmentSelection(Number(environmentId));
+          }
         } else {
           // If no ID in URL, try to load from localStorage
           this.loadWorkspaceFromLocalStorage();
@@ -76,19 +83,33 @@ export class WorkspaceComponent implements OnInit{
    */
   private loadWorkspaceById(id: number) {
     this.workspaceService.getWorkspace(id).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         if (response.isSuccess) {
           this.currentWorkspace = response.data;
-          // Save to localStorage for persistence
-          this.saveWorkspaceToLocalStorage(response.data);
+          console.log('Workspace loaded:', response.data);
         } else {
           console.error('Failed to load workspace:', response.error);
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading workspace:', error);
       }
     });
+  }
+  
+  /**
+   * Handle environment selection from URL without changing the view
+   * @param environmentId The ID of the selected environment
+   */
+  handleEnvironmentSelection(environmentId: number): void {
+    console.log(`Environment selected from URL: ${environmentId}`);
+    // This method can be used to notify other components about the selected environment
+    // For example, you could use a shared service to broadcast the selected environment ID
+    
+    // Example: If you have an environment service with a selectEnvironment method
+    // this.environmentService.selectEnvironment(environmentId);
+    
+    // For now, we'll just log the selection
   }
 
   /**

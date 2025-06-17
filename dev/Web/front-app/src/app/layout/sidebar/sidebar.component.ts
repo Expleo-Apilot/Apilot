@@ -132,11 +132,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Subscribe to route params to get workspace ID
     const routeSub = this.route.params.subscribe(params => {
       const id = +params['id'];
+      const environmentId = params['environmentId'];
+      
       if (id) {
         this.workspaceId = id;
         console.log('Workspace ID from route:', this.workspaceId);
-        // Load collections and histories for this workspace
-        this.loadCollections();
+        
+        // Check if we're navigating to an environment
+        if (environmentId) {
+          // Make sure we're in the environments section
+          this.activeNavItem = 'environments';
+          this.loadEnvironments();
+          // Load the specific environment details
+          this.loadEnvironmentDetails(+environmentId);
+        } else {
+          // Only load collections by default if not navigating to an environment
+          this.loadCollections();
+        }
+        
+        // Always load histories for this workspace
         this.loadHistories();
       }
     });
@@ -261,6 +275,54 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.snackBar.open('Environment import functionality coming soon', 'Close', {
       duration: 3000
     });
+  }
+  
+  /**
+   * Update URL to reflect selected environment without triggering full navigation
+   * @param environmentId The ID of the environment to select
+   * @param event Optional mouse event
+   */
+  navigateToEnvironment(environmentId: number, event?: MouseEvent): void {
+    // Prevent event propagation to parent elements
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    // Make sure we're in the environments section before navigating
+    if (this.activeNavItem !== 'environments') {
+      this.setActiveNavItem('environments');
+    }
+    
+    // Update the URL without triggering a full navigation
+    this.router.navigate(['/workspace', this.workspaceId, 'environment', environmentId], {
+      replaceUrl: false,   // Don't replace the URL in browser history
+      skipLocationChange: false, // Update the browser URL
+      queryParamsHandling: 'preserve' // Preserve any existing query parameters
+    });
+    
+    // Optionally load environment data here without changing the view
+    this.loadEnvironmentDetails(environmentId);
+    
+    console.log(`Selected environment ${environmentId} in workspace ${this.workspaceId}`);
+  }
+  
+  /**
+   * Load environment details without changing the view
+   * @param environmentId The ID of the environment to load details for
+   */
+  loadEnvironmentDetails(environmentId: number): void {
+    // Find the environment in the current list
+    const selectedEnvironment = this.environments.find(env => env.id === environmentId);
+    
+    if (selectedEnvironment) {
+      // Set as current environment for potential use in the UI
+      this.currentEnvironment = selectedEnvironment;
+      
+      // You could load additional data here if needed
+      console.log(`Loaded environment details for: ${selectedEnvironment.name}`);
+    } else {
+      console.warn(`Environment with ID ${environmentId} not found`);
+    }
   }
 
   // Toggle item menu (for collection, folder, or request)
@@ -770,11 +832,23 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   setActiveNavItem(item: NavItem): void {
     this.activeNavItem = item;
-    if (item === 'environments') {
+    
+    // Load appropriate data based on the selected section
+    if (item === 'collections') {
+      this.loadCollections();
+    } else if (item === 'environments') {
       this.loadEnvironments();
     } else if (item === 'history') {
-      // Load histories when the history tab is selected
       this.loadHistories();
+    }
+    
+    // If we're on an environment route but switching to collections or history,
+    // update the URL to remove the environment part
+    if (item !== 'environments' && this.route.snapshot.params['environmentId']) {
+      this.router.navigate(['/workspace', this.workspaceId], {
+        replaceUrl: false,
+        skipLocationChange: false
+      });
     }
   }
 

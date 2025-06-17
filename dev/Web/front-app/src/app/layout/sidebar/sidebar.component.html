@@ -126,7 +126,7 @@
             
             <!-- Environment items list -->
             <div *ngFor="let environment of filteredEnvironments" class="environment-item">
-              <div class="environment-content">
+              <div class="environment-content" (click)="navigateToEnvironment(environment.id, $event)">
                 <div class="environment-icon">
                   <mat-icon>layers</mat-icon>
                 </div>
