@@ -35,4 +35,13 @@ export class HistoryService {
   GetHistories(): Observable<HistoriesResponse> {
     return this.http.get<HistoriesResponse>(`${this.baseUrl}/GetHistories`, this.getHttpOptions());
   }
+
+  /**
+   * Get history items by workspace ID
+   * @param workspaceId The ID of the workspace to get history for
+   * @returns Observable of history response containing history items for the specified workspace
+   */
+  GetHistoryByWorkspaceId(workspaceId: number): Observable<HistoriesResponse> {
+    return this.http.get<HistoriesResponse>(`${this.baseUrl}/GetHistoryByWorkspaceId?workspaceId=${workspaceId}`, this.getHttpOptions());
+  }
 }

@@ -1127,6 +1127,19 @@
   color: var(--primary-color);
 }
 
+/* History section styles */
+.history-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.history-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
 /* Drag and Drop Styles */
 .cdk-drag-preview {
   box-sizing: border-box;
@@ -1464,6 +1477,111 @@
   background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.03));
 }
 
+/* History item styles - Professional Postman-like UI */
+/* History item container */
+.history-item {
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.history-item:hover {
+  background-color: var(--sidebar-hover-bg);
+  border-left-color: var(--primary-color);
+}
+
+/* History content layout */
+.history-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Method badge styling */
+.method-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+}
+
+/* Request details container */
+.history-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Ensures text truncation works properly */
+}
+
+/* URL container with full URL */
+.history-url-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+/* Full URL styling - clear and readable */
+.history-full-url {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+/* Metadata container for timestamp */
+.history-meta {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+/* Timestamp styling */
+.history-timestamp {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Action buttons container */
+.history-actions {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.2s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+/* Show actions on hover */
+.history-item:hover .history-actions {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Action button styling */
+.history-actions .action-button {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+}
+
+/* Small icon inside action buttons */
+.history-actions .small-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+
 /* Enhanced animations */
 @keyframes fadeIn {
   from {
@@ -1478,6 +1596,16 @@
 
 .collections-list {
   animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced folder icons */
+.folder-icon mat-icon {
+  transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.folder-header:hover .folder-icon mat-icon {
+  transform: scale(1.1) rotate(-5deg);
+  color: var(--primary-color);
 }
 
 /* Improved collection icons */

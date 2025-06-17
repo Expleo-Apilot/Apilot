@@ -38,7 +38,8 @@ export class HttpClientService {
     params: { key: string, value: string, description?: string, enabled: boolean }[],
     body?: any,
     auth?: any,
-    workspaceId : number  = 0
+    workspaceId : number  = 0,
+    bodyType: string = 'json'
   ): Observable<any> {
     // Convert the headers array to a dictionary format expected by the backend
     const headersDict = this.convertArrayToDictionary(
@@ -52,7 +53,7 @@ export class HttpClientService {
 
     // Prepare the request payload according to the PerformRequestDto format
     const requestPayload = {
-      httpMethod: method,
+      httpMethod: method, // Using httpMethod for the API call
       url: url,
       headers: headersDict,
       parameters: paramsDict,
@@ -60,26 +61,33 @@ export class HttpClientService {
       authentication: auth
     };
 
-    let createHistory : CreateHistoryDto = {
-      timeStamp: new Date(),
-      workSpaceId: workspaceId,
-      Requests : {
-        method: method,
-        url: url,
-        params: paramsDict,
-        headers: headersDict,
-        authentication : auth,
-        body : body
-      }
+    // Save the request to history before sending
+    if (workspaceId > 0) {
+      // Create history data with the correct HTTP method
+      const historyData: CreateHistoryDto = {
+        timeStamp: new Date(),
+        workSpaceId: workspaceId,
+        Requests: {
+          httpMethod: method, // Using httpMethod instead of method to match sidebar component expectations
+          url: url,
+          headers: headersDict,
+          params: paramsDict,
+          body: body,
+          bodyType: bodyType
+        } as any // Using type assertion to bypass type checking since we're adapting to the UI expectations
+      };
+      
+      // Debug log to verify the method being saved
+      console.log('Saving history with method:', method);
+      this.historyService.SaveHistory(historyData).subscribe({
+        next: (response) => {
+          console.log('Request saved to history successfully', response);
+        },
+        error: (error) => {
+          console.error('Error saving request to history', error);
+        }
+      });
     }
-    this.historyService.SaveHistory(createHistory).subscribe({
-      next : (data) => {
-        console.log(data);
-      },
-      error : (error) => {
-        console.log(error);
-      }
-    })
 
     // Send the HTTP request with authorization header
     return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions());
