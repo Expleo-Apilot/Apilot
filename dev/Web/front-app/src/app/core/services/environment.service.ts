@@ -118,14 +118,13 @@ export class EnvironmentService {
 
 
   removeVariableFromEnvironment(request: RemoveVariableFromEnvironmentRequest): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(
+    // For DELETE requests with body, we need to use the HttpClient's request method
+    return this.http.request<ApiResponse<void>>(
+      'DELETE',
       `${this.baseUrl}/RemoveVariableFromEnvironment`,
       {
         ...this.getHttpOptions(),
-        params: {
-          environmentId: request.environmentId.toString(),
-          key: request.key
-        }
+        body: request  // Send the request as the body instead of query parameters
       }
     );
   }

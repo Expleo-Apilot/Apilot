@@ -1,28 +1,37 @@
 // src/app/layout/sidebar/sidebar.component.ts
-import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
-import { CollectionImportService } from '../../core/services/collection-import.service';
-import {EnvironmentService} from '../../core/services/environment.service';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subscription, forkJoin } from 'rxjs';
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+
+// Services
+import { WorkspaceService } from '../../core/services/workspace.service';
+import { EnvironmentService } from '../../core/services/environment.service';
+import { CollectionService } from '../../core/services/collection.service';
+import { RequestService } from '../../core/services/request.service';
+import { FolderService } from '../../core/services/folder.service';
+import { TabService } from '../../core/services/tab.service';
 import { HistoryService } from '../../core/services/history.service';
-import { Environment, CreateEnvironmentRequest, UpdateEnvironmentRequest } from '../../core/models/environment.model';
+import { CollectionImportService } from '../../core/services/collection-import.service';
+import { CollaborationService } from '../../core/services/collaboration.service';
+
+// Models
+import { Workspace } from '../../core/models/workspace.model';
+import { Environment, 
+  CreateEnvironmentRequest, 
+  UpdateEnvironmentRequest,
+  AddVariableToEnvironmentRequest,
+  UpdateVariableInEnvironmentRequest,
+  RemoveVariableFromEnvironmentRequest 
+} from '../../core/models/environment.model';
+import { Collection, ApiResponse, CreateCollectionRequest } from '../../core/models/collection.model';
+import { Request } from '../../core/models/request.model';
+import { Folder, CreateFolderRequest } from '../../core/models/folder.model';
+import { HttpMethod } from '../../core/models/http-method.enum';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
-import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import {ActivatedRoute, Router} from '@angular/router';
-import {CollectionService} from '../../core/services/collection.service';
-import {FolderService} from '../../core/services/folder.service';
-import {RequestService} from '../../core/services/request.service';
-import {ApiResponse, Collection, CreateCollectionRequest} from '../../core/models/collection.model';
-import {Folder, CreateFolderRequest} from '../../core/models/folder.model';
-import {TabService} from '../../core/services/tab.service';
-import {HttpMethod} from '../../core/models/http-method.enum';
-import {Request} from '../../core/models/request.model';
-import {Subscription, forkJoin} from 'rxjs';
-import {CollaborationService} from '../../core/services/collaboration.service';
-
-
-
 
 @Component({
   selector: 'app-sidebar',
@@ -51,11 +60,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
   showNewEnvironmentModal = false;
   showEditEnvironmentModal = false;
   showDeleteEnvironmentModal = false;
+  showEnvironmentVariablesModal = false;
   currentEnvironment: Environment | null = null;
   newEnvironment = {
     name: '',
     workSpaceId: 0
   };
+  newVariable = {
+    key: '',
+    value: ''
+  };
+  environmentVariables: {key: string, value: string}[] = [];
 
   // Make Object available to the template
   Object = Object;
@@ -293,17 +308,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.setActiveNavItem('environments');
     }
     
-    // Update the URL without triggering a full navigation
+    // Update the URL to reflect the selected environment
     this.router.navigate(['/workspace', this.workspaceId, 'environment', environmentId], {
-      replaceUrl: false,   // Don't replace the URL in browser history
-      skipLocationChange: false, // Update the browser URL
-      queryParamsHandling: 'preserve' // Preserve any existing query parameters
+      replaceUrl: false,
+      skipLocationChange: false,
+      queryParamsHandling: 'preserve'
     });
     
-    // Optionally load environment data here without changing the view
-    this.loadEnvironmentDetails(environmentId);
-    
-    console.log(`Selected environment ${environmentId} in workspace ${this.workspaceId}`);
+    // Open the environment variables modal with the selected environment
+    this.openEnvironmentVariablesModal(environmentId);
   }
   
   /**
@@ -311,18 +324,406 @@ export class SidebarComponent implements OnInit, OnDestroy {
    * @param environmentId The ID of the environment to load details for
    */
   loadEnvironmentDetails(environmentId: number): void {
-    // Find the environment in the current list
-    const selectedEnvironment = this.environments.find(env => env.id === environmentId);
+    if (!environmentId) return;
+
+    this.environmentService.getEnvironmentById(environmentId).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.currentEnvironment = response.data;
+          console.log('Environment details loaded:', this.currentEnvironment);
+        } else {
+          console.error('Error loading environment details:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading environment details:', error);
+      }
+    });
+  }
+  
+  /**
+   * Opens the environment variables modal and loads environment details
+   * @param environmentId The ID of the environment to open variables for
+   */
+  openEnvironmentVariablesModal(environmentId: number): void {
+    if (!environmentId) return;
     
-    if (selectedEnvironment) {
-      // Set as current environment for potential use in the UI
-      this.currentEnvironment = selectedEnvironment;
-      
-      // You could load additional data here if needed
-      console.log(`Loaded environment details for: ${selectedEnvironment.name}`);
-    } else {
-      console.warn(`Environment with ID ${environmentId} not found`);
+    this.environmentService.getEnvironmentById(environmentId).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.currentEnvironment = response.data;
+          
+          // Convert environment variables object to array for easier UI manipulation
+          this.environmentVariables = [];
+          if (this.currentEnvironment.variables) {
+            for (const [key, value] of Object.entries(this.currentEnvironment.variables)) {
+              this.environmentVariables.push({ key, value });
+            }
+          }
+          
+          // Reset the new variable form
+          this.newVariable = { key: '', value: '' };
+          
+          // Show the modal
+          this.showEnvironmentVariablesModal = true;
+        } else {
+          this.snackBar.open('Error loading environment details', 'Close', { duration: 3000 });
+          console.error('Error loading environment details:', response.error);
+        }
+      },
+      error: (error) => {
+        this.snackBar.open('Error loading environment details', 'Close', { duration: 3000 });
+        console.error('Error loading environment details:', error);
+      }
+    });
+  }
+  
+  /**
+   * Close the environment variables modal
+   */
+  closeEnvironmentVariablesModal(): void {
+    this.showEnvironmentVariablesModal = false;
+    this.environmentVariables = [];
+    this.newVariable = { key: '', value: '' };
+  }
+  
+  /**
+   * Add a new environment variable to the list and persist it to the database
+   */
+  addEnvironmentVariable(): void {
+    if (!this.currentEnvironment) {
+      return;
     }
+    
+    // Validate the key is not empty
+    const trimmedKey = this.newVariable.key.trim();
+    if (!trimmedKey) {
+      this.snackBar.open('Variable key cannot be empty', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Check for duplicate keys
+    const isDuplicate = this.environmentVariables.some(v => v.key === trimmedKey);
+    if (isDuplicate) {
+      this.snackBar.open('Variable key already exists', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Create request to add variable to environment
+    const request: AddVariableToEnvironmentRequest = {
+      environmentId: this.currentEnvironment.id,
+      key: trimmedKey,
+      value: this.newVariable.value || ''
+    };
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Adding variable...', '', { duration: undefined });
+    
+    // Call API to add variable
+    this.environmentService.addVariableToEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        
+        if (response.isSuccess) {
+          // Reset the form
+          this.newVariable = { key: '', value: '' };
+          
+          this.snackBar.open('Variable added successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          this.snackBar.open(`Error adding variable: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error adding variable:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error adding variable', 'Close', { duration: 3000 });
+        console.error('Error adding variable:', error);
+      }
+    });
+  }
+  
+  /**
+   * Reload the current environment data from the database
+   */
+  reloadCurrentEnvironment(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+    
+    this.environmentService.getEnvironmentById(this.currentEnvironment.id).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.currentEnvironment = response.data;
+          
+          // Convert environment variables object to array for UI
+          this.environmentVariables = [];
+          if (this.currentEnvironment.variables) {
+            for (const [key, value] of Object.entries(this.currentEnvironment.variables)) {
+              this.environmentVariables.push({ key, value });
+            }
+          }
+        } else {
+          console.error('Error reloading environment:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error reloading environment:', error);
+      }
+    });
+  }
+  
+  /**
+   * Remove an environment variable from the list and persist the change
+   * @param index The index of the variable to remove
+   */
+  removeEnvironmentVariable(index: number): void {
+    if (!this.currentEnvironment || index < 0 || index >= this.environmentVariables.length) {
+      return;
+    }
+    
+    const variableToRemove = this.environmentVariables[index];
+    
+    // Create request to remove variable from environment
+    const request: RemoveVariableFromEnvironmentRequest = {
+      environmentId: this.currentEnvironment.id,
+      key: variableToRemove.key
+    };
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Removing variable...', '', { duration: undefined });
+    
+    // Call API to remove variable
+    this.environmentService.removeVariableFromEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        
+        if (response.isSuccess) {
+          this.snackBar.open('Variable removed successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          this.snackBar.open(`Error removing variable: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error removing variable:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error removing variable', 'Close', { duration: 3000 });
+        console.error('Error removing variable:', error);
+      }
+    });
+  }
+  
+  /**
+   * Update an environment variable
+   * @param index The index of the variable to update
+   */
+  updateEnvironmentVariable(index: number): void {
+    if (!this.currentEnvironment || index < 0 || index >= this.environmentVariables.length) {
+      console.log('Invalid environment or index:', { currentEnvironment: !!this.currentEnvironment, index });
+      return;
+    }
+    
+    const variable = this.environmentVariables[index];
+    console.log('Updating variable:', { index, variable });
+    
+    // Validate the key is not empty
+    if (!variable.key.trim()) {
+      this.snackBar.open('Variable key cannot be empty', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Check for duplicate keys (excluding the current variable)
+    const isDuplicate = this.environmentVariables.some((v, i) => 
+      i !== index && v.key.trim() === variable.key.trim()
+    );
+    
+    if (isDuplicate) {
+      this.snackBar.open('Variable key already exists', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Try the direct update approach first
+    const updateRequest: UpdateVariableInEnvironmentRequest = {
+      environmentId: this.currentEnvironment.id,
+      key: variable.key.trim(),
+      value: variable.value || ''
+    };
+    
+    console.log('Sending update request:', updateRequest);
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Updating variable...', '', { duration: undefined });
+    
+    this.environmentService.updateVariableInEnvironment(updateRequest).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        console.log('Update response:', response);
+        
+        if (response.isSuccess) {
+          this.snackBar.open('Variable updated successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          console.error('Error updating variable:', response.error);
+          
+          // If direct update fails, try the bulk update approach as fallback
+          this.updateEnvironmentWithAllVariables(index, variable.key.trim(), variable.value || '');
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        console.error('Error updating variable:', error);
+        
+        // If direct update fails with error, try the bulk update approach as fallback
+        this.updateEnvironmentWithAllVariables(index, variable.key.trim(), variable.value || '');
+      }
+    });
+  }
+  
+  /**
+   * Update the entire environment with all variables
+   * This is used as a fallback when individual variable update fails
+   */
+  private updateEnvironmentWithAllVariables(updatedIndex: number, updatedKey: string, updatedValue: string): void {
+    if (!this.currentEnvironment) {
+      console.error('Cannot update environment: currentEnvironment is null');
+      this.snackBar.open('Error updating variable: Environment not loaded', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    console.log('Falling back to bulk update for variable:', { updatedIndex, updatedKey, updatedValue });
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Updating environment...', '', { duration: undefined });
+    
+    // Convert the current variables to an object
+    const variables: { [key: string]: string } = {};
+    this.environmentVariables.forEach((v, i) => {
+      if (i === updatedIndex) {
+        // Use the updated key and value for the current variable
+        variables[updatedKey] = updatedValue;
+      } else {
+        // Use the existing keys for other variables
+        variables[v.key.trim()] = v.value || '';
+      }
+    });
+    
+    console.log('Bulk update variables:', variables);
+    
+    // Update the environment with all variables
+    const request: UpdateEnvironmentRequest = {
+      id: this.currentEnvironment.id,
+      name: this.currentEnvironment.name || '',
+      workspaceId: this.workspaceId,
+      variables: variables
+    };
+    
+    this.environmentService.updateEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        console.log('Bulk update response:', response);
+        
+        if (response.isSuccess) {
+          this.snackBar.open('Variable updated successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          this.snackBar.open(`Error updating variable: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error in bulk update:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error updating variable', 'Close', { duration: 3000 });
+        console.error('Error in bulk update:', error);
+      }
+    });
+  }
+  
+  /**
+   * Save all environment variables to the environment
+   * This is a bulk update operation that saves all variables at once
+   */
+  saveEnvironmentVariables(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+    
+    // Validate all variables for empty or duplicate keys
+    const keys = new Set<string>();
+    let hasEmptyKey = false;
+    
+    for (const variable of this.environmentVariables) {
+      const trimmedKey = variable.key.trim();
+      if (!trimmedKey) {
+        hasEmptyKey = true;
+        break;
+      }
+      
+      if (keys.has(trimmedKey)) {
+        this.snackBar.open('Duplicate variable keys found. Please fix before saving.', 'Close', { duration: 3000 });
+        return;
+      }
+      
+      keys.add(trimmedKey);
+    }
+    
+    if (hasEmptyKey) {
+      this.snackBar.open('Empty variable keys found. Please fix before saving.', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Saving environment variables...', '', { duration: undefined });
+    
+    // Convert the array of variables back to an object
+    const variables: { [key: string]: string } = {};
+    for (const variable of this.environmentVariables) {
+      variables[variable.key.trim()] = variable.value || '';
+    }
+    
+    // Update the environment with the new variables
+    const request: UpdateEnvironmentRequest = {
+      id: this.currentEnvironment?.id,
+      name: this.currentEnvironment?.name || '',
+      workspaceId: this.workspaceId,
+      variables: variables
+    };
+    
+    this.environmentService.updateEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        
+        if (response.isSuccess) {
+          this.snackBar.open('All environment variables saved successfully', 'Close', { duration: 3000 });
+          this.closeEnvironmentVariablesModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          this.snackBar.open(`Error saving environment variables: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error saving environment variables:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error saving environment variables', 'Close', { duration: 3000 });
+        console.error('Error saving environment variables:', error);
+      }
+    });
   }
 
   // Toggle item menu (for collection, folder, or request)
@@ -1026,7 +1427,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
     const request: UpdateEnvironmentRequest = {
       id: this.currentEnvironment.id,
-      name: this.currentEnvironment.name.trim()
+      name: this.currentEnvironment.name.trim(),
+      workspaceId: this.workspaceId,
+      variables: this.currentEnvironment.variables || {}
     };
 
     this.environmentService.updateEnvironment(request).subscribe({
