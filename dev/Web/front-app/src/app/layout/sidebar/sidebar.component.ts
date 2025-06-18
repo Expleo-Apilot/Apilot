@@ -1,35 +1,49 @@
 // src/app/layout/sidebar/sidebar.component.ts
-import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
-import { CollectionImportService } from '../../core/services/collection-import.service';
-import {EnvironmentService} from '../../core/services/environment.service';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subscription, forkJoin } from 'rxjs';
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+
+// Services
+import { WorkspaceService } from '../../core/services/workspace.service';
+import { EnvironmentService } from '../../core/services/environment.service';
+import { VariableReplacementService } from '../../core/services/variable-replacement.service';
+import { CollectionService } from '../../core/services/collection.service';
+import { RequestService } from '../../core/services/request.service';
+import { FolderService } from '../../core/services/folder.service';
+import { TabService } from '../../core/services/tab.service';
 import { HistoryService } from '../../core/services/history.service';
+import { CollectionImportService } from '../../core/services/collection-import.service';
+import { CollaborationService } from '../../core/services/collaboration.service';
+
+// Models
+import { Workspace } from '../../core/models/workspace.model';
+import { Environment, 
+  CreateEnvironmentRequest, 
+  UpdateEnvironmentRequest,
+  AddVariableToEnvironmentRequest,
+  UpdateVariableInEnvironmentRequest,
+  RemoveVariableFromEnvironmentRequest 
+} from '../../core/models/environment.model';
+import { Collection, ApiResponse, CreateCollectionRequest } from '../../core/models/collection.model';
+import { Request } from '../../core/models/request.model';
+import { Folder, CreateFolderRequest } from '../../core/models/folder.model';
+import { HttpMethod } from '../../core/models/http-method.enum';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
-import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import {ActivatedRoute, Router} from '@angular/router';
-import {CollectionService} from '../../core/services/collection.service';
-import {FolderService} from '../../core/services/folder.service';
-import {RequestService} from '../../core/services/request.service';
-import {ApiResponse, Collection, CreateCollectionRequest} from '../../core/models/collection.model';
-import {Folder, CreateFolderRequest} from '../../core/models/folder.model';
-import {TabService} from '../../core/services/tab.service';
-import {HttpMethod} from '../../core/models/http-method.enum';
-import {Request} from '../../core/models/request.model';
-import {Subscription, forkJoin} from 'rxjs';
-import {CollaborationService} from '../../core/services/collaboration.service';
-import {CollaborationStatus} from '../../core/models/collaboration.model';
-
-
 
 @Component({
   selector: 'app-sidebar',
   standalone: false,
   templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.css']
+  styleUrls: ['./sidebar.component.css', './environment-variables.css']
 })
 export class SidebarComponent implements OnInit, OnDestroy {
+  // Subscription management
+  private subscriptions = new Subscription();
+
   activeNavItem: NavItem = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
@@ -38,6 +52,30 @@ export class SidebarComponent implements OnInit, OnDestroy {
   histories: any[] = [];
   filteredHistories: any[] = [];
   historySearchTerm: string = '';
+
+  // Environment properties
+  environments: Environment[] = [];
+  filteredEnvironments: Environment[] = [];
+  environmentSearchTerm = '';
+  showEnvironmentsMenu = false;
+  activeEnvironmentId: number | null = null;
+  showNewEnvironmentModal = false;
+  showEditEnvironmentModal = false;
+  showDeleteEnvironmentModal = false;
+  showEnvironmentVariablesModal = false;
+  currentEnvironment: Environment | null = null;
+  newEnvironment = {
+    name: '',
+    workSpaceId: 0
+  };
+  newVariable = {
+    key: '',
+    value: ''
+  };
+  environmentVariables: {key: string, value: string}[] = [];
+
+  // Make Object available to the template
+  Object = Object;
 
   // Item context menu properties
   showItemMenu = false;
@@ -94,31 +132,46 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ViewChild reference to file input element
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
-  // Subscription to handle cleanup
-  private subscriptions: Subscription = new Subscription();
 
-
-  constructor(private route: ActivatedRoute,
-              private router: Router,
-              private collectionService: CollectionService,
-              private folderService: FolderService,
-              private requestService: RequestService,
-              private collaborationService: CollaborationService,
-              private environmentService: EnvironmentService,
-              private collectionImportService: CollectionImportService,
-              private tabService: TabService,
-              private historyService: HistoryService,
-              private snackBar: MatSnackBar) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private workspaceService: WorkspaceService,
+    private environmentService: EnvironmentService,
+    private collectionService: CollectionService,
+    private requestService: RequestService,
+    private folderService: FolderService,
+    private collaborationService: CollaborationService,
+    private collectionImportService: CollectionImportService,
+    private tabService: TabService,
+    private historyService: HistoryService,
+    private snackBar: MatSnackBar,
+    private variableReplacementService: VariableReplacementService
+  ) {}
 
   ngOnInit() {
     // Subscribe to route params to get workspace ID
     const routeSub = this.route.params.subscribe(params => {
       const id = +params['id'];
+      const environmentId = params['environmentId'];
+      
       if (id) {
         this.workspaceId = id;
         console.log('Workspace ID from route:', this.workspaceId);
-        // Load collections and histories for this workspace
-        this.loadCollections();
+        
+        // Check if we're navigating to an environment
+        if (environmentId) {
+          // Make sure we're in the environments section
+          this.activeNavItem = 'environments';
+          this.loadEnvironments();
+          // Load the specific environment details
+          this.loadEnvironmentDetails(+environmentId);
+        } else {
+          // Only load collections by default if not navigating to an environment
+          this.loadCollections();
+        }
+        
+        // Always load histories for this workspace
         this.loadHistories();
       }
     });
@@ -183,36 +236,614 @@ export class SidebarComponent implements OnInit, OnDestroy {
       left = Math.max(sidebarRect.left, buttonRect.right - menuWidth);
     }
 
-    // Ensure menu stays within sidebar bounds
-    left = Math.max(sidebarRect.left, Math.min(left, sidebarRect.right - menuWidth));
-
-    // Update menu position
-    this.menuPosition = {
-      top: `${top}px`,
-      left: `${left}px`
-    };
-
-    // Toggle menu visibility
     this.showCollectionsMenu = !this.showCollectionsMenu;
-
-    // Handle click outside
+    this.showItemMenu = false;
+    this.showEnvironmentsMenu = false;
+    
     if (this.showCollectionsMenu) {
-      // Remove any existing listener first
-      document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
-
-      // Add new listener with a slight delay to avoid immediate closure
+      // Position the menu relative to the click
+      this.menuPosition = {
+        top: `${event.clientY}px`,
+        left: `${event.clientX}px`
+      };
+      
+      // Add a click listener to close the menu when clicking outside
       setTimeout(() => {
-        document.addEventListener('click', this.closeCollectionsMenuOnClickOutside);
-      }, 100);
+        document.addEventListener('click', this.closeCollectionsMenu);
+      });
     } else {
-      document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+      document.removeEventListener('click', this.closeCollectionsMenu);
+    }
+  }
+  
+  toggleEnvironmentsMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showEnvironmentsMenu = !this.showEnvironmentsMenu;
+    this.showCollectionsMenu = false;
+    this.showItemMenu = false;
+    
+    if (this.showEnvironmentsMenu) {
+      // Position the menu relative to the click
+      this.menuPosition = {
+        top: `${event.clientY}px`,
+        left: `${event.clientX}px`
+      };
+      
+      // Add a click listener to close the menu when clicking outside
+      setTimeout(() => {
+        document.addEventListener('click', this.closeEnvironmentsMenu);
+      });
+    } else {
+      document.removeEventListener('click', this.closeEnvironmentsMenu);
     }
   }
 
-  // Close the collections menu
+  /**
+   * Close the environments menu
+   */
+  closeEnvironmentsMenu = () => {
+    this.showEnvironmentsMenu = false;
+    document.removeEventListener('click', this.closeEnvironmentsMenu);
+  };
+  
+  importEnvironment(): void {
+    console.log('Environment import functionality to be implemented');
+  }
+  
+  /**
+   * Sets an environment as active for variable replacement
+   * @param environmentId The environment ID to set as active
+   */
+  setActiveEnvironment(environmentId: number): void {
+    if (!environmentId) return;
+    
+    // Update the activeEnvironmentId in the component
+    this.activeEnvironmentId = environmentId;
+    
+    // Update the active environment in the variable replacement service
+    // This enables dynamic variable replacement in requests
+    this.variableReplacementService.setActiveEnvironment(environmentId);
+    
+    console.log(`Set active environment: ${environmentId} for variable replacement`);
+    
+    // Show success notification to the user
+    this.snackBar.open('Environment activated for variable replacement', 'Close', { 
+      duration: 3000,
+      panelClass: 'success-snackbar'
+    });
+  }
+
+  /**
+   * Handle environment click to directly open the variables modal
+   * @param environmentId The ID of the environment to select
+   * @param event Optional mouse event
+   */
+  navigateToEnvironment(environmentId: number, event?: MouseEvent): void {
+    // Prevent event propagation to parent elements
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    // Make sure we're in the environments section before navigating
+    if (this.activeNavItem !== 'environments') {
+      this.setActiveNavItem('environments');
+    }
+    
+    // Update the URL to reflect the selected environment
+    this.router.navigate(['/workspace', this.workspaceId, 'environment', environmentId], {
+      replaceUrl: false,
+      skipLocationChange: false,
+      queryParamsHandling: 'preserve'
+    });
+    
+    // Open the environment variables modal with the selected environment
+    this.openEnvironmentVariablesModal(environmentId);
+  }
+
   closeCollectionsMenu() {
     this.showCollectionsMenu = false;
     document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+  }
+
+  /**
+   * Load environment details without changing the view
+   * @param environmentId The ID of the environment to load details for
+   */
+  loadEnvironmentDetails(environmentId: number): void {
+    if (!environmentId) return;
+
+    this.environmentService.getEnvironmentById(environmentId).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.currentEnvironment = response.data;
+          console.log('Environment details loaded:', this.currentEnvironment);
+        } else {
+          console.error('Error loading environment details:', response.error);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading environment details:', error);
+      }
+    });
+  }
+  
+  /**
+   * Opens the environment variables modal and loads environment details
+   * @param environmentId The ID of the environment to open variables for
+   */
+  openEnvironmentVariablesModal(environmentId: number): void {
+    if (!environmentId) return;
+    
+    // Store the environment ID (without setting it as active for variable replacement)
+    this.activeEnvironmentId = environmentId;
+    
+    this.environmentService.getEnvironmentById(environmentId).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.currentEnvironment = response.data;
+          
+          // Convert environment variables object to array for easier UI manipulation
+          this.environmentVariables = [];
+          if (this.currentEnvironment.variables) {
+            for (const [key, value] of Object.entries(this.currentEnvironment.variables)) {
+              this.environmentVariables.push({ key, value });
+            }
+          }
+          
+          // Reset the new variable form
+          this.newVariable = { key: '', value: '' };
+          
+          // Show the modal
+          this.showEnvironmentVariablesModal = true;
+        } else {
+          this.snackBar.open('Error loading environment details', 'Close', { duration: 3000 });
+          console.error('Error loading environment details:', response.error);
+        }
+      },
+      error: (error: any) => {
+        this.snackBar.open('Error loading environment details', 'Close', { duration: 3000 });
+        console.error('Error loading environment details:', error);
+      }
+    });
+  }
+  
+  /**
+   * Close the environment variables modal
+   */
+  closeEnvironmentVariablesModal(): void {
+    this.showEnvironmentVariablesModal = false;
+    this.environmentVariables = [];
+    this.newVariable = { key: '', value: '' };
+  }
+  
+  /**
+   * Add a new environment variable to the list and persist it to the database
+   */
+  addEnvironmentVariable(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+    
+    // Validate the key is not empty
+    const trimmedKey = this.newVariable.key.trim();
+    if (!trimmedKey) {
+      this.snackBar.open('Variable key cannot be empty', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Check for duplicate keys
+    const isDuplicate = this.environmentVariables.some(v => v.key === trimmedKey);
+    if (isDuplicate) {
+      this.snackBar.open('Variable key already exists', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Create request to add variable to environment
+    const request: AddVariableToEnvironmentRequest = {
+      environmentId: this.currentEnvironment.id,
+      key: trimmedKey,
+      value: this.newVariable.value || ''
+    };
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Adding variable...', '', { duration: undefined });
+    
+    // Call API to add variable
+    this.environmentService.addVariableToEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        
+        if (response.isSuccess) {
+          // Reset the form
+          this.newVariable = { key: '', value: '' };
+          
+          this.snackBar.open('Variable added successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          this.snackBar.open(`Error adding variable: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error adding variable:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error adding variable', 'Close', { duration: 3000 });
+        console.error('Error adding variable:', error);
+      }
+    });
+  }
+  
+  /**
+   * Reload the current environment data from the database
+   */
+  reloadCurrentEnvironment(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+    
+    this.environmentService.getEnvironmentById(this.currentEnvironment.id).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.currentEnvironment = response.data;
+          
+          // Convert environment variables object to array for UI
+          this.environmentVariables = [];
+          if (this.currentEnvironment.variables) {
+            for (const [key, value] of Object.entries(this.currentEnvironment.variables)) {
+              this.environmentVariables.push({ key, value });
+            }
+          }
+        } else {
+          console.error('Error reloading environment:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('Error reloading environment:', error);
+      }
+    });
+  }
+  
+  /**
+   * Remove an environment variable from the list and persist the change
+   * @param index The index of the variable to remove
+   */
+  removeEnvironmentVariable(index: number): void {
+    if (!this.currentEnvironment || index < 0 || index >= this.environmentVariables.length) {
+      return;
+    }
+    
+    const variableToRemove = this.environmentVariables[index];
+    
+    // Create request to remove variable from environment
+    const request: RemoveVariableFromEnvironmentRequest = {
+      environmentId: this.currentEnvironment.id,
+      key: variableToRemove.key
+    };
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Removing variable...', '', { duration: undefined });
+    
+    // Call API to remove variable
+    this.environmentService.removeVariableFromEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        
+        if (response.isSuccess) {
+          this.snackBar.open('Variable removed successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          this.snackBar.open(`Error removing variable: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error removing variable:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error removing variable', 'Close', { duration: 3000 });
+        console.error('Error removing variable:', error);
+      }
+    });
+  }
+  
+  /**
+   * Update an environment variable
+   * @param index The index of the variable to update
+   */
+  updateEnvironmentVariable(index: number): void {
+    if (!this.currentEnvironment || index < 0 || index >= this.environmentVariables.length) {
+      console.log('Invalid environment or index:', { currentEnvironment: !!this.currentEnvironment, index });
+      return;
+    }
+    
+    const variable = this.environmentVariables[index];
+    const originalKey = this.getOriginalKeyFromCurrentEnvironment(index);
+    const isKeyChanged = originalKey !== variable.key.trim();
+    
+    console.log('Updating variable:', { index, variable, originalKey, isKeyChanged });
+    
+    // Validate the key is not empty
+    if (!variable.key.trim()) {
+      this.snackBar.open('Variable key cannot be empty', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Check for duplicate keys (excluding the current variable)
+    const isDuplicate = this.environmentVariables.some((v, i) => 
+      i !== index && v.key.trim() === variable.key.trim()
+    );
+    
+    if (isDuplicate) {
+      this.snackBar.open('Variable key already exists', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // If key has changed, we need to remove the old key and add the new one
+    if (isKeyChanged && originalKey) {
+      console.log('Key has changed, removing old key and adding new one');
+      this.handleKeyChange(originalKey, variable.key.trim(), variable.value || '');
+      return;
+    }
+    
+    // If key hasn't changed, proceed with normal update
+    const updateRequest: UpdateVariableInEnvironmentRequest = {
+      environmentId: this.currentEnvironment.id,
+      key: variable.key.trim(),
+      value: variable.value || ''
+    };
+    
+    console.log('Sending update request:', updateRequest);
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Updating variable...', '', { duration: undefined });
+    
+    this.environmentService.updateVariableInEnvironment(updateRequest).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        console.log('Update response:', response);
+        
+        if (response.isSuccess) {
+          this.snackBar.open('Variable updated successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          console.error('Error updating variable:', response.error);
+          
+          // If direct update fails, try the bulk update approach as fallback
+          this.updateEnvironmentWithAllVariables(index, variable.key.trim(), variable.value || '');
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        console.error('Error updating variable:', error);
+        
+        // If direct update fails with error, try the bulk update approach as fallback
+        this.updateEnvironmentWithAllVariables(index, variable.key.trim(), variable.value || '');
+      }
+    });
+  }
+  
+  /**
+   * Get the original key from the current environment variables object
+   * @param index The index of the variable in the environmentVariables array
+   * @returns The original key or null if not found
+   */
+  private getOriginalKeyFromCurrentEnvironment(index: number): string | null {
+    if (!this.currentEnvironment?.variables || index < 0 || index >= this.environmentVariables.length) {
+      return null;
+    }
+    
+    // Find the original key in the environment variables object
+    // We need to match by position since we're working with an array that was converted from an object
+    const keys = Object.keys(this.currentEnvironment.variables);
+    if (index < keys.length) {
+      return keys[index];
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Handle a key change by removing the old variable and adding a new one
+   * @param oldKey The original key to remove
+   * @param newKey The new key to add
+   * @param value The value for the new key
+   */
+  private handleKeyChange(oldKey: string, newKey: string, value: string): void {
+    if (!this.currentEnvironment) return;
+    
+    const loadingRef = this.snackBar.open('Updating variable name...', '', { duration: undefined });
+    
+    // First remove the old key
+    this.environmentService.removeVariableFromEnvironment({
+      environmentId: this.currentEnvironment.id,
+      key: oldKey
+    }).subscribe({
+      next: (removeResponse) => {
+        if (removeResponse.isSuccess) {
+          // Then add the new key with the value
+          this.environmentService.addVariableToEnvironment({
+            environmentId: this.currentEnvironment!.id,
+            key: newKey,
+            value: value
+          }).subscribe({
+            next: (addResponse) => {
+              loadingRef.dismiss();
+              if (addResponse.isSuccess) {
+                this.snackBar.open('Variable name updated successfully', 'Close', { duration: 3000 });
+                // Reload the environment to get the latest data
+                this.reloadCurrentEnvironment();
+                // Also refresh the environments list
+                this.loadEnvironments();
+              } else {
+                console.error('Error adding new variable after key change:', addResponse.error);
+                // Fall back to bulk update
+                this.updateEnvironmentWithAllVariables(-1, newKey, value);
+              }
+            },
+            error: (error) => {
+              loadingRef.dismiss();
+              console.error('Error adding new variable after key change:', error);
+              // Fall back to bulk update
+              this.updateEnvironmentWithAllVariables(-1, newKey, value);
+            }
+          });
+        } else {
+          loadingRef.dismiss();
+          console.error('Error removing old variable during key change:', removeResponse.error);
+          // Fall back to bulk update
+          this.updateEnvironmentWithAllVariables(-1, newKey, value);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        console.error('Error removing old variable during key change:', error);
+        // Fall back to bulk update
+        this.updateEnvironmentWithAllVariables(-1, newKey, value);
+      }
+    });
+  }
+  
+  /**
+   * Update the entire environment with all variables
+   * This is used as a fallback when individual variable update fails
+   */
+  private updateEnvironmentWithAllVariables(updatedIndex: number, updatedKey: string, updatedValue: string): void {
+    if (!this.currentEnvironment) {
+      console.error('Cannot update environment: currentEnvironment is null');
+      this.snackBar.open('Error updating variable: Environment not loaded', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    console.log('Falling back to bulk update for variable:', { updatedIndex, updatedKey, updatedValue });
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Updating environment...', '', { duration: undefined });
+    
+    // Convert the current variables to an object
+    const variables: { [key: string]: string } = {};
+    this.environmentVariables.forEach((v, i) => {
+      if (i === updatedIndex) {
+        // Use the updated key and value for the current variable
+        variables[updatedKey] = updatedValue;
+      } else {
+        // Use the existing keys for other variables
+        variables[v.key.trim()] = v.value || '';
+      }
+    });
+    
+    console.log('Bulk update variables:', variables);
+    
+    // Update the environment with all variables
+    const request: UpdateEnvironmentRequest = {
+      id: this.currentEnvironment.id,
+      name: this.currentEnvironment.name || '',
+      workspaceId: this.workspaceId,
+      variables: variables
+    };
+    
+    this.environmentService.updateEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        console.log('Bulk update response:', response);
+        
+        if (response.isSuccess) {
+          this.snackBar.open('Variable updated successfully', 'Close', { duration: 3000 });
+          
+          // Reload the environment to get the latest data
+          this.reloadCurrentEnvironment();
+          // Also refresh the environments list
+          this.loadEnvironments();
+        } else {
+          this.snackBar.open(`Error updating variable: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error in bulk update:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error updating variable', 'Close', { duration: 3000 });
+        console.error('Error in bulk update:', error);
+      }
+    });
+  }
+  
+  /**
+   * Save all environment variables to the environment
+   * This is a bulk update operation that saves all variables at once
+   */
+  saveEnvironmentVariables(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+    
+    // Validate all variables for empty or duplicate keys
+    const keys = new Set<string>();
+    let hasEmptyKey = false;
+    
+    for (const variable of this.environmentVariables) {
+      const trimmedKey = variable.key.trim();
+      if (!trimmedKey) {
+        hasEmptyKey = true;
+        break;
+      }
+      
+      if (keys.has(trimmedKey)) {
+        this.snackBar.open('Duplicate variable keys found. Please fix before saving.', 'Close', { duration: 3000 });
+        return;
+      }
+      
+      keys.add(trimmedKey);
+    }
+    
+    if (hasEmptyKey) {
+      this.snackBar.open('Empty variable keys found. Please fix before saving.', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    // Show loading indicator
+    const loadingRef = this.snackBar.open('Saving environment variables...', '', { duration: undefined });
+    
+    // Convert the array of variables back to an object
+    const variables: { [key: string]: string } = {};
+    for (const variable of this.environmentVariables) {
+      variables[variable.key.trim()] = variable.value || '';
+    }
+    
+    // Update the environment with the new variables
+    const request: UpdateEnvironmentRequest = {
+      id: this.currentEnvironment?.id,
+      name: this.currentEnvironment?.name || '',
+      workspaceId: this.workspaceId,
+      variables: variables
+    };
+    
+    this.environmentService.updateEnvironment(request).subscribe({
+      next: (response) => {
+        loadingRef.dismiss();
+        
+        if (response.isSuccess) {
+          this.snackBar.open('All environment variables saved successfully', 'Close', { duration: 3000 });
+          this.closeEnvironmentVariablesModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          this.snackBar.open(`Error saving environment variables: ${response.error || 'Unknown error'}`, 'Close', { duration: 3000 });
+          console.error('Error saving environment variables:', response.error);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        this.snackBar.open('Error saving environment variables', 'Close', { duration: 3000 });
+        console.error('Error saving environment variables:', error);
+      }
+    });
   }
 
   // Toggle item menu (for collection, folder, or request)
@@ -698,50 +1329,55 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
       }
     } else if (itemType === 'request') {
-      // Find the request in collections or folders
-      this.findRequestById(itemId);
+      console.log(`Delete request with ID: ${itemId}`);
+      // TODO: Implement request delete functionality
     }
   }
 
-  // Handle importing a collection
-  importCollection() {
-    // Open the import collection modal
-    console.log('Opening import collection modal');
-    this.closeCollectionsMenu();
+  importCollection(): void {
     this.showImportCollectionModal = true;
+    this.importCollectionUrl = '';
+    this.isImporting = false;
+    this.importError = '';
   }
 
-  closeImportCollectionModal() {
+  closeImportCollectionModal(): void {
     this.showImportCollectionModal = false;
     this.importCollectionUrl = '';
     this.isImporting = false;
     this.importError = '';
   }
 
-  setActiveNavItem(item: NavItem) {
+  /**
+   * Set the active navigation item and load corresponding data
+   */
+  setActiveNavItem(item: NavItem): void {
     this.activeNavItem = item;
-    if (item === 'environments') {
-      this.environmentService.getEnvironmentsByWorkspaceId(this.workspaceId)
-        .subscribe({
-          next: (response) => {
-            console.log('Environments:', response);
-          },
-          error: (error) => {
-            console.error('Error fetching environments:', error);
-          }
-        });
+    
+    // Load appropriate data based on the selected section
+    if (item === 'collections') {
+      this.loadCollections();
+    } else if (item === 'environments') {
+      this.loadEnvironments();
     } else if (item === 'history') {
-      // Load histories when the history tab is selected
       this.loadHistories();
+    }
+    
+    // If we're on an environment route but switching to collections or history,
+    // update the URL to remove the environment part
+    if (item !== 'environments' && this.route.snapshot.params['environmentId']) {
+      this.router.navigate(['/workspace', this.workspaceId], {
+        replaceUrl: false,
+        skipLocationChange: false
+      });
     }
   }
 
   /**
    * Load histories for the current workspace
-   * Each workspace has its own history items
    */
-  loadHistories() {
-    // Use workspace ID from route to get workspace-specific history
+  loadHistories(): void {
+    // Use workspace ID from route to get workspace-specific histories
     if (!this.workspaceId) {
       // If no workspace ID is available yet, get it from the route
       const routeSub = this.route.params.subscribe(params => {
@@ -762,10 +1398,240 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fetch histories by workspace ID
-   * @param workspaceId The ID of the workspace to get history for
+   * Load environments for the current workspace
    */
-  private fetchHistoriesByWorkspaceId(workspaceId: number) {
+  loadEnvironments(): void {
+    // Use workspace ID from route to get workspace-specific environments
+    if (!this.workspaceId) {
+      // If no workspace ID is available yet, get it from the route
+      const routeSub = this.route.params.subscribe(params => {
+        const id = +params['id'];
+        if (id) {
+          this.workspaceId = id;
+          this.fetchEnvironmentsByWorkspaceId(this.workspaceId);
+        } else {
+          console.error('No workspace ID available');
+          this.snackBar.open('No workspace ID available', 'Close', { duration: 3000 });
+        }
+      });
+      this.subscriptions.add(routeSub);
+    } else {
+      // If workspace ID is already available, use it directly
+      this.fetchEnvironmentsByWorkspaceId(this.workspaceId);
+    }
+  }
+
+  /**
+   * Fetch environments by workspace ID
+   * @param workspaceId The ID of the workspace to get environments for
+   */
+  private fetchEnvironmentsByWorkspaceId(workspaceId: number): void {
+    console.log(`Fetching environments for workspace ID: ${workspaceId}`);
+    this.environmentService.getEnvironmentsByWorkspaceId(workspaceId).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.environments = response.data;
+          this.filteredEnvironments = [...this.environments];
+          console.log(`Loaded ${this.environments.length} environments for workspace ID ${workspaceId}:`, this.environments);
+        } else {
+          console.error(`Error loading environments for workspace ID ${workspaceId}:`, response.error);
+          this.snackBar.open('Failed to load environments', 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error(`Error loading environments for workspace ID ${workspaceId}:`, error);
+        this.snackBar.open('Failed to load environments', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Filter environments based on search term
+   * @param searchTerm The search term to filter environments by
+   */
+  filterEnvironments(searchTerm: string): void {
+    this.environmentSearchTerm = searchTerm;
+    if (!searchTerm) {
+      // If search term is empty, show all environments
+      this.filteredEnvironments = [...this.environments];
+    } else {
+      // Filter environments by name (case-insensitive)
+      const term = searchTerm.toLowerCase();
+      this.filteredEnvironments = this.environments.filter(env =>
+        env.name.toLowerCase().includes(term)
+      );
+    }
+    console.log(`Filtered environments by "${searchTerm}": ${this.filteredEnvironments.length} results`);
+  }
+
+  /**
+   * Open the new environment modal
+   */
+  openNewEnvironmentModal(): void {
+    this.newEnvironment = {
+      name: '',
+      workSpaceId: this.workspaceId
+    };
+    this.showNewEnvironmentModal = true;
+  }
+
+  /**
+   * Close the new environment modal
+   */
+  closeNewEnvironmentModal(): void {
+    this.showNewEnvironmentModal = false;
+  }
+
+  /**
+   * Create a new environment
+   */
+  createNewEnvironment(): void {
+    if (!this.newEnvironment.name.trim()) {
+      this.snackBar.open('Environment name is required', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const request: CreateEnvironmentRequest = {
+      name: this.newEnvironment.name.trim(),
+      workSpaceId: this.workspaceId
+    };
+
+    this.environmentService.createEnvironment(request).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          console.log('Environment created successfully:', response.data);
+          this.snackBar.open('Environment created successfully', 'Close', { duration: 3000 });
+          this.closeNewEnvironmentModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          console.error('Error creating environment:', response.error);
+          this.snackBar.open(`Failed to create environment: ${response.error}`, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error creating environment:', error);
+        this.snackBar.open('Failed to create environment', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Open the edit environment modal
+   * @param environment The environment to edit
+   * @param event Mouse event to stop propagation
+   */
+  openEditEnvironmentModal(environment: Environment, event: MouseEvent): void {
+    // Stop event propagation to prevent the navigateToEnvironment method from being called
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    this.currentEnvironment = { ...environment };
+    this.showEditEnvironmentModal = true;
+  }
+
+  /**
+   * Close the edit environment modal
+   */
+  closeEditEnvironmentModal(): void {
+    this.showEditEnvironmentModal = false;
+    this.currentEnvironment = null;
+  }
+
+  /**
+   * Update an environment
+   */
+  updateEnvironment(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+
+    if (!this.currentEnvironment.name.trim()) {
+      this.snackBar.open('Environment name is required', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const request: UpdateEnvironmentRequest = {
+      id: this.currentEnvironment.id,
+      name: this.currentEnvironment.name.trim(),
+      workspaceId: this.workspaceId,
+      variables: this.currentEnvironment.variables || {}
+    };
+
+    this.environmentService.updateEnvironment(request).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          console.log('Environment updated successfully');
+          this.snackBar.open('Environment updated successfully', 'Close', { duration: 3000 });
+          this.closeEditEnvironmentModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          console.error('Error updating environment:', response.error);
+          this.snackBar.open(`Failed to update environment: ${response.error}`, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error updating environment:', error);
+        this.snackBar.open('Failed to update environment', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Open the delete environment confirmation modal
+   * @param environment The environment to delete
+   * @param event Mouse event to stop propagation
+   */
+  openDeleteEnvironmentModal(environment: Environment, event: MouseEvent): void {
+    // Stop event propagation to prevent the navigateToEnvironment method from being called
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    this.currentEnvironment = environment;
+    this.showDeleteEnvironmentModal = true;
+  }
+
+  /**
+   * Close the delete environment modal
+   */
+  closeDeleteEnvironmentModal(): void {
+    this.showDeleteEnvironmentModal = false;
+    this.currentEnvironment = null;
+  }
+
+  /**
+   * Delete an environment
+   */
+  deleteEnvironment(): void {
+    if (!this.currentEnvironment) {
+      return;
+    }
+
+    this.environmentService.deleteEnvironment(this.currentEnvironment.id, this.currentEnvironment.workSpaceId).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          console.log('Environment deleted successfully');
+          this.snackBar.open('Environment deleted successfully', 'Close', { duration: 3000 });
+          this.closeDeleteEnvironmentModal();
+          this.loadEnvironments(); // Refresh the environments list
+        } else {
+          console.error('Error deleting environment:', response.error);
+          this.snackBar.open(`Failed to delete environment: ${response.error}`, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting environment:', error);
+        this.snackBar.open('Failed to delete environment', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Fetch histories by workspace ID
+   * @param workspaceId The ID of the workspace to get histories for
+   */
+  private fetchHistoriesByWorkspaceId(workspaceId: number): void {
     console.log(`Fetching histories for workspace ID: ${workspaceId}`);
     this.historyService.GetHistoryByWorkspaceId(workspaceId).subscribe({
       next: (response) => {
@@ -773,7 +1639,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           this.histories = response.data;
           this.filteredHistories = [...this.histories];
           console.log(`Loaded ${this.histories.length} histories for workspace ID ${workspaceId}:`, this.histories);
-          
+
           // Debug the structure of the first history item
           if (this.histories.length > 0) {
             console.log('First history item structure:', JSON.stringify(this.histories[0], null, 2));
@@ -809,20 +1675,26 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Filter environments based on search term
+   * @param searchTerm The search term to filter by
+   */
+
+
+  /**
    * Open a history item in a new tab
    * @param history The history item to open
    */
   openHistoryItem(history: any) {
     // Get domain for tab name display
     const domain = this.getDomainFromUrl(history.requests.url);
-    
+
     // Convert the string method to the HttpMethod enum
     const methodString = history.requests.httpMethod || 'GET';
     const method = HttpMethod[methodString as keyof typeof HttpMethod] || HttpMethod.GET;
-    
+
     console.log('Opening history item with method:', methodString, 'converted to:', method);
     console.log('History item details:', history);
-    
+
     // Create a new tab with the history request data
     this.tabService.createNewTab({
       name: `${methodString} ${domain}`,
@@ -849,7 +1721,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   getDomainFromUrl(url: string): string {
     if (!url) return 'No URL';
-    
+
     try {
       const urlObj = new URL(url);
       return urlObj.hostname;
@@ -867,7 +1739,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   getPathFromUrl(url: string): string {
     if (!url) return '/path';
-    
+
     try {
       const urlObj = new URL(url);
       return urlObj.pathname + urlObj.search;
@@ -1500,10 +2372,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       });
   }
 
-  ngOnDestroy() {
-    // Clean up subscriptions when the component is destroyed
-    this.subscriptions.unsubscribe();
-  }
+  // ngOnDestroy method is implemented at the end of the class
 
   /**
    * Advanced search functionality to filter collections, folders, and requests
@@ -1626,5 +2495,16 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Auto-expand matching collections and folders for better UX
     matchingCollectionIds.forEach(id => this.expandedCollections.add(id));
     matchingFolderIds.forEach(id => this.expandedFolders.add(id));
+  }
+
+  /**
+   * Implement OnDestroy interface to clean up subscriptions
+   */
+  ngOnDestroy(): void {
+    // Unsubscribe from all subscriptions to prevent memory leaks
+    if (this.subscriptions) {
+      this.subscriptions.unsubscribe();
+      console.log('Sidebar component destroyed, all subscriptions cleaned up');
+    }
   }
 }

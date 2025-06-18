@@ -22,6 +22,8 @@ export interface CreateEnvironmentRequest {
 export interface UpdateEnvironmentRequest {
   id: number;
   name: string;
+  workspaceId?: number;
+  variables?: { [key: string]: string };
 }
 
 export interface AddVariableToEnvironmentRequest {

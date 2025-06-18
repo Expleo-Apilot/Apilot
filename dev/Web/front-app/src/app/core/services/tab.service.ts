@@ -62,7 +62,7 @@ export class TabService {
       const storedTabs = localStorage.getItem(this.STORAGE_KEY);
       if (storedTabs) {
         const tabs = JSON.parse(storedTabs) as RequestTab[];
-        
+
         // If there are tabs but no active tab, set the first one as active
         if (tabs.length > 0) {
           const activeTab = tabs.find(tab => tab.active);
@@ -93,15 +93,15 @@ export class TabService {
 
   createNewTab(initialData?: Partial<RequestTab>): RequestTab {
     const tabs = this.tabs;
-    
+
     // Set all existing tabs as inactive
     tabs.forEach(tab => tab.active = false);
-    
+
     // Create a new tab with default values
     const newTab: RequestTab = {
       id: this.generateId(),
       name: initialData?.name || 'New Request',
-      url: initialData?.url || 'https://simple-books-api.glitch.me',
+      url: initialData?.url || '',
       method: initialData?.method || HttpMethod.GET,
       params: initialData?.params || [{ key: '', value: '', enabled: true }],
       headers: initialData?.headers || [{ key: '', value: '', enabled: true }],
@@ -115,24 +115,24 @@ export class TabService {
       parentId: initialData?.parentId,
       parentType: initialData?.parentType
     };
-    
+
     tabs.push(newTab);
     this._tabs.next(tabs);
     this._activeTabId.next(newTab.id);
     this.saveTabsToStorage();
-    
+
     return newTab;
   }
 
   closeTab(tabId: string): void {
     let tabs = this.tabs;
     const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-    
+
     if (tabIndex === -1) return;
-    
+
     const isActiveTab = tabs[tabIndex].active;
     tabs = tabs.filter(tab => tab.id !== tabId);
-    
+
     // If we closed the active tab and there are other tabs, make another one active
     if (isActiveTab && tabs.length > 0) {
       const newActiveIndex = Math.min(tabIndex, tabs.length - 1);
@@ -144,7 +144,7 @@ export class TabService {
       this.createNewTab();
       return;
     }
-    
+
     this._tabs.next(tabs);
     this.saveTabsToStorage();
   }
@@ -152,16 +152,16 @@ export class TabService {
   activateTab(tabId: string): void {
     const tabs = this.tabs;
     const tab = tabs.find(t => t.id === tabId);
-    
+
     if (!tab) return;
-    
+
     // Deactivate all tabs
     tabs.forEach(t => t.active = false);
-    
+
     // Activate the selected tab
     tab.active = true;
     this._activeTabId.next(tabId);
-    
+
     this._tabs.next(tabs);
     this.saveTabsToStorage();
   }
@@ -169,17 +169,17 @@ export class TabService {
   updateTabData(tabId: string, data: Partial<RequestTab>): void {
     const tabs = this.tabs;
     const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-    
+
     if (tabIndex === -1) return;
-    
+
     // Update the tab with new data
     tabs[tabIndex] = { ...tabs[tabIndex], ...data };
-    
+
     // If the URL changed, update the tab name based on the URL
     if (data.url && data.url !== tabs[tabIndex].url) {
       tabs[tabIndex].name = this.generateTabNameFromUrl(data.url);
     }
-    
+
     this._tabs.next(tabs);
     this.saveTabsToStorage();
   }
@@ -188,7 +188,7 @@ export class TabService {
     try {
       const urlObj = new URL(url);
       const pathParts = urlObj.pathname.split('/').filter(Boolean);
-      
+
       if (pathParts.length > 0) {
         // Use the last meaningful part of the path
         return pathParts[pathParts.length - 1];

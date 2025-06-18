@@ -4,7 +4,8 @@ import { WorkspaceComponent } from './workspace.component';
 
 const routes: Routes = [
   { path: '', component: WorkspaceComponent },
-  { path: ':id', component: WorkspaceComponent }
+  { path: ':id', component: WorkspaceComponent },
+  { path: ':id/environment/:environmentId', component: WorkspaceComponent }
 ];
 
 @NgModule({
