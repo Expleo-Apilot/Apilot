@@ -4,6 +4,21 @@
   <form [formGroup]="requestForm" (ngSubmit)="sendRequest()">
     <!-- URL and Method Row -->
     <div class="url-method-container">
+      <div class="env-selector">
+        <mat-form-field appearance="outline">
+          <mat-select 
+            [value]="activeEnvironmentId" 
+            (selectionChange)="changeEnvironment($event.value)" 
+            placeholder="Environment"
+          >
+            <mat-option [value]="0">{{ noEnvironmentOption.name }}</mat-option>
+            <mat-option *ngFor="let env of environments" [value]="env.id">
+              {{ env.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
       <div class="method-select">
         <mat-form-field appearance="outline">
           <mat-select formControlName="method">
@@ -17,6 +32,7 @@
       <div class="url-input">
         <mat-form-field appearance="outline" class="full-width">
           <input matInput
+                 id="url-input"
                  [placeholder]="'https://simple-books-api.glitch.me'"
                  [value]="getDisplayUrl()"
                  (input)="onUrlInput($event)"
@@ -33,12 +49,12 @@
           <span *ngIf="!isLoading" style="color: white">Send</span>
           <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
         </button>
-        
+
         <!-- Dropdown trigger button -->
         <button mat-stroked-button type="button" class="dropdown-button" [disabled]="requestForm.invalid || isLoading" [matMenuTriggerFor]="sendMenu">
           <mat-icon style="color: white">arrow_drop_down</mat-icon>
         </button>
-        
+
         <!-- Dropdown menu -->
         <mat-menu #sendMenu="matMenu">
           <button mat-menu-item (click)="saveRequest()">
@@ -246,4 +262,5 @@
       </mat-tab>
     </mat-tab-group>
   </form>
+
 </div>

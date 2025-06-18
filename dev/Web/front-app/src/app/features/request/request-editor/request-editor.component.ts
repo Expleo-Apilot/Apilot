@@ -14,6 +14,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { SaveRequestModalComponent, SaveLocation } from '../save-request-modal/save-request-modal.component';
 import { ActivatedRoute, ParamMap } from '@angular/router';
+import { VariableReplacementService } from '../../../core/services/variable-replacement.service';
+import { EnvironmentService } from '../../../core/services/environment.service';
+import { Environment } from '../../../core/models/environment.model';
 
 @Component({
   selector: 'app-request-editor',
@@ -63,6 +66,15 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
   // Current workspace ID
   workspaceId: number = 0;
 
+  // Environment variable support
+  environmentVariables: { [key: string]: string } = {};
+  activeEnvironmentId: number | null = null;
+  urlPreview: string = ''; // Holds the URL with variables replaced for preview
+  
+  // Environment selection
+  environments: Environment[] = [];
+  noEnvironmentOption = { id: 0, name: 'No Environment', description: '', variables: {}, workspaceId: 0, isGlobal: false };
+
   constructor(
     private fb: FormBuilder,
     private httpClientService: HttpClientService,
@@ -72,7 +84,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private route: ActivatedRoute,
-    public cdr: ChangeDetectorRef
+    public cdr: ChangeDetectorRef,
+    private variableReplacementService: VariableReplacementService,
+    private environmentService: EnvironmentService
   ) { }
 
   ngOnInit(): void {
@@ -92,6 +106,42 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     const theme = savedTheme === 'dark' ? 'vs-dark' : 'vs-light';
     this.setMonacoTheme(theme);
 
+    // Subscribe to environment variables and update URL preview when variables change
+    const envVarsSubscription = this.variableReplacementService.getCurrentEnvironmentVariables()
+      .subscribe(variables => {
+        this.environmentVariables = variables;
+        this.updateUrlPreview();
+      });
+    this.subscriptions.push(envVarsSubscription);
+
+    // Subscribe to active environment changes
+    const activeEnvSubscription = this.variableReplacementService.getActiveEnvironmentId()
+      .subscribe(id => {
+        this.activeEnvironmentId = id;
+      });
+    this.subscriptions.push(activeEnvSubscription);
+    
+    // Load environments for the current workspace and activate the first one by default
+    this.route.paramMap.pipe(
+      take(1) // Take only the first emission and complete
+    ).subscribe((params: ParamMap) => {
+      const workspaceId = params.get('id');
+      if (workspaceId) {
+        this.loadEnvironmentsForWorkspace(Number(workspaceId), true);
+        
+        // Subscribe to environment changes to reload the dropdown when environments are created or updated
+        const envChangesSubscription = this.environmentService.environmentsChanged$
+          .subscribe(changedWorkspaceId => {
+            // Only reload if the changes affect our current workspace
+            if (changedWorkspaceId === Number(workspaceId)) {
+              // Reload environments but preserve the current active environment
+              this.loadEnvironmentsForWorkspace(Number(workspaceId), false);
+            }
+          });
+        this.subscriptions.push(envChangesSubscription);
+      }
+    });
+
     // Get workspace ID from route
     this.route.parent?.parent?.params.subscribe(params => {
       if (params['id']) {
@@ -103,6 +153,8 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     const urlSubscription = this.requestForm.get('url')?.valueChanges.subscribe((url) => {
       if (url) {
         this.parseUrlParameters(url);
+        // Update URL preview with variables replaced
+        this.updateUrlPreview();
         // Save the current tab data when URL changes
         this.saveCurrentTabData();
       }
@@ -145,7 +197,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       this.subscriptions.push(authTypeSubscription);
     }
 
-    // Subscribe to active tab changes
+    // Subscribe to active tab changes and load tab data when tab changes
     this.subscriptions.push(
       this.tabService.activeTabId$.subscribe(tabId => {
         if (tabId && tabId !== this.currentTabId) {
@@ -153,13 +205,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           if (this.currentTabId) {
             this.saveCurrentTabData();
           }
-
-          // Update current tab ID
+          // Update current tab ID and load new tab data
           this.currentTabId = tabId;
-
-          // Tell the response service about the tab change
           this.responseService.setCurrentTabId(tabId);
-
           // Load the new tab data
           this.loadTabData(tabId);
         } else if (!tabId && this.tabService.tabs.length === 0) {
@@ -197,7 +245,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
   initForm(): void {
     this.requestForm = this.fb.group({
-      url: ['https://simple-books-api.glitch.me', [Validators.required]],
+      url: ['', [Validators.required]],
       method: [HttpMethod.GET, [Validators.required]],
       body: ['{\n  "key": "value"\n}'],
       authType: [AuthType.NONE],
@@ -435,119 +483,46 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
       // Parse and update parameters
       this.parseUrlParameters(url);
+
+      // Update URL preview with replaced variables
+      this.updateUrlPreview();
     } catch (e) {
       // If URL is invalid, just update the form value
       this.requestForm.patchValue({ url: url }, { emitEvent: false });
-    }
 
-    this.cdr.detectChanges();
+      // Still update URL preview for variable replacement
+      this.updateUrlPreview();
+    }
   }
 
-  // Handle URL blur event
   onUrlBlur(): void {
-    const url = this.requestForm.get('url')?.value;
-    if (url) {
-      try {
-        // Try to parse the URL
-        const urlObj = new URL(url);
-        const baseUrl = urlObj.origin + urlObj.pathname;
-
-        // Update the form with the base URL
-        this.requestForm.patchValue({ url: baseUrl }, { emitEvent: false });
-
-        // Parse and update parameters
+    const urlControl = this.requestForm.get('url');
+    if (urlControl) {
+      const url = urlControl.value;
+      if (url) {
         this.parseUrlParameters(url);
-      } catch (e) {
-        // If URL is invalid, do nothing
-        console.log('Invalid URL format');
+        this.updateUrlFromParams();
+        this.updateUrlPreview();
+      }
+      if (url && url.trim() !== '' && !url.match(/^[a-z]+:\/\//)) {
+        const updatedUrl = `${url}`;
+        urlControl.setValue(updatedUrl, { emitEvent: true });
       }
     }
   }
 
-  // Update the parseUrlParameters method
-  private parseUrlParameters(url: string): void {
-    try {
-      const urlObj = new URL(url);
-      const searchParams = new URLSearchParams(urlObj.search);
+  // Method moved to unified implementation
 
-      // Clear existing params
-      this.params = [];
-
-      // Add each parameter from the URL
-      searchParams.forEach((value, key) => {
-        this.params.push({
-          key: key,
-          value: value,
-          enabled: true
-        });
-      });
-
-      // Add an empty row if no parameters
-      if (this.params.length === 0) {
-        this.params.push({ key: '', value: '', enabled: true });
-      }
-
-      this.cdr.detectChanges();
-    } catch (e) {
-      // If URL is invalid, do nothing
-      console.log('Invalid URL format');
-    }
-  }
-
-  // Update the buildQueryString method
-  buildQueryString(): string {
-    const validParams = this.params.filter(p => p.enabled && p.key.trim() !== '');
-
-    if (validParams.length === 0) {
-      return '';
-    }
-
-    const queryParams = new URLSearchParams();
-    validParams.forEach(param => {
-      if (param.key.trim()) {
-        queryParams.append(param.key.trim(), param.value || '');
-      }
-    });
-
-    return queryParams.toString();
-  }
-
-  // Update the processUrl method
-  processUrl(baseUrl: string): string {
-    const queryString = this.buildQueryString();
-
-    if (!queryString) {
-      return baseUrl;
-    }
-
-    try {
-      const url = new URL(baseUrl);
-      const hasQueryParams = url.search.length > 0;
-      return hasQueryParams
-        ? `${baseUrl}&${queryString}`
-        : `${baseUrl}?${queryString}`;
-    } catch (e) {
-      // If URL is invalid, just append the query string
-      const hasQueryParams = baseUrl.includes('?');
-      return hasQueryParams
-        ? `${baseUrl}&${queryString}`
-        : `${baseUrl}?${queryString}`;
-    }
-  }
-
-  // Update the getDisplayUrl method
-  getDisplayUrl(): string {
-    const baseUrl = this.requestForm.get('url')?.value;
-    if (!baseUrl) return '';
-    return this.processUrl(baseUrl);
-  }
-
-  // Load data from a tab
-  private loadTabData(tabId: string): void {
+  /**
+   * Loads saved tab data when switching tabs
+   * @param tabId ID of the tab to load data from
+   */
+  loadTabData(tabId: string): void {
+    // Find the tab in the tab service
     const tab = this.tabService.tabs.find(t => t.id === tabId);
     if (!tab) return;
 
-    // Update form values
+    // Update form values with tab properties
     this.requestForm.patchValue({
       url: tab.url,
       method: tab.method,
@@ -577,17 +552,35 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       this.requestForm.get('body')?.enable({ emitEvent: false });
     }
 
+    // Update auth headers after loading data
+    this.updateAuthHeaders();
+    
+    // Ensure an environment is active when switching tabs
+    // (This preserves environment context across tabs without changing it)
+    if (!this.activeEnvironmentId && this.environments && this.environments.length > 0) {
+      // If no environment is currently active, activate the first one
+      const defaultEnv = this.environments[0];
+      this.changeEnvironment(defaultEnv.id);
+    }
+
+    // Update URL preview
+    this.updateUrlPreview();
+
     // Load any existing response data for this tab
     this.responseData = this.responseService.getResponseForTab(tabId);
 
     this.cdr.detectChanges();
   }
 
-  // Save current tab data
+  /**
+   * Save the current tab data to the tab service when switching tabs
+   * This ensures that tab state is preserved
+   */
   private saveCurrentTabData(): void {
     if (!this.currentTabId) return;
 
-    const formValue = this.requestForm.getRawValue(); // getRawValue includes disabled controls
+    // Get form values including disabled controls
+    const formValue = this.requestForm.getRawValue();
 
     // Get the current tab to preserve parent information
     const currentTab = this.tabService.tabs.find(t => t.id === this.currentTabId);
@@ -608,6 +601,8 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       parentType: currentTab?.parentType
     });
   }
+
+  // The saveCurrentTabData method has been moved above
 
   /**
    * Save the current request to the database
@@ -673,7 +668,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       if (result.location) {
         const location: SaveLocation = result.location;
         isShared = location.isShared || false;
-        
+
         if (location.type === 'collection') {
           collectionId = location.id;
           this.tabService.updateTabData(this.currentTabId!, {
@@ -695,7 +690,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
       // Convert form data to request DTO
       const requestDto = convertFormDataToRequest(requestFormData, requestName, collectionId || undefined, folderId || undefined, isShared);
-      
+
       // Save the request to the database
       this.requestService.saveRequest(requestDto).subscribe({
         next: (response) => {
@@ -705,7 +700,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           } else {
             // Display only the specific error message from the backend without prefix
             const errorMessage = response.error || 'An unknown error occurred';
-            this.snackBar.open(errorMessage, 'Dismiss', { 
+            this.snackBar.open(errorMessage, 'Dismiss', {
               duration: 7000,
               panelClass: ['error-snackbar']
             });
@@ -715,16 +710,16 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         error: (error) => {
           // Handle HTTP errors or other exceptions
           let errorMessage = 'An error occurred while communicating with the server';
-          
+
           if (error.error && error.error.error) {
             // Extract error message from API response if available
             errorMessage = error.error.error;
           } else if (error.message) {
             errorMessage = error.message;
           }
-          
+
           // Display only the specific error message without prefix
-          this.snackBar.open(errorMessage, 'Dismiss', { 
+          this.snackBar.open(errorMessage, 'Dismiss', {
             duration: 7000,
             panelClass: ['error-snackbar']
           });
@@ -749,14 +744,215 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       } else if (pathParts.length > 1 && pathParts[pathParts.length - 2]) {
         return pathParts[pathParts.length - 2].charAt(0).toUpperCase() + pathParts[pathParts.length - 2].slice(1);
       }
-
-      // If no meaningful path parts, use the hostname
-      return urlObj.hostname.split('.')[0].charAt(0).toUpperCase() + urlObj.hostname.split('.')[0].slice(1);
+      return 'Untitled Request';
     } catch (e) {
-      // If URL parsing fails, return a generic name
-      return 'New Request';
+      // If we can't parse the URL, just use a generic name
+      return 'Untitled Request';
     }
   }
+
+  /**
+   * Gets a display URL with the base URL and query string
+   */
+  getDisplayUrl(): string {
+    const url = this.requestForm.get('url')?.value || '';
+    const queryString = this.buildQueryString();
+    return url + queryString;
+  }
+
+  /**
+   * Updates the URL preview by replacing environment variables in the display URL
+   */
+  updateUrlPreview(): void {
+    const displayUrl = this.getDisplayUrl();
+    // Use the variable replacement service to replace variables in the URL
+    // Pass isUrl=true so that variable replacement knows to handle URL variables differently
+    this.urlPreview = this.variableReplacementService.replaceVariables(displayUrl, true);
+  }
+
+  /**
+   * Detects if a string contains environment variables in {{variable}} format
+   * @param text The text to check for variables
+   * @returns true if variables are found, false otherwise
+   */
+  /**
+   * Loads all available environments for the current workspace
+   * @param workspaceId The ID of the current workspace
+   * @param activateDefault Whether to activate the first environment by default
+   */
+  loadEnvironmentsForWorkspace(workspaceId: number, activateDefault: boolean = false): void {
+    // Save the current active environment ID to restore it after reload if needed
+    const previousActiveEnvId = this.activeEnvironmentId;
+    
+    this.environmentService.getEnvironmentsByWorkspaceId(workspaceId)
+      .subscribe({
+        next: (response) => {
+          if (response.isSuccess && response.data) {
+            this.environments = response.data;
+            
+            // If there are environments and we should activate the default, use the first one
+            if (activateDefault && this.environments.length > 0 && !this.activeEnvironmentId) {
+              // Use the first environment available
+              const defaultEnv = this.environments[0];
+              this.changeEnvironment(defaultEnv.id);
+            } 
+            // If we're reloading and had a previous environment, try to restore it
+            else if (!activateDefault && previousActiveEnvId && this.environments.length > 0) {
+              // Check if the previously active environment still exists
+              const envStillExists = this.environments.some(env => env.id === previousActiveEnvId);
+              if (envStillExists) {
+                // If it still exists, make sure it's still active (no need to change if it is)
+                if (this.activeEnvironmentId !== previousActiveEnvId) {
+                  this.changeEnvironment(previousActiveEnvId);
+                }
+              } else {
+                // If the environment was deleted, select the first available one
+                const defaultEnv = this.environments[0];
+                this.changeEnvironment(defaultEnv.id);
+              }
+            }
+            
+            this.cdr.detectChanges();
+          } else {
+            console.error('Failed to load environments:', response.error);
+          }
+        },
+        error: (error) => {
+          console.error('Error loading environments:', error);
+        }
+      });
+  }
+  
+  /**
+   * Change the active environment
+   * @param environmentId The ID of the environment to activate
+   */
+  changeEnvironment(environmentId: number | null): void {
+    // Pass the environment ID only if it's a valid number (not 0 which means 'No Environment')
+    const idToSet = environmentId && environmentId > 0 ? environmentId : null;
+    this.variableReplacementService.setActiveEnvironment(idToSet);
+  }
+  
+  hasEnvironmentVariables(text: string): boolean {
+    return text ? /\{\{([^{}]+)\}\}/g.test(text) : false;
+  }
+
+  /**
+   * Gets the variables used in a string
+   * @param text The text to extract variables from
+   * @returns Array of variable names without the {{ }} delimiters
+   */
+  getVariablesInText(text: string): string[] {
+    if (!text) return [];
+    return this.variableReplacementService.detectVariables(text);
+  }
+  
+  /**
+   * Creates a new tab and initializes it with the active environment
+   * @param name Optional name for the new tab
+   */
+  createNewTab(name?: string): void {
+    // Save current tab data before creating a new one
+    if (this.currentTabId) {
+      this.saveCurrentTabData();
+    }
+
+    // Create a new tab
+    const newTab = this.tabService.createNewTab({ name: name || 'New Request' });
+    this.currentTabId = newTab.id;
+    this.responseService.setCurrentTabId(this.currentTabId);
+    
+    // Reset the form with default values
+    this.requestForm.patchValue({
+      url: '',
+      method: HttpMethod.GET,
+      body: '{\n  "key": "value"\n}',
+      authType: AuthType.NONE,
+      basicAuthUsername: '',
+      basicAuthPassword: '',
+      bearerToken: ''
+    });
+    
+    // Reset params and headers
+    this.params = [{ key: '', value: '', enabled: true }];
+    this.headers = [{ key: '', value: '', enabled: true }];
+    this.bodyType = 'json';
+    this.responseData = null;
+    
+    // Make sure the active environment is still set
+    // (We don't change it when creating a new tab to maintain environment context across tabs)
+    if (!this.activeEnvironmentId && this.environments && this.environments.length > 0) {
+      // If no environment is active yet, activate the first one
+      const defaultEnv = this.environments[0];
+      this.changeEnvironment(defaultEnv.id);
+    }
+    
+    // Update the request URL preview
+    this.updateUrlPreview();
+    
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Checks if a specific variable is defined in the current environment
+   * @param variableName Name of the variable to check
+   * @returns true if the variable is defined, false otherwise
+   */
+  isVariableDefined(variableName: string): boolean {
+    return this.variableReplacementService.isVariableDefined(variableName);
+  }
+
+  /**
+   * Inserts a variable at the current cursor position in the URL input
+   * @param variableName Name of the variable to insert
+   */
+  insertVariableInUrl(variableName: string): void {
+    const urlControl = this.requestForm.get('url');
+    if (!urlControl) return;
+
+    const currentUrl = urlControl.value || '';
+    const urlInput = document.getElementById('url-input') as HTMLInputElement;
+
+    if (urlInput) {
+      const cursorPos = urlInput.selectionStart || 0;
+      const textBefore = currentUrl.substring(0, cursorPos);
+      const textAfter = currentUrl.substring(cursorPos, currentUrl.length);
+
+      // Insert variable without http:// prefix, just the variable token
+      const newUrl = `${textBefore}{{${variableName}}}${textAfter}`;
+      urlControl.setValue(newUrl, { emitEvent: true });
+
+      // Set cursor position after the inserted variable
+      setTimeout(() => {
+        const newCursorPos = cursorPos + variableName.length + 4; // +4 for '{{}}'
+        urlInput.setSelectionRange(newCursorPos, newCursorPos);
+        urlInput.focus();
+      }, 0);
+    }
+  }
+
+  /**
+   * Inserts a variable at the current cursor position in a header or param value
+   * @param item The header or param object to update
+   * @param variableName Name of the variable to insert
+   * @param field 'key' or 'value' - which field to insert into
+   */
+  insertVariableInKeyValue(item: KeyValuePair, variableName: string, field: 'key' | 'value'): void {
+    if (!item) return;
+
+    const currentValue = item[field] || '';
+    item[field] = `${currentValue}{{${variableName}}}`;
+
+    // Update the auth headers if necessary
+    this.updateAuthCredentials();
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Loads saved tab data when switching tabs
+   * @param tabId ID of the tab to load data from
+   */
+  // This duplicate method has been removed and merged with the other implementation
 
   sendRequest(): void {
     if (this.requestForm.invalid) {
@@ -769,13 +965,103 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     ).subscribe((params: ParamMap) => {
       const workspaceId = params.get('id');
       this.workspaceIdRoute = Number(workspaceId || '0');
-      
+
       // Continue with the request after we have the workspace ID
       this.executeRequest(this.workspaceIdRoute);
     });
   }
 
-  // Execute the actual HTTP request with the workspace ID
+  /* This duplicate getDisplayUrl method has been removed */
+
+  /**
+   * Process URL with query parameters
+   */
+  private processUrl(baseUrl: string): string {
+    const queryString = this.buildQueryString();
+
+    if (!queryString) {
+      return baseUrl;
+    }
+
+    try {
+      const url = new URL(baseUrl);
+      const hasQueryParams = url.search.length > 0;
+      return hasQueryParams
+        ? `${baseUrl}&${queryString}`
+        : `${baseUrl}?${queryString}`;
+    } catch (e) {
+      // If URL is invalid, just append the query string
+      const hasQueryParams = baseUrl.includes('?');
+      return hasQueryParams
+        ? `${baseUrl}&${queryString}`
+        : `${baseUrl}?${queryString}`;
+    }
+  }
+
+  /**
+   * Update URL from parameters
+   */
+  private updateUrlFromParams(): void {
+    const urlControl = this.requestForm.get('url');
+    if (urlControl) {
+      const baseUrl = urlControl.value;
+      const processedUrl = this.processUrl(baseUrl);
+      urlControl.setValue(processedUrl, { emitEvent: false });
+    }
+  }
+
+  /**
+   * Parse URL parameters from a URL string
+   */
+  private parseUrlParameters(url: string): void {
+    try {
+      const urlObj = new URL(url);
+      const searchParams = new URLSearchParams(urlObj.search);
+
+      // Clear existing params
+      this.params = [];
+
+      // Add each parameter from the URL
+      searchParams.forEach((value, key) => {
+        this.params.push({
+          key: key,
+          value: value,
+          enabled: true
+        });
+      });
+
+      // Add an empty row if no parameters
+      if (this.params.length === 0) {
+        this.params.push({ key: '', value: '', enabled: true });
+      }
+
+      this.cdr.detectChanges();
+    } catch (e) {
+      // If URL is invalid, do nothing
+      console.log('Invalid URL format');
+    }
+  }
+
+  /**
+   * Build query string from params
+   */
+  private buildQueryString(): string {
+    const validParams = this.params.filter(p => p.enabled && p.key.trim() !== '');
+
+    if (validParams.length === 0) {
+      return '';
+    }
+
+    const queryParams = new URLSearchParams();
+    validParams.forEach(param => {
+      if (param.key.trim()) {
+        queryParams.append(param.key.trim(), param.value || '');
+      }
+    });
+
+    return queryParams.toString() ? `?${queryParams.toString()}` : '';
+  }
+
   private executeRequest(workspaceId: number): void {
     this.isLoading = true;
     this.responseData = null;

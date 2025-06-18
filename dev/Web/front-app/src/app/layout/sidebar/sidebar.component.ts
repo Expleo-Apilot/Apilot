@@ -8,6 +8,7 @@ import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/dr
 // Services
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { EnvironmentService } from '../../core/services/environment.service';
+import { VariableReplacementService } from '../../core/services/variable-replacement.service';
 import { CollectionService } from '../../core/services/collection.service';
 import { RequestService } from '../../core/services/request.service';
 import { FolderService } from '../../core/services/folder.service';
@@ -57,6 +58,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   filteredEnvironments: Environment[] = [];
   environmentSearchTerm = '';
   showEnvironmentsMenu = false;
+  activeEnvironmentId: number | null = null;
   showNewEnvironmentModal = false;
   showEditEnvironmentModal = false;
   showDeleteEnvironmentModal = false;
@@ -131,17 +133,21 @@ export class SidebarComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
 
-  constructor(private route: ActivatedRoute,
-              private router: Router,
-              private collectionService: CollectionService,
-              private folderService: FolderService,
-              private requestService: RequestService,
-              private collaborationService: CollaborationService,
-              private environmentService: EnvironmentService,
-              private collectionImportService: CollectionImportService,
-              private tabService: TabService,
-              private historyService: HistoryService,
-              private snackBar: MatSnackBar) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private workspaceService: WorkspaceService,
+    private environmentService: EnvironmentService,
+    private collectionService: CollectionService,
+    private requestService: RequestService,
+    private folderService: FolderService,
+    private collaborationService: CollaborationService,
+    private collectionImportService: CollectionImportService,
+    private tabService: TabService,
+    private historyService: HistoryService,
+    private snackBar: MatSnackBar,
+    private variableReplacementService: VariableReplacementService
+  ) {}
 
   ngOnInit() {
     // Subscribe to route params to get workspace ID
@@ -272,26 +278,41 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Close the collections menu
-  closeCollectionsMenu() {
-    this.showCollectionsMenu = false;
-    document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
-  }
-
-  // Close the environments menu
+  /**
+   * Close the environments menu
+   */
   closeEnvironmentsMenu = () => {
     this.showEnvironmentsMenu = false;
     document.removeEventListener('click', this.closeEnvironmentsMenu);
   };
   
   importEnvironment(): void {
-    // Placeholder for environment import functionality
-    // This would be implemented similar to importCollection
-    this.snackBar.open('Environment import functionality coming soon', 'Close', {
-      duration: 3000
-    });
+    console.log('Environment import functionality to be implemented');
   }
   
+  /**
+   * Sets an environment as active for variable replacement
+   * @param environmentId The environment ID to set as active
+   */
+  setActiveEnvironment(environmentId: number): void {
+    if (!environmentId) return;
+    
+    // Update the activeEnvironmentId in the component
+    this.activeEnvironmentId = environmentId;
+    
+    // Update the active environment in the variable replacement service
+    // This enables dynamic variable replacement in requests
+    this.variableReplacementService.setActiveEnvironment(environmentId);
+    
+    console.log(`Set active environment: ${environmentId} for variable replacement`);
+    
+    // Show success notification to the user
+    this.snackBar.open('Environment activated for variable replacement', 'Close', { 
+      duration: 3000,
+      panelClass: 'success-snackbar'
+    });
+  }
+
   /**
    * Update URL to reflect selected environment without triggering full navigation
    * @param environmentId The ID of the environment to select
@@ -308,6 +329,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.setActiveNavItem('environments');
     }
     
+    // Set this as the active environment for variable replacement
+    this.setActiveEnvironment(environmentId);
+    
     // Update the URL to reflect the selected environment
     this.router.navigate(['/workspace', this.workspaceId, 'environment', environmentId], {
       replaceUrl: false,
@@ -318,7 +342,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Open the environment variables modal with the selected environment
     this.openEnvironmentVariablesModal(environmentId);
   }
-  
+
+  closeCollectionsMenu() {
+    this.showCollectionsMenu = false;
+    document.removeEventListener('click', this.closeCollectionsMenuOnClickOutside);
+  }
+
   /**
    * Load environment details without changing the view
    * @param environmentId The ID of the environment to load details for
@@ -335,7 +364,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           console.error('Error loading environment details:', response.error);
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading environment details:', error);
       }
     });
@@ -347,6 +376,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   openEnvironmentVariablesModal(environmentId: number): void {
     if (!environmentId) return;
+    
+    // Also set this as the active environment for variable replacement
+    this.setActiveEnvironment(environmentId);
     
     this.environmentService.getEnvironmentById(environmentId).subscribe({
       next: (response) => {
@@ -371,7 +403,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           console.error('Error loading environment details:', response.error);
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         this.snackBar.open('Error loading environment details', 'Close', { duration: 3000 });
         console.error('Error loading environment details:', error);
       }
@@ -1567,7 +1599,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.environmentService.deleteEnvironment(this.currentEnvironment.id).subscribe({
+    this.environmentService.deleteEnvironment(this.currentEnvironment.id, this.currentEnvironment.workSpaceId).subscribe({
       next: (response) => {
         if (response.isSuccess) {
           console.log('Environment deleted successfully');

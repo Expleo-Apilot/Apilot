@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import {
   Environment,
   CreateEnvironmentRequest,
@@ -17,6 +18,12 @@ import { ApiResponse } from '../models/api-response.model';
 })
 export class EnvironmentService {
   private baseUrl = 'http://localhost:5051';
+  
+  // Subject to notify subscribers when environments change (create/update/delete)
+  private environmentsChanged = new Subject<number>();
+  
+  // Observable that components can subscribe to
+  public environmentsChanged$ = this.environmentsChanged.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -38,6 +45,13 @@ export class EnvironmentService {
       `${this.baseUrl}/CreateEnvironment`,
       request,
       this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(request.workSpaceId);
+        }
+      })
     );
   }
 
@@ -76,17 +90,31 @@ export class EnvironmentService {
       `${this.baseUrl}/UpdateEnvironment`,
       request,
       this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess && request.workspaceId) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(request.workspaceId);
+        }
+      })
     );
   }
 
 
-  deleteEnvironment(id: number): Observable<ApiResponse<void>> {
+  deleteEnvironment(id: number, workspaceId: number): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(
       `${this.baseUrl}/DeleteEnvironment`,
       {
         ...this.getHttpOptions(),
         params: { id: id.toString() }
       }
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(workspaceId);
+        }
+      })
     );
   }
 
@@ -96,6 +124,13 @@ export class EnvironmentService {
       `${this.baseUrl}/AddVariablesToEnvironment`,
       request,
       this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess && response.data) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(response.data.workSpaceId);
+        }
+      })
     );
   }
 

@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../../constants';
+import { HistoryService } from './history.service';
+import { CreateHistoryDto } from '../models/history/history-request.model';
+import { VariableReplacementService } from './variable-replacement.service';
+import { Authentication, KeyValuePair } from '../models/request.model';
 import { HttpMethod } from '../models/http-method.enum';
-import {HistoryService} from './history.service';
-import {CreateHistoryDto, PerformRequestDto} from '../models/history.model';
-import {Authentication, KeyValuePair} from '../models/request.model';
-import {ActivatedRoute} from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -13,8 +15,11 @@ import {ActivatedRoute} from '@angular/router';
 export class HttpClientService {
   private apiUrl = 'http://localhost:5051/PerformRequest'; // API endpoint from your
 
-  constructor(private http: HttpClient ,
-              private historyService: HistoryService ) { }
+  constructor(
+    private http: HttpClient,
+    private historyService: HistoryService,
+    private variableReplacementService: VariableReplacementService
+  ) { }
 
   private getAuthHeaders(): HttpHeaders {
     return new HttpHeaders({
@@ -41,25 +46,50 @@ export class HttpClientService {
     workspaceId : number  = 0,
     bodyType: string = 'json'
   ): Observable<any> {
-    // Convert the headers array to a dictionary format expected by the backend
-    const headersDict = this.convertArrayToDictionary(
-      headers.filter(h => h.enabled)
-    );
-
-    // Convert the params array to a dictionary format expected by the backend
-    const paramsDict = this.convertArrayToDictionary(
-      params.filter(p => p.enabled)
-    );
+    // Replace variables in the URL using the {{variableName}} syntax
+    // Pass isUrl=true so that variable replacement knows to handle URL variables differently
+    const processedUrl = this.variableReplacementService.replaceVariables(url, true);
+    console.log('URL after variable replacement:', processedUrl);
+    
+    // Process headers - replace variables in both keys and values
+    const processedHeaders = this.processKeyValuePairsWithVariables(headers.filter(h => h.enabled));
+    
+    // Process parameters - replace variables in both keys and values
+    const processedParams = this.processKeyValuePairsWithVariables(params.filter(p => p.enabled));
+    
+    // Process body - replace variables in the request body if it's a string or object
+    let processedBody = body;
+    if (body) {
+      processedBody = this.variableReplacementService.replaceVariablesInObject(body);
+    }
+    
+    // Process authentication if present
+    let processedAuth = auth;
+    if (auth) {
+      processedAuth = this.variableReplacementService.replaceVariablesInObject(auth);
+    }
+    
+    // Convert the processed headers and params arrays to dictionary format expected by the backend
+    const headersDict = this.convertArrayToDictionary(processedHeaders);
+    const paramsDict = this.convertArrayToDictionary(processedParams);
 
     // Prepare the request payload according to the PerformRequestDto format
     const requestPayload = {
-      httpMethod: method, // Using httpMethod for the API call
-      url: url,
+      httpMethod: method,
+      url: processedUrl,
       headers: headersDict,
       parameters: paramsDict,
-      body: body,
-      authentication: auth
+      body: processedBody,
+      authentication: processedAuth
     };
+    
+    // Log the processed request for debugging
+    console.log('Processed request with variables replaced:', {
+      url: processedUrl,
+      headers: headersDict,
+      params: paramsDict,
+      body: processedBody
+    });
 
     // Save the request to history before sending
     if (workspaceId > 0) {
@@ -68,17 +98,16 @@ export class HttpClientService {
         timeStamp: new Date(),
         workSpaceId: workspaceId,
         Requests: {
-          httpMethod: method, // Using httpMethod instead of method to match sidebar component expectations
-          url: url,
+          method: method, // Match the PerformRequestDto interface which expects 'method' not 'httpMethod'
+          url: processedUrl, // Save the processed URL with replaced variables
           headers: headersDict,
           params: paramsDict,
-          body: body,
+          body: processedBody,
           bodyType: bodyType
-        } as any // Using type assertion to bypass type checking since we're adapting to the UI expectations
+        }
       };
       
-      // Debug log to verify the method being saved
-      console.log('Saving history with method:', method);
+      // Save to history
       this.historyService.SaveHistory(historyData).subscribe({
         next: (response) => {
           console.log('Request saved to history successfully', response);
@@ -89,8 +118,26 @@ export class HttpClientService {
       });
     }
 
-    // Send the HTTP request with authorization header
+    // Send the HTTP request with authorization header and processed data
     return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions());
+  }
+
+  /**
+   * Process key-value pairs by replacing variables in both keys and values
+   * @param array Array of key-value pairs to process
+   * @returns Processed array with variables replaced
+   */
+  private processKeyValuePairsWithVariables(
+    array: { key: string, value: string, description?: string, enabled: boolean }[]
+  ): { key: string, value: string, description?: string, enabled: boolean }[] {
+    return array.map(item => {
+      return {
+        key: this.variableReplacementService.replaceVariables(item.key),
+        value: this.variableReplacementService.replaceVariables(item.value || ''),
+        description: item.description,
+        enabled: item.enabled
+      };
+    });
   }
 
   /**
