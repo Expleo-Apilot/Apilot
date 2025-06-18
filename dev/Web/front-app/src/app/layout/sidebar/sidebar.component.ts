@@ -37,7 +37,7 @@ type NavItem = 'collections' | 'environments' | 'flows' | 'history';
   selector: 'app-sidebar',
   standalone: false,
   templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.css']
+  styleUrls: ['./sidebar.component.css', './environment-variables.css']
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   // Subscription management
@@ -533,7 +533,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     
     const variable = this.environmentVariables[index];
-    console.log('Updating variable:', { index, variable });
+    const originalKey = this.getOriginalKeyFromCurrentEnvironment(index);
+    const isKeyChanged = originalKey !== variable.key.trim();
+    
+    console.log('Updating variable:', { index, variable, originalKey, isKeyChanged });
     
     // Validate the key is not empty
     if (!variable.key.trim()) {
@@ -551,7 +554,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
     
-    // Try the direct update approach first
+    // If key has changed, we need to remove the old key and add the new one
+    if (isKeyChanged && originalKey) {
+      console.log('Key has changed, removing old key and adding new one');
+      this.handleKeyChange(originalKey, variable.key.trim(), variable.value || '');
+      return;
+    }
+    
+    // If key hasn't changed, proceed with normal update
     const updateRequest: UpdateVariableInEnvironmentRequest = {
       environmentId: this.currentEnvironment.id,
       key: variable.key.trim(),
@@ -588,6 +598,87 @@ export class SidebarComponent implements OnInit, OnDestroy {
         
         // If direct update fails with error, try the bulk update approach as fallback
         this.updateEnvironmentWithAllVariables(index, variable.key.trim(), variable.value || '');
+      }
+    });
+  }
+  
+  /**
+   * Get the original key from the current environment variables object
+   * @param index The index of the variable in the environmentVariables array
+   * @returns The original key or null if not found
+   */
+  private getOriginalKeyFromCurrentEnvironment(index: number): string | null {
+    if (!this.currentEnvironment?.variables || index < 0 || index >= this.environmentVariables.length) {
+      return null;
+    }
+    
+    // Find the original key in the environment variables object
+    // We need to match by position since we're working with an array that was converted from an object
+    const keys = Object.keys(this.currentEnvironment.variables);
+    if (index < keys.length) {
+      return keys[index];
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Handle a key change by removing the old variable and adding a new one
+   * @param oldKey The original key to remove
+   * @param newKey The new key to add
+   * @param value The value for the new key
+   */
+  private handleKeyChange(oldKey: string, newKey: string, value: string): void {
+    if (!this.currentEnvironment) return;
+    
+    const loadingRef = this.snackBar.open('Updating variable name...', '', { duration: undefined });
+    
+    // First remove the old key
+    this.environmentService.removeVariableFromEnvironment({
+      environmentId: this.currentEnvironment.id,
+      key: oldKey
+    }).subscribe({
+      next: (removeResponse) => {
+        if (removeResponse.isSuccess) {
+          // Then add the new key with the value
+          this.environmentService.addVariableToEnvironment({
+            environmentId: this.currentEnvironment!.id,
+            key: newKey,
+            value: value
+          }).subscribe({
+            next: (addResponse) => {
+              loadingRef.dismiss();
+              if (addResponse.isSuccess) {
+                this.snackBar.open('Variable name updated successfully', 'Close', { duration: 3000 });
+                // Reload the environment to get the latest data
+                this.reloadCurrentEnvironment();
+                // Also refresh the environments list
+                this.loadEnvironments();
+              } else {
+                console.error('Error adding new variable after key change:', addResponse.error);
+                // Fall back to bulk update
+                this.updateEnvironmentWithAllVariables(-1, newKey, value);
+              }
+            },
+            error: (error) => {
+              loadingRef.dismiss();
+              console.error('Error adding new variable after key change:', error);
+              // Fall back to bulk update
+              this.updateEnvironmentWithAllVariables(-1, newKey, value);
+            }
+          });
+        } else {
+          loadingRef.dismiss();
+          console.error('Error removing old variable during key change:', removeResponse.error);
+          // Fall back to bulk update
+          this.updateEnvironmentWithAllVariables(-1, newKey, value);
+        }
+      },
+      error: (error) => {
+        loadingRef.dismiss();
+        console.error('Error removing old variable during key change:', error);
+        // Fall back to bulk update
+        this.updateEnvironmentWithAllVariables(-1, newKey, value);
       }
     });
   }

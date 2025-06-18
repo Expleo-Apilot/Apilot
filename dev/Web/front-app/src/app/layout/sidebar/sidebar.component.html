@@ -880,12 +880,14 @@
 <!-- Environment Variables Modal -->
 <div *ngIf="showEnvironmentVariablesModal && currentEnvironment" class="modal-overlay">
   <div class="modal-container environment-variables-modal">
-    <div class="modal-header">
-      <div class="modal-title-container">
-        <mat-icon class="env-icon">settings_applications</mat-icon>
-        <div class="modal-title-content">
-          <h2>{{ currentEnvironment.name }}</h2>
-          <span class="modal-subtitle">Environment Variables</span>
+    <div class="modal-header env-modal-header">
+      <div class="header-content">
+        <div class="env-header-icon-container">
+          <mat-icon class="env-header-icon">tune</mat-icon>
+        </div>
+        <div>
+          <h2>Environment Variables</h2>
+          <div class="modal-subtitle">{{ currentEnvironment.name }}</div>
         </div>
       </div>
       <button mat-icon-button class="close-button" (click)="closeEnvironmentVariablesModal()">
@@ -893,10 +895,9 @@
       </button>
     </div>
     
-    <div class="modal-content">
-      <!-- Info banner -->
-      <div class="info-banner">
-        <mat-icon>info</mat-icon>
+    <div class="modal-content env-modal-content">
+      <div class="info-box env-info-box">
+        <mat-icon class="env-icon">info</mat-icon>
         <span>Environment variables are used to store sensitive data and configuration values that can be referenced in your requests.</span>
       </div>
       
@@ -904,14 +905,16 @@
         <!-- Variables Table -->
         <div class="variables-table">
           <div class="variables-header">
-            <div class="variable-key-header">Variable Name</div>
-            <div class="variable-value-header">Value</div>
-            <div class="variable-actions-header"></div>
+            <div class="variable-key-header">VARIABLE NAME</div>
+            <div class="variable-value-header">VALUE</div>
+            <div class="variable-actions-header">ACTIONS</div>
           </div>
           
           <!-- Empty state -->
           <div *ngIf="environmentVariables.length === 0" class="empty-variables-state">
-            <mat-icon>category</mat-icon>
+            <div class="empty-state-icon">
+              <mat-icon>category</mat-icon>
+            </div>
             <p>No variables defined yet</p>
             <span>Add your first variable below</span>
           </div>
@@ -919,21 +922,25 @@
           <!-- Existing Variables -->
           <div class="variables-list" *ngIf="environmentVariables.length > 0">
             <div *ngFor="let variable of environmentVariables; let i = index" class="variable-row" [class.even-row]="i % 2 === 0">
-              <input 
-                type="text" 
-                class="variable-key" 
-                [(ngModel)]="variable.key" 
-                placeholder="Variable name"
-                required
-                (blur)="updateEnvironmentVariable(i)"
-              >
-              <input 
-                type="text" 
-                class="variable-value" 
-                [(ngModel)]="variable.value" 
-                placeholder="Variable value"
-                (blur)="updateEnvironmentVariable(i)"
-              >
+              <div class="variable-input-container">
+                <input 
+                  type="text" 
+                  class="variable-key" 
+                  [(ngModel)]="variable.key" 
+                  placeholder="Variable name"
+                  required
+                  (blur)="updateEnvironmentVariable(i)"
+                >
+              </div>
+              <div class="variable-input-container">
+                <input 
+                  type="text" 
+                  class="variable-value" 
+                  [(ngModel)]="variable.value" 
+                  placeholder="Variable value"
+                  (blur)="updateEnvironmentVariable(i)"
+                >
+              </div>
               <div class="variable-actions">
                 <button mat-icon-button class="delete-variable" (click)="removeEnvironmentVariable(i)" title="Delete variable">
                   <mat-icon>delete_outline</mat-icon>
@@ -947,19 +954,23 @@
         <div class="add-variable-section">
           <h3 class="section-title">Add New Variable</h3>
           <div class="add-variable-form">
-            <input 
-              type="text" 
-              class="variable-key" 
-              [(ngModel)]="newVariable.key" 
-              placeholder="Variable name"
-              required
-            >
-            <input 
-              type="text" 
-              class="variable-value" 
-              [(ngModel)]="newVariable.value" 
-              placeholder="Variable value"
-            >
+            <div class="variable-input-container">
+              <input 
+                type="text" 
+                class="variable-key" 
+                [(ngModel)]="newVariable.key" 
+                placeholder="Variable name"
+                required
+              >
+            </div>
+            <div class="variable-input-container">
+              <input 
+                type="text" 
+                class="variable-value" 
+                [(ngModel)]="newVariable.value" 
+                placeholder="Variable value"
+              >
+            </div>
             <div class="variable-actions">
               <button mat-flat-button color="primary" class="add-variable-btn" (click)="addEnvironmentVariable()" [disabled]="!newVariable.key.trim()">
                 <mat-icon>add</mat-icon>
@@ -970,16 +981,16 @@
         </div>
       </div>
       
-      <div class="modal-actions">
-        <button type="button" class="btn-danger" (click)="openDeleteEnvironmentModal(currentEnvironment)">
+      <div class="modal-actions env-modal-actions">
+        <button type="button" class="btn-danger env-danger-btn" (click)="openDeleteEnvironmentModal(currentEnvironment)">
           <mat-icon>delete</mat-icon>
           Delete Environment
         </button>
         <div class="right-actions">
-          <button type="button" class="btn-secondary" (click)="closeEnvironmentVariablesModal()">
+          <button type="button" class="btn-secondary env-secondary-btn" (click)="closeEnvironmentVariablesModal()">
             Cancel
           </button>
-          <button type="button" class="btn-primary" (click)="saveEnvironmentVariables()">
+          <button type="button" class="btn-primary env-primary-btn" (click)="saveEnvironmentVariables()">
             <mat-icon>save</mat-icon>
             Save Changes
           </button>
