@@ -140,10 +140,10 @@
                 </div>
                 <!-- Action buttons -->
                 <div class="environment-actions">
-                  <button mat-icon-button class="action-button small" (click)="openEditEnvironmentModal(environment)" title="Edit environment">
+                  <button mat-icon-button class="action-button small" (click)="openEditEnvironmentModal(environment, $event)" title="Edit environment">
                     <mat-icon class="small-icon">edit</mat-icon>
                   </button>
-                  <button mat-icon-button class="action-button small" (click)="openDeleteEnvironmentModal(environment)" title="Delete environment">
+                  <button mat-icon-button class="action-button small" (click)="openDeleteEnvironmentModal(environment, $event)" title="Delete environment">
                     <mat-icon class="small-icon">delete</mat-icon>
                   </button>
                 </div>
@@ -982,7 +982,7 @@
       </div>
       
       <div class="modal-actions env-modal-actions">
-        <button type="button" class="btn-danger env-danger-btn" (click)="openDeleteEnvironmentModal(currentEnvironment)">
+        <button type="button" class="btn-danger env-danger-btn" (click)="openDeleteEnvironmentModal(currentEnvironment, $event)">
           <mat-icon>delete</mat-icon>
           Delete Environment
         </button>

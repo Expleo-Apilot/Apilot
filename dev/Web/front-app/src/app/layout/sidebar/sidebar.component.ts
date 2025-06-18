@@ -314,7 +314,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Update URL to reflect selected environment without triggering full navigation
+   * Handle environment click to directly open the variables modal
    * @param environmentId The ID of the environment to select
    * @param event Optional mouse event
    */
@@ -328,9 +328,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.activeNavItem !== 'environments') {
       this.setActiveNavItem('environments');
     }
-    
-    // Set this as the active environment for variable replacement
-    this.setActiveEnvironment(environmentId);
     
     // Update the URL to reflect the selected environment
     this.router.navigate(['/workspace', this.workspaceId, 'environment', environmentId], {
@@ -377,8 +374,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   openEnvironmentVariablesModal(environmentId: number): void {
     if (!environmentId) return;
     
-    // Also set this as the active environment for variable replacement
-    this.setActiveEnvironment(environmentId);
+    // Store the environment ID (without setting it as active for variable replacement)
+    this.activeEnvironmentId = environmentId;
     
     this.environmentService.getEnvironmentById(environmentId).subscribe({
       next: (response) => {
@@ -1521,8 +1518,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
   /**
    * Open the edit environment modal
    * @param environment The environment to edit
+   * @param event Mouse event to stop propagation
    */
-  openEditEnvironmentModal(environment: Environment): void {
+  openEditEnvironmentModal(environment: Environment, event: MouseEvent): void {
+    // Stop event propagation to prevent the navigateToEnvironment method from being called
+    if (event) {
+      event.stopPropagation();
+    }
+    
     this.currentEnvironment = { ...environment };
     this.showEditEnvironmentModal = true;
   }
@@ -1577,8 +1580,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
   /**
    * Open the delete environment confirmation modal
    * @param environment The environment to delete
+   * @param event Mouse event to stop propagation
    */
-  openDeleteEnvironmentModal(environment: Environment): void {
+  openDeleteEnvironmentModal(environment: Environment, event: MouseEvent): void {
+    // Stop event propagation to prevent the navigateToEnvironment method from being called
+    if (event) {
+      event.stopPropagation();
+    }
+    
     this.currentEnvironment = environment;
     this.showDeleteEnvironmentModal = true;
   }
