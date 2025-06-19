@@ -973,10 +973,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Create a new request in a collection or folder
+  // Create a new request in a collection or folder (as a draft/unsaved tab)  
   createNewRequest(parentType: 'collection' | 'folder', parentId: number) {
     this.closeItemMenu();
-    console.log(`Create new request in ${parentType} with ID: ${parentId}`);
+    console.log(`Create new draft request for ${parentType} with ID: ${parentId}`);
 
     // Check if this is a shared collection or folder
     let isShared = false;
@@ -989,23 +989,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
       isShared = collection ? !!(collection as any).isShared : false;
     }
 
-    // Create a new tab with default values and parent information
+    // Create a new tab with default values and target parent information
+    // But don't set parentId since this indicates the request already exists
     const newTab = this.tabService.createNewTab({
       method: HttpMethod.GET,
       url: 'https://simple-books-api.glitch.me',
       name: `New ${parentType} Request`,
-      parentId: parentId,         // Store the parent ID
-      parentType: parentType,     // Store the parent type
-      isShared: isShared          // Indicate if this is in a shared collection
+      // Instead of parentId, store target collection/folder information
+      // in separate properties to indicate this is a draft that hasn't been saved yet
+      targetType: parentType,    // Where to save the request when user clicks Save
+      targetId: parentId,        // Collection or folder ID to save to
+      isShared: isShared         // Indicate if this is in a shared collection
     });
 
-    console.log(`Created new tab with parent ${parentType} ID: ${parentId}, isShared: ${isShared}`);
+    console.log(`Created new draft tab for ${parentType} ID: ${parentId}, isShared: ${isShared}`);
 
     // The request editor is already integrated in the workspace layout,
     // so we don't need to navigate to a different route
-
-    // This parent information can now be used later when saving the request
-    // to associate it with the correct collection or folder
+    
+    // Request will only be saved when the user explicitly clicks Save
   }
 
   // Create a new folder in a collection

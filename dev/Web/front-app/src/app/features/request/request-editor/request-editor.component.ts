@@ -608,6 +608,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
    * Save the current request to the database
    * Always shows the save modal regardless of whether the request is new or existing
    * After modal confirmation, creates or updates the request based on parentId
+   * For draft requests, uses targetType and targetId to determine save location
    */
   saveRequest(): void {
     if (this.requestForm.invalid) {
@@ -624,6 +625,7 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     
     // Log request details for debugging
     console.log('Tab parentId:', currentTab?.parentId);
+    console.log('Tab targetId:', currentTab?.targetId);
     console.log('Current tab data:', currentTab);
     
     // Always open the save dialog, regardless of whether the request is new or existing
@@ -637,11 +639,16 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         // Pass current tab data for editing
         requestName: currentTab?.name || this.getRequestNameFromUrl(formValue.url),
         // If request was previously saved, provide existing location data
+        // If it's a draft with targetId/targetType, use those as initial location
         location: currentTab?.parentId ? {
           id: currentTab.parentId,
           type: currentTab.parentType,
           isShared: currentTab.isShared
-        } : undefined
+        } : (currentTab?.targetId ? {
+          id: currentTab.targetId,
+          type: currentTab.targetType,
+          isShared: currentTab.isShared || false
+        } : undefined)
       }
     });
 
@@ -701,7 +708,10 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
             parentType: 'collection',
             parentId: isExistingRequest ? currentTab!.parentId : location.id,  // Preserve existing ID if updating
             name: requestName,
-            isShared: isShared
+            isShared: isShared,
+            // Clear targetType and targetId once the request is being saved
+            targetType: undefined,
+            targetId: undefined
           });
         } else if (location.type === 'folder') {
           folderId = location.id;
@@ -709,7 +719,10 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
             parentType: 'folder',
             parentId: isExistingRequest ? currentTab!.parentId : location.id,  // Preserve existing ID if updating
             name: requestName,
-            isShared: isShared
+            isShared: isShared,
+            // Clear targetType and targetId once the request is being saved
+            targetType: undefined,
+            targetId: undefined
           });
         }
       }
