@@ -151,13 +151,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    // Track previous workspace ID to detect changes
+    let previousWorkspaceId: number | null = null;
+    
     // Subscribe to route params to get workspace ID
     const routeSub = this.route.params.subscribe(params => {
       const id = +params['id'];
       const environmentId = params['environmentId'];
       
       if (id) {
+        // Check if workspace has changed (not first load)
+        if (previousWorkspaceId !== null && previousWorkspaceId !== id) {
+          console.log(`Workspace changed from ${previousWorkspaceId} to ${id}, closing all tabs`);
+          this.tabService.closeAllTabs();
+        }
+        
+        // Update current workspace ID
         this.workspaceId = id;
+        previousWorkspaceId = id;
         console.log('Workspace ID from route:', this.workspaceId);
         
         // Check if we're navigating to an environment
@@ -168,12 +179,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Load the specific environment details
           this.loadEnvironmentDetails(+environmentId);
         } else {
-          // Only load collections by default if not navigating to an environment
           this.loadCollections();
+          this.loadEnvironments();
+          this.loadHistories();
         }
-        
-        // Always load histories for this workspace
-        this.loadHistories();
       }
     });
     this.subscriptions.add(routeSub);

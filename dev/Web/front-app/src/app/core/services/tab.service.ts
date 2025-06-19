@@ -184,6 +184,32 @@ export class TabService {
     this.saveTabsToStorage();
   }
 
+  /**
+   * Close all open tabs and create a new empty tab
+   */
+  closeAllTabs(): void {
+    const newTab: RequestTab = {
+      id: this.generateId(),
+      name: 'New Request',
+      url: '',
+      method: HttpMethod.GET,
+      params: [{ key: '', value: '', enabled: true }],
+      headers: [{ key: '', value: '', enabled: true }],
+      body: '{\n  "key": "value"\n}',
+      bodyType: 'json',
+      authType: AuthType.NONE,
+      basicAuthUsername: '',
+      basicAuthPassword: '',
+      bearerToken: '',
+      active: true
+    };
+    
+    // Set tabs to just the one new tab
+    this._tabs.next([newTab]);
+    this._activeTabId.next(newTab.id);
+    this.saveTabsToStorage();
+  }
+
   private generateTabNameFromUrl(url: string): string {
     try {
       const urlObj = new URL(url);
