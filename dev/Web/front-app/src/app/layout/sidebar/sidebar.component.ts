@@ -27,7 +27,8 @@ import { Environment,
   RemoveVariableFromEnvironmentRequest 
 } from '../../core/models/environment.model';
 import { Collection, ApiResponse, CreateCollectionRequest } from '../../core/models/collection.model';
-import { Request } from '../../core/models/request.model';
+import { Request, KeyValuePair, Authentication } from '../../core/models/request.model';
+import { AuthType } from '../../core/models/auth-type.enum';
 import { Folder, CreateFolderRequest } from '../../core/models/folder.model';
 import { HttpMethod } from '../../core/models/http-method.enum';
 
@@ -150,13 +151,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    // Track previous workspace ID to detect changes
+    let previousWorkspaceId: number | null = null;
+    
     // Subscribe to route params to get workspace ID
     const routeSub = this.route.params.subscribe(params => {
       const id = +params['id'];
       const environmentId = params['environmentId'];
       
       if (id) {
+        // Check if workspace has changed (not first load)
+        if (previousWorkspaceId !== null && previousWorkspaceId !== id) {
+          console.log(`Workspace changed from ${previousWorkspaceId} to ${id}, closing all tabs`);
+          this.tabService.closeAllTabs();
+        }
+        
+        // Update current workspace ID
         this.workspaceId = id;
+        previousWorkspaceId = id;
         console.log('Workspace ID from route:', this.workspaceId);
         
         // Check if we're navigating to an environment
@@ -167,12 +179,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
           // Load the specific environment details
           this.loadEnvironmentDetails(+environmentId);
         } else {
-          // Only load collections by default if not navigating to an environment
           this.loadCollections();
+          this.loadEnvironments();
+          this.loadHistories();
         }
-        
-        // Always load histories for this workspace
-        this.loadHistories();
       }
     });
     this.subscriptions.add(routeSub);
@@ -963,10 +973,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Create a new request in a collection or folder
+  // Create a new request in a collection or folder (as a draft/unsaved tab)  
   createNewRequest(parentType: 'collection' | 'folder', parentId: number) {
     this.closeItemMenu();
-    console.log(`Create new request in ${parentType} with ID: ${parentId}`);
+    console.log(`Create new draft request for ${parentType} with ID: ${parentId}`);
 
     // Check if this is a shared collection or folder
     let isShared = false;
@@ -979,23 +989,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
       isShared = collection ? !!(collection as any).isShared : false;
     }
 
-    // Create a new tab with default values and parent information
+    // Create a new tab with default values and target parent information
+    // But don't set parentId since this indicates the request already exists
     const newTab = this.tabService.createNewTab({
       method: HttpMethod.GET,
       url: 'https://simple-books-api.glitch.me',
       name: `New ${parentType} Request`,
-      parentId: parentId,         // Store the parent ID
-      parentType: parentType,     // Store the parent type
-      isShared: isShared          // Indicate if this is in a shared collection
+      // Instead of parentId, store target collection/folder information
+      // in separate properties to indicate this is a draft that hasn't been saved yet
+      targetType: parentType,    // Where to save the request when user clicks Save
+      targetId: parentId,        // Collection or folder ID to save to
+      isShared: isShared         // Indicate if this is in a shared collection
     });
 
-    console.log(`Created new tab with parent ${parentType} ID: ${parentId}, isShared: ${isShared}`);
+    console.log(`Created new draft tab for ${parentType} ID: ${parentId}, isShared: ${isShared}`);
 
     // The request editor is already integrated in the workspace layout,
     // so we don't need to navigate to a different route
-
-    // This parent information can now be used later when saving the request
-    // to associate it with the correct collection or folder
+    
+    // Request will only be saved when the user explicitly clicks Save
   }
 
   // Create a new folder in a collection
@@ -2500,6 +2512,131 @@ export class SidebarComponent implements OnInit, OnDestroy {
   /**
    * Implement OnDestroy interface to clean up subscriptions
    */
+  /**
+   * Opens a request in a new tab or switches to an existing tab if it's already open
+   * @param request The request to open in a tab
+   */
+  openRequestInTab(request: Request): void {
+    if (!request || !request.id) {
+      this.snackBar.open('Invalid request data', 'Close', { duration: 3000 });
+      return;
+    }
+
+    // Determine the parent type based on the request's folder or collection ID
+    const parentType = request.folderId ? 'folder' : 'collection';
+
+    // Check if a tab with this request already exists
+    const existingTabForRequest = this.tabService.tabs.find(tab => 
+      tab.parentId === request.id && 
+      (tab.parentType === 'collection' || tab.parentType === 'folder')
+    );
+
+    if (existingTabForRequest) {
+      // If a tab already exists for this request, switch to it
+      this.tabService.activateTab(existingTabForRequest.id);
+    } else {
+      // Otherwise, fetch the request details and create a new tab
+      this.requestService.getRequest(request.id).subscribe({
+        next: (response) => {
+          if (response.isSuccess && response.data) {
+            const requestData = response.data;
+
+            // Convert header object to KeyValuePair array with all data preserved
+            const headers: KeyValuePair[] = this.objectToKeyValuePairs(requestData.headers);
+            
+            // Convert parameters object to KeyValuePair array if it exists
+            const params: KeyValuePair[] = requestData.parameters 
+              ? this.objectToKeyValuePairs(requestData.parameters)
+              : [{ key: '', value: '', enabled: true }];
+              
+            // Ensure we have at least one empty row for user input if no data exists
+            if (headers.length === 0) {
+              headers.push({ key: '', value: '', enabled: true });
+            }
+            
+            if (params.length === 0) {
+              params.push({ key: '', value: '', enabled: true });
+            }
+            
+            // Determine authentication information
+            const authType = requestData.authentication?.authType || AuthType.NONE;
+            const authData = requestData.authentication?.authData || {};
+                        
+            // Create new tab with the request data
+            const newTab = this.tabService.createNewTab({
+              name: requestData.name,
+              url: requestData.url || '',
+              method: requestData.httpMethod,
+              params: params,
+              headers: headers,
+              body: typeof requestData.body === 'string' ? requestData.body : JSON.stringify(requestData.body, null, 2) || '',
+              bodyType: 'json', // Default to JSON, app can detect proper type based on content
+              authType: authType,
+              basicAuthUsername: authData['username'] || '',
+              basicAuthPassword: authData['password'] || '',
+              bearerToken: authData['token'] || '',
+              parentId: requestData.id,
+              parentType: parentType
+            });
+
+            // Notify user
+            this.snackBar.open(`Request "${requestData.name}" opened in a new tab`, 'Close', { duration: 3000 });
+          } else {
+            this.snackBar.open('Failed to load request details', 'Close', { duration: 3000 });
+          }
+        },
+        error: (error) => {
+          console.error('Error loading request details:', error);
+          this.snackBar.open('Error loading request details', 'Close', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  /**
+   * Convert an object of key-value pairs to KeyValuePair array
+   * @param obj The object to convert
+   */
+  private objectToKeyValuePairs(obj?: any): KeyValuePair[] {
+    if (!obj) return [{ key: '', value: '', enabled: true }];
+    
+    // Handle the case where obj is already an array of key-value pairs
+    if (Array.isArray(obj)) {
+      return obj.map(item => ({
+        key: item.key || '',
+        value: String(item.value || ''),
+        description: item.description ? String(item.description) : undefined,
+        enabled: Boolean(item.enabled !== undefined ? item.enabled : true)
+      }));
+    }
+    
+    // Handle case where obj is a simple key-value object
+    if (typeof obj === 'object') {
+      return Object.entries(obj).map(([key, val]) => {
+        // Check if value is an object with metadata
+        if (val && typeof val === 'object' && val.hasOwnProperty('value')) {
+          const valueObj = val as Record<string, any>;
+          return {
+            key,
+            value: String(valueObj['value'] || ''),
+            description: valueObj['description'] ? String(valueObj['description']) : undefined,
+            enabled: Boolean(valueObj.hasOwnProperty('enabled') ? valueObj['enabled'] : true)
+          };
+        }
+        
+        // Simple key-value pair
+        return {
+          key,
+          value: String(val || ''),
+          enabled: true
+        };
+      });
+    }
+    
+    // Handle any other case by returning a default empty row
+    return [{ key: '', value: '', enabled: true }];
+  }
+
   ngOnDestroy(): void {
     // Unsubscribe from all subscriptions to prevent memory leaks
     if (this.subscriptions) {

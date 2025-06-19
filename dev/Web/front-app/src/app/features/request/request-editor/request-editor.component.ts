@@ -1,6 +1,6 @@
 // request-editor.component.ts
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
-import { take } from 'rxjs/operators';
+import { take, finalize } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpMethod } from '../../../core/models/http-method.enum';
 import { AuthType } from '../../../core/models/auth-type.enum';
@@ -606,6 +606,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
   /**
    * Save the current request to the database
+   * Always shows the save modal regardless of whether the request is new or existing
+   * After modal confirmation, creates or updates the request based on parentId
+   * For draft requests, uses targetType and targetId to determine save location
    */
   saveRequest(): void {
     if (this.requestForm.invalid) {
@@ -619,13 +622,33 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       this.snackBar.open('Unable to save request: No active tab', 'Close', { duration: 3000 });
       return;
     }
+    
+    // Log request details for debugging
+    console.log('Tab parentId:', currentTab?.parentId);
+    console.log('Tab targetId:', currentTab?.targetId);
+    console.log('Current tab data:', currentTab);
+    
+    // Always open the save dialog, regardless of whether the request is new or existing
+    // This allows users to edit the name or change the associated folder/collection
 
     // Open the save request modal dialog
     const dialogRef = this.dialog.open(SaveRequestModalComponent, {
       width: '500px',
       data: {
         workspaceId: this.workspaceId,
-        requestName: currentTab.name || this.getRequestNameFromUrl(formValue.url)
+        // Pass current tab data for editing
+        requestName: currentTab?.name || this.getRequestNameFromUrl(formValue.url),
+        // If request was previously saved, provide existing location data
+        // If it's a draft with targetId/targetType, use those as initial location
+        location: currentTab?.parentId ? {
+          id: currentTab.parentId,
+          type: currentTab.parentType,
+          isShared: currentTab.isShared
+        } : (currentTab?.targetId ? {
+          id: currentTab.targetId,
+          type: currentTab.targetType,
+          isShared: currentTab.isShared || false
+        } : undefined)
       }
     });
 
@@ -633,9 +656,12 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       if (!result) {
         return; // User canceled
       }
+      
+      // Check if this is a new request or an existing one based on parentId
+      const isExistingRequest = currentTab?.parentId !== undefined;
 
       // Get the request name from the result or generate one from the URL
-      const requestName = result.name || currentTab.name || this.getRequestNameFromUrl(formValue.url);
+      const requestName = result.name || currentTab?.name || this.getRequestNameFromUrl(formValue.url);
 
       // Create a RequestFormData object from the current form values
       const requestFormData: RequestFormData = {
@@ -660,6 +686,13 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
         };
       }
 
+      // Show loading indicator regardless of operation type
+      const loadingSnackBarRef = this.snackBar.open(
+        isExistingRequest ? 'Updating request...' : 'Saving request...', 
+        '', 
+        { duration: undefined }
+      );
+
       // Handle collection or folder selection
       let collectionId: number | null = null;
       let folderId: number | null = null;
@@ -673,59 +706,160 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           collectionId = location.id;
           this.tabService.updateTabData(this.currentTabId!, {
             parentType: 'collection',
-            parentId: location.id,
+            parentId: isExistingRequest ? currentTab!.parentId : location.id,  // Preserve existing ID if updating
             name: requestName,
-            isShared: isShared
+            isShared: isShared,
+            // Clear targetType and targetId once the request is being saved
+            targetType: undefined,
+            targetId: undefined
           });
         } else if (location.type === 'folder') {
           folderId = location.id;
           this.tabService.updateTabData(this.currentTabId!, {
             parentType: 'folder',
-            parentId: location.id,
+            parentId: isExistingRequest ? currentTab!.parentId : location.id,  // Preserve existing ID if updating
             name: requestName,
-            isShared: isShared
+            isShared: isShared,
+            // Clear targetType and targetId once the request is being saved
+            targetType: undefined,
+            targetId: undefined
           });
         }
       }
 
-      // Convert form data to request DTO
-      const requestDto = convertFormDataToRequest(requestFormData, requestName, collectionId || undefined, folderId || undefined, isShared);
+      if (isExistingRequest && currentTab?.parentId) {
+        // UPDATE EXISTING REQUEST
+        // Create request update object with PascalCase properties for backend compatibility
+        const requestToUpdate: any = {
+          Id: currentTab.parentId, // Use parentId as the request ID
+          Name: requestName,
+          Url: formValue.url,
+          HttpMethod: formValue.method,
+          Headers: this.headers.reduce((obj: any, item) => {
+            if (item.key && item.enabled) obj[item.key] = item.value;
+            return obj;
+          }, {}),
+          Parameters: this.params.reduce((obj: any, item) => {
+            if (item.key && item.enabled) obj[item.key] = item.value;
+            return obj;
+          }, {}),
+          Body: formValue.body,
+          CollectionId: collectionId || undefined,
+          FolderId: folderId || undefined,
+          IsShared: isShared
+        };
+        
+        // Add authentication data if provided
+        if (formValue.authType !== AuthType.NONE) {
+          requestToUpdate.Authentication = {
+            authType: formValue.authType,
+            authData: {}
+          };
+          
+          if (formValue.authType === AuthType.BASIC) {
+            requestToUpdate.Authentication.authData = {
+              'username': this.basicAuthUsername,
+              'password': this.basicAuthPassword
+            };
+          } else if (formValue.authType === AuthType.BEARER) {
+            requestToUpdate.Authentication.authData = {
+              'token': this.bearerToken
+            };
+          }
+        }
+        
+        // Update the existing request
+        this.requestService.updateRequest(requestToUpdate).pipe(
+          finalize(() => loadingSnackBarRef.dismiss())
+        ).subscribe({
+          next: (response: any) => {
+            if (response.isSuccess) {
+              this.snackBar.open('Request updated successfully', 'Close', { duration: 3000 });
+              console.log('Request updated:', response.data);
+            } else {
+              const errorMessage = response.error || 'An unknown error occurred';
+              this.snackBar.open(errorMessage, 'Dismiss', { 
+                duration: 5000, 
+                panelClass: ['error-snackbar'] 
+              });
+            }
+          },
+          error: (error: any) => {
+            // Handle HTTP errors or other exceptions
+            let errorMessage = 'An error occurred while communicating with the server';
+            if (error.error && error.error.error) {
+              // Extract error message from API response if available
+              errorMessage = error.error.error;
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+            this.snackBar.open(errorMessage, 'Dismiss', {
+              duration: 5000,
+              panelClass: ['error-snackbar']
+            });
+            console.error('Error updating request:', error);
+          }
+        });
+      } else {
+        // CREATE NEW REQUEST
+        // Convert form data to request DTO with PascalCase properties
+        const requestDto = convertFormDataToRequest(requestFormData, requestName, collectionId || undefined, folderId || undefined, isShared);
 
-      // Save the request to the database
-      this.requestService.saveRequest(requestDto).subscribe({
-        next: (response) => {
-          if (response.isSuccess) {
-            this.snackBar.open('Request saved successfully', 'Close', { duration: 3000 });
-            console.log('Request saved:', response.data);
-          } else {
-            // Display only the specific error message from the backend without prefix
-            const errorMessage = response.error || 'An unknown error occurred';
+        // Save as a new request
+        this.requestService.saveRequest(requestDto).pipe(
+          finalize(() => loadingSnackBarRef.dismiss())
+        ).subscribe({
+          next: (response: any) => {
+            if (response.isSuccess && response.data) {
+              this.snackBar.open('Request saved successfully', 'Close', { duration: 3000 });
+              console.log('Request saved:', response.data);
+              
+              // Critical: Update the tab with the new request ID from the response
+              // to ensure subsequent updates work correctly
+              if (response.data.id) {
+                const newRequestId = response.data.id;
+                console.log(`Updating tab with new request ID: ${newRequestId}`);
+                
+                // Update tab data with the correct parentId after successful save
+                this.tabService.updateTabData(this.currentTabId!, {
+                  parentId: newRequestId,
+                  // Make sure parentType is set correctly based on where it was saved
+                  parentType: folderId ? 'folder' : 'collection',
+                  // Keep the target properties cleared
+                  targetId: undefined,
+                  targetType: undefined
+                });
+              }
+            } else {
+              // Display only the specific error message from the backend without prefix
+              const errorMessage = response.error || 'An unknown error occurred';
+              this.snackBar.open(errorMessage, 'Dismiss', {
+                duration: 7000,
+                panelClass: ['error-snackbar']
+              });
+              console.error('Failed to save request:', errorMessage);
+            }
+          },
+          error: (error: any) => {
+            // Handle HTTP errors or other exceptions
+            let errorMessage = 'An error occurred while communicating with the server';
+
+            if (error.error && error.error.error) {
+              // Extract error message from API response if available
+              errorMessage = error.error.error;
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+
+            // Display only the specific error message without prefix
             this.snackBar.open(errorMessage, 'Dismiss', {
               duration: 7000,
               panelClass: ['error-snackbar']
             });
-            console.error('Failed to save request:', errorMessage);
+            console.error('Error saving request:', error);
           }
-        },
-        error: (error) => {
-          // Handle HTTP errors or other exceptions
-          let errorMessage = 'An error occurred while communicating with the server';
-
-          if (error.error && error.error.error) {
-            // Extract error message from API response if available
-            errorMessage = error.error.error;
-          } else if (error.message) {
-            errorMessage = error.message;
-          }
-
-          // Display only the specific error message without prefix
-          this.snackBar.open(errorMessage, 'Dismiss', {
-            duration: 7000,
-            panelClass: ['error-snackbar']
-          });
-          console.error('Error saving request:', error);
-        }
-      });
+        });
+      }
     });
   }
 
@@ -1060,6 +1194,114 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     });
 
     return queryParams.toString() ? `?${queryParams.toString()}` : '';
+  }
+
+  /**
+   * Update an existing request using its ID (which is stored as parentId)
+   * @param requestId The ID of the request to update (same as parentId)
+   * @param formValue Form data from the request editor
+   * @param currentTab Current tab data containing metadata
+   */
+  private updateExistingRequestById(requestId: number, formValue: any, currentTab: any): void {
+    // Show loading indicator
+    const loadingSnackBarRef = this.snackBar.open('Updating request...', '', {
+      duration: undefined
+    });
+
+    // Create a request update object with PascalCase properties for backend compatibility
+    interface RequestUpdateData {
+      Id: number;
+      Name?: string;
+      Url?: string;
+      HttpMethod?: string;
+      Headers?: {[key: string]: string};
+      Parameters?: {[key: string]: string};
+      Body?: any;
+      CollectionId?: number;
+      FolderId?: number;
+      IsShared?: boolean;
+      Authentication?: {
+        authType: AuthType;
+        authData: any;
+      };
+    }
+
+    const requestToUpdate: RequestUpdateData = {
+      Id: requestId, // Use the parentId as the request ID
+      Name: currentTab?.name || this.getRequestNameFromUrl(formValue.url),
+      Url: formValue.url,
+      HttpMethod: formValue.method,
+      Headers: this.headers.reduce((obj: any, item) => {
+        if (item.key && item.enabled) obj[item.key] = item.value;
+        return obj;
+      }, {}),
+      Parameters: this.params.reduce((obj: any, item) => {
+        if (item.key && item.enabled) obj[item.key] = item.value;
+        return obj;
+      }, {}),
+      Body: formValue.body,
+      CollectionId: currentTab.parentType === 'collection' ? currentTab.parentId : undefined,
+      FolderId: currentTab.parentType === 'folder' ? currentTab.parentId : undefined,
+      IsShared: currentTab.isShared
+    };
+
+    // Add authentication data if provided
+    if (formValue.authType !== AuthType.NONE) {
+      requestToUpdate.Authentication = {
+        authType: formValue.authType,
+        authData: {}
+      };
+      
+      if (formValue.authType === AuthType.BASIC) {
+        requestToUpdate.Authentication.authData = {
+          'username': this.basicAuthUsername,
+          'password': this.basicAuthPassword
+        };
+      } else if (formValue.authType === AuthType.BEARER) {
+        requestToUpdate.Authentication.authData = {
+          'token': this.bearerToken
+        };
+      }
+    }
+
+    // Cast to any to handle PascalCase vs camelCase property mismatch with backend
+    this.requestService.updateRequest(requestToUpdate as any).pipe(
+      finalize(() => {
+        loadingSnackBarRef.dismiss();
+      })
+    ).subscribe({
+      next: (response: any) => {
+        if (response.isSuccess) {
+          // Update the tab metadata with latest values
+          if (this.currentTabId) {
+            this.tabService.updateTabData(this.currentTabId, {
+              name: requestToUpdate.Name,
+              url: requestToUpdate.Url,
+              method: requestToUpdate.HttpMethod as HttpMethod,
+              parentId: requestId, // Keep the parentId which is the request ID
+              parentType: currentTab.parentType,
+              isShared: requestToUpdate.IsShared
+            });
+          }
+
+          this.snackBar.open('Request updated successfully', 'Close', { duration: 3000 });
+        } else {
+          const errorMessage = response.error || 'An unknown error occurred';
+          this.snackBar.open(errorMessage, 'Dismiss', { duration: 5000, panelClass: ['error-snackbar'] });
+        }
+      },
+      error: (error: any) => {
+        // Handle error case
+        let errorMessage = 'An error occurred while communicating with the server';
+        if (error.error && error.error.error) {
+          errorMessage = error.error.error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        this.snackBar.open(errorMessage, 'Dismiss', { duration: 5000, panelClass: ['error-snackbar'] });
+        console.error('Error updating request:', error);
+      }
+    });
   }
 
   private executeRequest(workspaceId: number): void {

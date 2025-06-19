@@ -18,9 +18,11 @@ export interface RequestTab {
   basicAuthPassword: string;
   bearerToken: string;
   active: boolean;
-  parentId?: number;           // ID of parent collection or folder
-  parentType?: 'collection' | 'folder';  // Type of parent
+  parentId?: number;           // ID of parent collection or folder for saved requests
+  parentType?: 'collection' | 'folder';  // Type of parent for saved requests
   isShared?: boolean;          // Indicates if the request belongs to a shared collection
+  targetType?: 'collection' | 'folder';  // Type of target for unsaved draft requests
+  targetId?: number;           // ID of target collection or folder for unsaved draft requests
 }
 
 @Injectable({
@@ -113,7 +115,10 @@ export class TabService {
       bearerToken: initialData?.bearerToken || '',
       active: true,
       parentId: initialData?.parentId,
-      parentType: initialData?.parentType
+      parentType: initialData?.parentType,
+      isShared: initialData?.isShared,
+      targetType: initialData?.targetType,
+      targetId: initialData?.targetId
     };
 
     tabs.push(newTab);
@@ -181,6 +186,32 @@ export class TabService {
     }
 
     this._tabs.next(tabs);
+    this.saveTabsToStorage();
+  }
+
+  /**
+   * Close all open tabs and create a new empty tab
+   */
+  closeAllTabs(): void {
+    const newTab: RequestTab = {
+      id: this.generateId(),
+      name: 'New Request',
+      url: '',
+      method: HttpMethod.GET,
+      params: [{ key: '', value: '', enabled: true }],
+      headers: [{ key: '', value: '', enabled: true }],
+      body: '{\n  "key": "value"\n}',
+      bodyType: 'json',
+      authType: AuthType.NONE,
+      basicAuthUsername: '',
+      basicAuthPassword: '',
+      bearerToken: '',
+      active: true
+    };
+    
+    // Set tabs to just the one new tab
+    this._tabs.next([newTab]);
+    this._activeTabId.next(newTab.id);
     this.saveTabsToStorage();
   }
 
