@@ -228,7 +228,30 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       this.responseService.setCurrentTabId(this.currentTabId);
       this.tabService.activateTab(this.currentTabId);
     } else {
-      this.currentTabId = this.tabService.createNewTab().id;
+      // Try to load the last selected request from localStorage
+      const lastSelectedRequest = this.tabService.getSelectedRequestDetails();
+      if (lastSelectedRequest) {
+        // Create a new tab with the last selected request details
+        this.currentTabId = this.tabService.createNewTab({
+          name: lastSelectedRequest.name,
+          url: lastSelectedRequest.url,
+          method: lastSelectedRequest.method,
+          params: lastSelectedRequest.params,
+          headers: lastSelectedRequest.headers,
+          body: lastSelectedRequest.body,
+          bodyType: lastSelectedRequest.bodyType,
+          authType: lastSelectedRequest.authType,
+          basicAuthUsername: lastSelectedRequest.basicAuthUsername,
+          basicAuthPassword: lastSelectedRequest.basicAuthPassword,
+          bearerToken: lastSelectedRequest.bearerToken,
+          parentId: lastSelectedRequest.parentId,
+          parentType: lastSelectedRequest.parentType,
+          isShared: lastSelectedRequest.isShared
+        }).id;
+      } else {
+        // If no last selected request, create a new empty tab
+        this.currentTabId = this.tabService.createNewTab().id;
+      }
       this.responseService.setCurrentTabId(this.currentTabId);
     }
   }
@@ -522,6 +545,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     const tab = this.tabService.tabs.find(t => t.id === tabId);
     if (!tab) return;
 
+    // Set the current tab ID
+    this.currentTabId = tabId;
+
     // Update form values with tab properties
     this.requestForm.patchValue({
       url: tab.url,
@@ -568,6 +594,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
 
     // Load any existing response data for this tab
     this.responseData = this.responseService.getResponseForTab(tabId);
+
+    // The TabService will automatically store the selected request details in localStorage
+    // when a tab is activated, so we don't need to explicitly call it here
 
     this.cdr.detectChanges();
   }

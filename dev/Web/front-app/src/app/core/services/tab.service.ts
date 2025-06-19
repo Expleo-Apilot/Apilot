@@ -30,6 +30,7 @@ export interface RequestTab {
 })
 export class TabService {
   private readonly STORAGE_KEY = 'apilot_tabs';
+  private readonly SELECTED_REQUEST_KEY = 'apilot_selected_request_';
   private _tabs = new BehaviorSubject<RequestTab[]>([]);
   private _activeTabId = new BehaviorSubject<string | null>(null);
 
@@ -167,6 +168,9 @@ export class TabService {
     tab.active = true;
     this._activeTabId.next(tabId);
 
+    // Store the selected request details in localStorage
+    this.storeSelectedRequestDetails(tab);
+
     this._tabs.next(tabs);
     this.saveTabsToStorage();
   }
@@ -187,6 +191,11 @@ export class TabService {
 
     this._tabs.next(tabs);
     this.saveTabsToStorage();
+    
+    // If this is the active tab, store its details in localStorage
+    if (tabs[tabIndex].active) {
+      this.storeSelectedRequestDetails(tabs[tabIndex]);
+    }
   }
 
   /**
@@ -239,6 +248,86 @@ export class TabService {
     }
   }
 
+  /**
+   * Stores the selected request details in localStorage using the request name as part of the key
+   * This enables persistence of the selected request across sessions
+   * @param tab The tab containing the request details to store
+   */
+  private storeSelectedRequestDetails(tab: RequestTab): void {
+    try {
+      // Create a sanitized key from the request name
+      const sanitizedName = tab.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const storageKey = `${this.SELECTED_REQUEST_KEY}${sanitizedName}_${tab.id}`;
+      
+      // Store the request details
+      const requestDetails = {
+        id: tab.id,
+        name: tab.name,
+        url: tab.url,
+        method: tab.method,
+        params: tab.params,
+        headers: tab.headers,
+        body: tab.body,
+        bodyType: tab.bodyType,
+        authType: tab.authType,
+        basicAuthUsername: tab.basicAuthUsername,
+        basicAuthPassword: tab.basicAuthPassword,
+        bearerToken: tab.bearerToken,
+        parentId: tab.parentId,
+        parentType: tab.parentType,
+        isShared: tab.isShared,
+        lastSelected: new Date().toISOString()
+      };
+      
+      localStorage.setItem(storageKey, JSON.stringify(requestDetails));
+      
+      // Store the key of the most recently selected request
+      localStorage.setItem('apilot_last_selected_request', storageKey);
+    } catch (error) {
+      console.error('Error storing selected request details:', error);
+    }
+  }
+  
+  /**
+   * Retrieves the selected request details from localStorage
+   * @param requestName Optional name of the request to retrieve, if not provided returns the last selected request
+   * @returns The request details or null if not found
+   */
+  getSelectedRequestDetails(requestName?: string): any {
+    try {
+      if (requestName) {
+        // Create a sanitized key from the request name
+        const sanitizedName = requestName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        // Find all keys that match the pattern
+        const keys = Object.keys(localStorage).filter(key => 
+          key.startsWith(`${this.SELECTED_REQUEST_KEY}${sanitizedName}_`));
+        
+        if (keys.length > 0) {
+          // Sort by last selected date if available
+          const sortedKeys = keys.sort((a, b) => {
+            const aData = JSON.parse(localStorage.getItem(a) || '{}');
+            const bData = JSON.parse(localStorage.getItem(b) || '{}');
+            return (bData.lastSelected || '').localeCompare(aData.lastSelected || '');
+          });
+          
+          // Return the most recently selected one
+          return JSON.parse(localStorage.getItem(sortedKeys[0]) || 'null');
+        }
+        return null;
+      } else {
+        // Return the last selected request
+        const lastSelectedKey = localStorage.getItem('apilot_last_selected_request');
+        if (lastSelectedKey) {
+          return JSON.parse(localStorage.getItem(lastSelectedKey) || 'null');
+        }
+        return null;
+      }
+    } catch (error) {
+      console.error('Error retrieving selected request details:', error);
+      return null;
+    }
+  }
+  
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
   }
