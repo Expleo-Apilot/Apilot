@@ -810,9 +810,26 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           finalize(() => loadingSnackBarRef.dismiss())
         ).subscribe({
           next: (response: any) => {
-            if (response.isSuccess) {
+            if (response.isSuccess && response.data) {
               this.snackBar.open('Request saved successfully', 'Close', { duration: 3000 });
               console.log('Request saved:', response.data);
+              
+              // Critical: Update the tab with the new request ID from the response
+              // to ensure subsequent updates work correctly
+              if (response.data.id) {
+                const newRequestId = response.data.id;
+                console.log(`Updating tab with new request ID: ${newRequestId}`);
+                
+                // Update tab data with the correct parentId after successful save
+                this.tabService.updateTabData(this.currentTabId!, {
+                  parentId: newRequestId,
+                  // Make sure parentType is set correctly based on where it was saved
+                  parentType: folderId ? 'folder' : 'collection',
+                  // Keep the target properties cleared
+                  targetId: undefined,
+                  targetType: undefined
+                });
+              }
             } else {
               // Display only the specific error message from the backend without prefix
               const errorMessage = response.error || 'An unknown error occurred';
