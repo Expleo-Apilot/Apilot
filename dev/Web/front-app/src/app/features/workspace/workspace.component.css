@@ -1,0 +1,4 @@
+.tools-pane{
+  border-right: 1px solid var(--border-color);
+  min-height: 0px;
+}

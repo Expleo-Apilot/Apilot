@@ -28,7 +28,9 @@
 }
 
 .env-selector {
-  flex: 0 0 160px;
+  flex: 0 0 100px;
+  flex-shrink: 0;
+  color: var(--text-color);
 }
 
 .env-selector .mat-form-field {
@@ -37,6 +39,25 @@
 
 .env-selector .mat-select-value {
   font-size: 13px;
+}
+
+/* Override mat-form-field styles to match method-select's compact look */
+.env-selector ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.dark-theme .env-selector ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--request-editor-input-bg);
+}
+
+.env-selector ::ng-deep .mat-mdc-text-field-wrapper {
+  padding: 0px 23px !important;
+}
+
+.env-selector ::ng-deep .mat-mdc-form-field-infix {
+  padding: 8px 0 !important;
+  min-height: unset !important;
+  width: 80px;
 }
 
 .method-select {
@@ -61,6 +82,7 @@
 .method-select ::ng-deep .mat-mdc-form-field-infix {
   padding: 8px 0 !important;
   min-height: unset !important;
+  width: 80px;
 }
 
 .url-input {
@@ -98,6 +120,7 @@
   background-color: #7c4dff;
   color: white;
   min-width: 80px;
+  margin-top: -20px;
 }
 
 .dropdown-button {
@@ -106,6 +129,7 @@
   min-width: 36px !important;
   background-color: #7c4dff;
   color: white;
+  margin-top: -20px;
 }
 
 /* Ensure the dropdown button icon is properly aligned */

@@ -35,7 +35,7 @@
 }
 
 .nav-item {
-  width: 48px;
+  width: 70px;
   height: 48px;
   display: flex;
   flex-direction: column;
@@ -58,7 +58,7 @@
 }
 
 .nav-item span {
-  font-size: 12px;
+  font-size: 9px;
   margin-top: 6px;
   font-weight: 600;
   letter-spacing: 0.3px;

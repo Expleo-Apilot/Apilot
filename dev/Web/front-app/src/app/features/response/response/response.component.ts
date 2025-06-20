@@ -68,12 +68,10 @@ export class ResponseComponent implements OnInit, OnChanges, OnDestroy {
     automaticLayout: true,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
-    wordWrap: 'on',
-    lineNumbers: 'on',
-    renderLineHighlight: 'gutter' as 'none' | 'gutter' | 'line' | 'all',
-    roundedSelection: false,
-    occurrencesHighlight: false,
-    folding: true,
+    fontSize: 14,
+    tabSize: 2,
+    wordWrap: 'on'
+    
   };
 
   constructor(

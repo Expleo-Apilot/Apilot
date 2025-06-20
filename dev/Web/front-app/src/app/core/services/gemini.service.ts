@@ -68,7 +68,7 @@ export class GeminiService implements LlmService {
 4. Do NOT use TestFramework.HttpClient directly or raw System.Text.Json APIs.
 5. Each test must return true at the end if it passes.
 6. Use try/catch for error handling inside the test lambda.
-7. Do not include explanations, comments, or markdown formatting. Output ONLY the C# code.
+7. Do not include explanations, comments, or markdown formatting. Output ONLY the pure C# code. Never prefix output with 'csharp' or any language identifier.
 8. Example:
 
 TestAsync("Verify Simple Books API Status", async () => {
