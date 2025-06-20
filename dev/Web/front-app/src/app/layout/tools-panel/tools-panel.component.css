@@ -1,10 +1,18 @@
 /* Test Script Panel Styles */
+
+.border {
+  height: 900px;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--card-bg);
+}
 .test-script-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
   background-color: var(--request-editor-bg);
-  border-left: 1px solid var(--border-color);
 }
 
 /* Tab Navigation */
@@ -84,7 +92,7 @@
   display: none;
   flex-direction: column;
   flex: 1;
-  overflow: hidden;
+  overflow: auto; /* Changed from 'hidden' to 'auto' to enable scrolling */
 }
 
 .tab-content.active {
@@ -271,7 +279,7 @@
 }
 
 .summary-icon.passed {
-  background-color: rgba(0, 200, 83, 0.1);
+  background-color: var(--primary-color);
   color: var(--status-success);
 }
 
@@ -303,6 +311,9 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
+  max-height: 60vh; /* Add max height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding: 0 16px; /* Add padding for better appearance */
 }
 
 .result-item {
