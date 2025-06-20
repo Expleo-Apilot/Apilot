@@ -102,56 +102,62 @@ export class ToolsPanelComponent implements OnInit {
     this.testResults = [];
     this.errorMessage = '';
 
-    this.testRunnerService.runTests(this.testScript).subscribe(
-      (response: TestResponse) => {
-        if (response.success) {
-          this.testResults = response.results;
-          this.totalTests = response.totalTests;
-          this.passedTests = response.passedTests;
-          this.allTestsPassed = this.passedTests === this.totalTests;
-        } else {
-          // Handle server-side error with the test execution
+    this.testRunnerService.runTests(this.testScript)
+      .pipe(
+        // Use finalize to ensure isRunning is set to false in all cases
+        // This will run after both success and error cases
+        finalize(() => {
+          this.isRunning = false;
+        })
+      )
+      .subscribe(
+        (response: TestResponse) => {
+          if (response.success) {
+            this.testResults = response.results;
+            this.totalTests = response.totalTests;
+            this.passedTests = response.passedTests;
+            this.allTestsPassed = this.passedTests === this.totalTests;
+          } else {
+            // Handle server-side error with the test execution
+            this.testResults = [{
+              name: 'Test Execution Error',
+              passed: false,
+              message: response.errorMessage || 'The server encountered an error while executing tests',
+              duration: 0
+            }];
+            this.totalTests = 1;
+            this.passedTests = 0;
+            this.allTestsPassed = false;
+          }
+          this.activeTab = 'results';
+        },
+        (error) => {
+          console.error('Error running tests:', error);
+
+          // Determine if it's a connection error or other HTTP error
+          let errorMessage = 'Failed to run tests';
+
+          if (error.status === 0) {
+            errorMessage = 'Cannot connect to the test runner service. Please make sure the backend API is running.';
+          } else if (error.status >= 400) {
+            errorMessage = `Server error (${error.status}): ${error.error?.message || error.statusText || 'Unknown error'}`;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+
           this.testResults = [{
-            name: 'Test Execution Error',
+            name: 'Test Runner Error',
             passed: false,
-            message: response.errorMessage || 'The server encountered an error while executing tests',
+            message: errorMessage,
             duration: 0
           }];
           this.totalTests = 1;
           this.passedTests = 0;
           this.allTestsPassed = false;
+          this.activeTab = 'results';
         }
-        this.activeTab = 'results';
-      },
-      (error) => {
-        console.error('Error running tests:', error);
-
-        // Determine if it's a connection error or other HTTP error
-        let errorMessage = 'Failed to run tests';
-
-        if (error.status === 0) {
-          errorMessage = 'Cannot connect to the test runner service. Please make sure the backend API is running.';
-        } else if (error.status >= 400) {
-          errorMessage = `Server error (${error.status}): ${error.error?.message || error.statusText || 'Unknown error'}`;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-
-        this.testResults = [{
-          name: 'Test Runner Error',
-          passed: false,
-          message: errorMessage,
-          duration: 0
-        }];
-        this.totalTests = 1;
-        this.passedTests = 0;
-        this.allTestsPassed = false;
-        this.activeTab = 'results';
-      },
-      () => {
-        this.isRunning = false;
-      }
-    );
+        // Removed the completion handler since we're using finalize
+      );
   }
 
   /**
