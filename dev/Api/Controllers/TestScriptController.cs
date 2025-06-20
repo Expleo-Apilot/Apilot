@@ -5,6 +5,9 @@ using dev.Application.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Apilot.Api.Controllers;
 
 namespace dev.Api.Controllers;
 
@@ -104,7 +107,8 @@ public class TestScriptController : ControllerBase
         // Run the test
         var testResult = await testRunnerController.RunTests(testRunnerRequest);
         
-        return testResult;
+        // Convert ActionResult<TestResponse> to IActionResult
+        return testResult.Result;
     }
 }
 

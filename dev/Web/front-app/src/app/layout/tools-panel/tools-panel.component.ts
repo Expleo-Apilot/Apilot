@@ -63,6 +63,9 @@ export class ToolsPanelComponent implements OnInit {
   availableLlmTypes: LlmType[] = [];
   selectedLlmType: LlmType = LlmType.OLLAMA;
   currentModelName: string = '';
+  
+  // Workspace information
+  selectedWorkspace: any = null;
 
   // Real-time typing effect
   private typingInterval: any;
@@ -85,6 +88,9 @@ export class ToolsPanelComponent implements OnInit {
     this.availableLlmTypes = this.llmFactoryService.getAllLlmTypes();
     this.selectedLlmType = this.llmFactoryService.getCurrentLlmType();
     this.updateCurrentModelName();
+    
+    // Load selected workspace from localStorage if available
+    this.loadSelectedWorkspace();
   }
 
   /**
@@ -349,9 +355,6 @@ TestAsync("JSON Array Test", async () => {
   /**
    * Process the prompt input and generate code using selected LLM
    */
-  /**
-   * Process the prompt input and generate code using selected LLM
-   */
   processPrompt(): void {
     if (!this.promptInput.trim()) return;
 
@@ -371,9 +374,21 @@ TestAsync("JSON Array Test", async () => {
 
     // Get the current LLM service
     const llmService = this.llmFactoryService.getCurrentLlm();
+    
+    // Create an enhanced prompt with workspace information if available
+    let enhancedPrompt = prompt;
+    
+    // Add workspace information to the prompt if available
+    if (this.selectedWorkspace) {
+      // Create a simplified workspace object with only the necessary information
+      const workspaceInfo = this.prepareWorkspaceInfoForPrompt();
+      
+      // Add workspace context to the prompt
+      enhancedPrompt = `${prompt}\n\nWorkspace Context:\n${JSON.stringify(workspaceInfo, null, 2)}`;
+    }
 
-    // Call the LLM service to generate test code
-    llmService.generateTestCode(prompt)
+    // Call the LLM service to generate test code with the enhanced prompt
+    llmService.generateTestCode(enhancedPrompt)
       .pipe(
         catchError(error => {
           console.error(`Error calling ${llmService.getModelName()} API:`, error);
@@ -544,7 +559,76 @@ TestAsync("JSON Array Test", async () => {
     this.currentModelName = currentLlm.getModelName();
   }
 
-  private cleanGeneratedCode(response: string): string {
+  /**
+ * Load selected workspace from localStorage
+ */
+private loadSelectedWorkspace(): void {
+  try {
+    const workspaceData = localStorage.getItem('selectedWorkspace');
+    if (workspaceData) {
+      this.selectedWorkspace = JSON.parse(workspaceData);
+      console.log('Loaded workspace from localStorage:', this.selectedWorkspace);
+    }
+  } catch (error) {
+    console.error('Error loading workspace from localStorage:', error);
+  }
+}
+
+/**
+ * Prepare workspace information for the prompt
+ * Extracts and formats relevant information from the workspace
+ */
+private prepareWorkspaceInfoForPrompt(): any {
+  if (!this.selectedWorkspace) return null;
+  
+  // Create a simplified version of the workspace with only relevant information
+  const workspaceInfo: any = {
+    name: this.selectedWorkspace.name,
+    description: this.selectedWorkspace.description,
+    collections: []
+  };
+  
+  // Add collection information
+  if (this.selectedWorkspace.collections && this.selectedWorkspace.collections.length > 0) {
+    workspaceInfo.collections = this.selectedWorkspace.collections.map((collection: any) => {
+      const collectionInfo: any = {
+        name: collection.name,
+        description: collection.description,
+        requests: []
+      };
+      
+      // Add request information
+      if (collection.requests && collection.requests.length > 0) {
+        collectionInfo.requests = collection.requests.map((request: any) => {
+          return {
+            name: request.name,
+            httpMethod: request.httpMethod,
+            url: request.url,
+            headers: request.headers,
+            body: request.body,
+            authentication: request.authentication
+          };
+        });
+      }
+      
+      return collectionInfo;
+    });
+  }
+  
+  // Add environment information if available
+  if (this.selectedWorkspace.environments && this.selectedWorkspace.environments.length > 0) {
+    workspaceInfo.environments = this.selectedWorkspace.environments.map((env: any) => {
+      return {
+        name: env.name,
+        variables: env.variables
+      };
+    });
+  }
+  
+  return workspaceInfo;
+}
+
+private cleanGeneratedCode(response: string): string {
     // Try to extract code blocks if they exist (markdown format ```js...```)
     const codeBlockRegex = /```(?:javascript|js)?([\s\S]*?)```/g;
     const codeBlocks = [];

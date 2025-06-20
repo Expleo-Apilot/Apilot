@@ -69,7 +69,56 @@ export class GeminiService implements LlmService {
 5. Each test must return true at the end if it passes.
 6. Use try/catch for error handling inside the test lambda.
 7. Do not include explanations, comments, or markdown formatting. Output ONLY the pure C# code. Never prefix output with 'csharp' or any language identifier.
-8. Example:
+8. Example1:
+
+TestAsync("Verify Simple Books API Status", async () => {
+    try {
+        var client = ConfigureClient("https://simple-books-api.glitch.me", new Dictionary<string, string>());
+        var response = await client.GetAsync("/status");
+        AssertStatusCode(response, HttpStatusCode.OK);
+        var jsonResult = ParseJsonResponse(response);
+        Assert(JsonPropertyEquals(jsonResult, "status", "OK"), "Status should be OK");
+        return true;
+    } catch (Exception ex) {
+        Assert(false, $"Test failed with error: {ex.Message}");
+        return false;
+    }
+});
+Example2:
+
+TestAsync("Mistral API Request", async () => {
+    try {
+        // Use the correct base URL without a trailing slash
+        var client = ConfigureClient("https://api.mistral.ai", new Dictionary<string, string> {
+            { "Authorization", "Bearer 2rYoaDl2VizSq6QmG2TvHEKw1QSFU4AM" },
+            { "Accept", "application/json" }
+        });
+
+        var requestBody = new
+        {
+            model = "mistral-large-latest",
+            messages = new[] {
+                new {
+                    role = "user",
+                    content = "Create a test for Simple Books API status endpoint that verifies the status is OK"
+                }
+            }
+        };
+
+        var jsonBody = System.Text.Json.JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+        
+        // Use the full path to the endpoint
+        var response = await client.PostAsync("/v1/chat/completions", content);
+        AssertStatusCode(response, System.Net.HttpStatusCode.OK);
+        var jsonResult = ParseJsonResponse(response);
+        Assert(jsonResult.GetProperty("choices").EnumerateArray().Any(), "Choices should not be empty");
+        return true;
+    } catch (Exception ex) {
+        Assert(false, $"Test failed with error: {ex.Message}");
+        return false;
+    }
+});
 
 TestAsync("Verify Simple Books API Status", async () => {
     try {
