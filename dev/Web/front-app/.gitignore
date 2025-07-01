@@ -6,10 +6,24 @@
 /out-tsc
 /bazel-out
 
+# Build outputs
+/dist
+/release
+/dist-server
+/dist/front-app
+
 # Node
 /node_modules
 npm-debug.log
 yarn-error.log
+
+# Electron-builder output
+/out
+/win-unpacked
+/win-ia32-unpacked
+/win-x64-unpacked
+/linux-unpacked
+/mac
 
 # IDEs and editors
 .idea/
@@ -22,6 +36,50 @@ yarn-error.log
 
 # Visual Studio Code
 .vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build files
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+/coverage
+
+# Production build files
+/dist/front-app/browser
+/dist/front-app/server
+
+# Electron builder cache
+.electron-builder-cache
+
+# Angular cache
+.cache
+.angular
+
+# Misc
+.DS_Store
+Thumbs.db
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
