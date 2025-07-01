@@ -46,7 +46,10 @@ export class HeaderComponent implements OnInit {
 
   ngOnInit() {
     // Load theme from localStorage
-    const savedTheme = localStorage.getItem('theme');
+    let savedTheme = 'light';
+    if (typeof window !== 'undefined' && window.localStorage) {
+      savedTheme = localStorage.getItem('theme') || 'light';
+    }
     this.isDarkMode = savedTheme === 'dark';
 
     this.applyTheme();
@@ -91,7 +94,9 @@ export class HeaderComponent implements OnInit {
     const newTheme = this.isDarkMode ? 'dark' : 'light';
 
     // Save to localStorage
-    localStorage.setItem('theme', newTheme);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('theme', newTheme);
+    }
 
     // Add a transition class before changing the theme
     document.body.classList.add('theme-transition');
@@ -106,13 +111,20 @@ export class HeaderComponent implements OnInit {
   }
 
   private applyTheme() {
+    if (typeof document === 'undefined') {
+      return; // Ne rien faire si on n'est pas dans le navigateur
+    }
     const body = document.body;
     if (this.isDarkMode) {
       body.classList.add('dark-theme');
-      window.dispatchEvent(new CustomEvent('themeChange', { detail: 'vs-dark' }));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('themeChange', { detail: 'vs-dark' }));
+      }
     } else {
       body.classList.remove('dark-theme');
-      window.dispatchEvent(new CustomEvent('themeChange', { detail: 'vs-light' }));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('themeChange', { detail: 'vs-light' }));
+      }
     }
   }
 
@@ -136,10 +148,12 @@ export class HeaderComponent implements OnInit {
   // Load the previously selected workspace from localStorage
   loadSelectedWorkspace() {
     try {
-      const savedWorkspace = localStorage.getItem('selectedWorkspace');
-      if (savedWorkspace) {
-        const workspace = JSON.parse(savedWorkspace) as Workspace;
-        this.selectedWorkspaceId = workspace.id;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedWorkspace = localStorage.getItem('selectedWorkspace');
+        if (savedWorkspace) {
+          const workspace = JSON.parse(savedWorkspace) as Workspace;
+          this.selectedWorkspaceId = workspace.id;
+        }
       }
     } catch (error) {
       console.error('Error loading selected workspace:', error);
@@ -164,7 +178,9 @@ export class HeaderComponent implements OnInit {
   // Save the selected workspace to localStorage
   saveSelectedWorkspace(workspace: Workspace) {
     try {
-      localStorage.setItem('selectedWorkspace', JSON.stringify(workspace));
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('selectedWorkspace', JSON.stringify(workspace));
+      }
     } catch (error) {
       console.error('Error saving workspace to localStorage:', error);
     }

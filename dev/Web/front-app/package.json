@@ -7,7 +7,9 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:front-app": "node dist/front-app/server/server.mjs"
+    "serve:ssr:front-app": "node dist/front-app/server/server.mjs",
+    "electron:dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && electron .\"",
+    "electron:build": "ng build && electron-builder"
   },
   "private": true,
   "dependencies": {
@@ -42,12 +44,52 @@
     "@types/jasmine": "~5.1.0",
     "@types/node": "^18.18.0",
     "@types/uuid": "^10.0.0",
+    "concurrently": "^9.2.0",
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12",
+    "electron-is-dev": "^3.0.1",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.7.2"
+    "typescript": "~5.7.2",
+    "wait-on": "^8.0.3"
+  },
+  "main": "electron/main.js",
+  "homepage": "./",
+  "build": {
+    "appId": "com.apilot.desktop",
+    "productName": "ApiLot",
+    "files": [
+      "dist/front-app/browser/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "buildResources": "public",
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/ApiLot.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "public/ApiLot.ico",
+      "uninstallerIcon": "public/ApiLot.ico",
+      "installerHeaderIcon": "public/ApiLot.ico",
+      "createDesktopShortcut": true,
+      "shortcutName": "ApiLot",
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
+    },
+    "extraResources": [
+      {
+        "from": "public/ApiLot.ico",
+        "to": "public/ApiLot.ico"
+      }
+    ]
   }
 }

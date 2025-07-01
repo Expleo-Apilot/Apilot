@@ -84,7 +84,71 @@ TestAsync("Verify Simple Books API Status", async () => {
         return false;
     }
 });
-Example2:
+
+example2;
+TestAsync("Create and Update Order with Valid Token and Unique BookId", async () => {
+try {
+var token = "1f26a6a6f182ff37bdf0e90e21fddd927691045c48c40046da9490839f4dc2ea";
+var client = ConfigureClient("https://simple-books-api.glitch.me", new Dictionary<string, string> {
+{ "Authorization", $"Bearer {token}" }
+});
+
+
+    var orderBody = System.Text.Json.JsonSerializer.Serialize(new {
+        bookId = 1,
+        customerName = "Test User"
+    });
+    var content = new StringContent(orderBody, System.Text.Encoding.UTF8, "application/json");
+    var createResponse = await client.PostAsync("/orders", content);
+    AssertStatusCode(createResponse, HttpStatusCode.Created);
+    var createJson = ParseJsonResponse(createResponse);
+    var orderId = createJson.GetProperty("orderId").GetString();
+
+    var patchBody = System.Text.Json.JsonSerializer.Serialize(new {
+        customerName = "Updated User"
+    });
+    var patchContent = new StringContent(patchBody, System.Text.Encoding.UTF8, "application/json");
+    var patchResponse = await client.PatchAsync($"/orders/{orderId}", patchContent);
+    AssertStatusCode(patchResponse, HttpStatusCode.NoContent);
+    return true;
+} catch (Exception ex) {
+    Assert(false, $"Test failed with error: {ex.Message}");
+    return false;
+
+ example3:
+ TestAsync("Get List of Books", async () => {
+try {
+var client = ConfigureClient("https://simple-books-api.glitch.me", new Dictionary<string, string>());
+var response = await client.GetAsync("/books");
+AssertStatusCode(response, HttpStatusCode.OK);
+var jsonResult = ParseJsonResponse(response);
+Assert(jsonResult.GetArrayLength() > 0, "Books array should not be empty");
+return true;
+} catch (Exception ex) {
+Assert(false, $"Test failed with error: {ex.Message}");
+return false;
+}
+});
+example4:
+TestAsync("Register API Client", async () => {
+try {
+var client = ConfigureClient("https://simple-books-api.glitch.me", new Dictionary<string, string>());
+var jsonBody = System.Text.Json.JsonSerializer.Serialize(new {
+clientName = "SamirTestClient",
+clientEmail = "samir@example.com"
+});
+var content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+var response = await client.PostAsync("/api-clients", content);
+AssertStatusCode(response, HttpStatusCode.Created);
+var jsonResult = ParseJsonResponse(response);
+Assert(jsonResult.TryGetProperty("accessToken", out var token) && token.GetString().Length > 0, "Token must be present");
+return true;
+} catch (Exception ex) {
+Assert(false, $"Test failed with error: {ex.Message}");
+return false;
+}
+});
+Example5:
 
 TestAsync("Mistral API Request", async () => {
     try {
@@ -107,7 +171,7 @@ TestAsync("Mistral API Request", async () => {
 
         var jsonBody = System.Text.Json.JsonSerializer.Serialize(requestBody);
         var content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
-        
+
         // Use the full path to the endpoint
         var response = await client.PostAsync("/v1/chat/completions", content);
         AssertStatusCode(response, System.Net.HttpStatusCode.OK);
@@ -120,19 +184,6 @@ TestAsync("Mistral API Request", async () => {
     }
 });
 
-TestAsync("Verify Simple Books API Status", async () => {
-    try {
-        var client = ConfigureClient("https://simple-books-api.glitch.me", new Dictionary<string, string>());
-        var response = await client.GetAsync("/status");
-        AssertStatusCode(response, HttpStatusCode.OK);
-        var jsonResult = ParseJsonResponse(response);
-        Assert(JsonPropertyEquals(jsonResult, "status", "OK"), "Status should be OK");
-        return true;
-    } catch (Exception ex) {
-        Assert(false, $"Test failed with error: {ex.Message}");
-        return false;
-    }
-});
 
 9. API-specific information:
    - Simple Books API (https://simple-books-api.glitch.me) status endpoint returns: {"status":"OK"}
@@ -140,7 +191,10 @@ TestAsync("Verify Simple Books API Status", async () => {
    - Authentication requires a POST to /api-clients with clientName and clientEmail
 
 Based on this request: "${prompt}"
-Generate ONLY the C# test code.`;
+Generate ONLY the C# test code.
+
+`;
+
     return this.generateText(enhancedPrompt);
   }
 
