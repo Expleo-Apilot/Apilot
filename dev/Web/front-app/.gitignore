@@ -98,3 +98,7 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+# Electron specific
+*.asar
+*.exe
+*.dll
