@@ -5,23 +5,16 @@ const isDev = require('electron-is-dev');
 let mainWindow;
 
 function createWindow() {
-  // Get the path to the icon
-  const iconPath = path.join(__dirname, isDev ? '../public/ApiLot.ico' : '../public/ApiLot.ico');
-
+  // Create a basic window
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      nodeIntegration: false,
+      contextIsolation: true
     },
-    icon: iconPath,
-    title: 'ApiLot',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#1e1e1e',
-      symbolColor: '#ffffff'
-    }
+    // You can keep the icon
+    icon: path.join(__dirname, isDev ? '../public/ApiLot.ico' : '../public/ApiLot.ico'),
   });
 
   // Load the app
@@ -30,11 +23,6 @@ function createWindow() {
     : `file://${path.join(__dirname, '../dist/front-app/browser/index.html')}`;
   
   mainWindow.loadURL(appPath);
-
-  // Open the DevTools in development mode
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
