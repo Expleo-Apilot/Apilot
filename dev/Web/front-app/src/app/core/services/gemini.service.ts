@@ -54,7 +54,11 @@ export class GeminiService implements LlmService {
    * @param prompt The prompt describing the tests to generate
    * @returns Observable with the generated test code
    */
-  generateTestCode(prompt: string): Observable<LlmResponse> {
+  generateTestCode(prompt: string ): Observable<LlmResponse> {
+
+    const request = localStorage.getItem("apilot_last_selected_request");
+    const requestFinal = localStorage.getItem(request!);
+    console.log(requestFinal);
     // Enhanced prompt for Gemini to generate code compatible with our dynamic test runner
     const enhancedPrompt = `You are generating C# test code for an ASP.NET Core test runner that dynamically compiles and executes tests. Follow these rules:
 
@@ -190,10 +194,15 @@ TestAsync("Mistral API Request", async () => {
    - Books endpoint (/books) returns an array of book objects with properties: id, name, type, available
    - Authentication requires a POST to /api-clients with clientName and clientEmail
 
-Based on this request: "${prompt}"
+Based on this prompt: "${prompt}"
+Based on this request: "${requestFinal}"
 Generate ONLY the C# test code.
+remove any comments
+remove the word csharp
+remove the identifer csharp
 
 `;
+
 
     return this.generateText(enhancedPrompt);
   }

@@ -70,10 +70,10 @@ namespace dev.Api.Controllers
                     generationConfig = new
                     {
                         responseMimeType = "text/plain",
-                        temperature = 0.7,
+                        temperature = 0.2,
                         topK = 40,
-                        topP = 0.95,
-                        maxOutputTokens = 8192
+                        topP = 0.9,
+                        maxOutputTokens = 2000
                     }
                 };
                 
