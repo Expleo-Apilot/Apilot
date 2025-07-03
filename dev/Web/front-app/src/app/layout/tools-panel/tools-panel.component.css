@@ -9,10 +9,24 @@
   overflow: hidden;
   background-color: var(--card-bg);
 }
+/* Option 6: Custom CSS properties for maximum flexibility */
 .test-script-panel {
   display: flex;
   flex-direction: column;
   background-color: var(--request-editor-bg);
+  height: var(--panel-height, 83%);
+  min-height: var(--panel-min-height, 200px);
+  max-height: var(--panel-max-height, 90vh);
+  transition: height 0.3s ease; /* Smooth transitions */
+}
+
+/* Usage: Override in parent or with JavaScript */
+.test-script-panel.expanded {
+  --panel-height: 95%;
+}
+
+.test-script-panel.compact {
+  --panel-height: 60%;
 }
 
 /* Tab Navigation */
