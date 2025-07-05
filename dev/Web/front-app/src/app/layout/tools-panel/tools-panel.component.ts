@@ -48,6 +48,8 @@ export class ToolsPanelComponent implements OnInit {
   allTestsPassed: boolean = true;
   totalTests: number = 0;
   passedTests: number = 0;
+  isSaving: boolean = false;
+  requestScript : any
 
   // Selected tab
   activeTab: 'script' | 'results' = 'script';
@@ -63,7 +65,7 @@ export class ToolsPanelComponent implements OnInit {
   availableLlmTypes: LlmType[] = [];
   selectedLlmType: LlmType = LlmType.OLLAMA;
   currentModelName: string = '';
-  
+
   // Workspace information
   selectedWorkspace: any = null;
 
@@ -75,7 +77,38 @@ export class ToolsPanelComponent implements OnInit {
   private typingPosition: number = 0;
   private typingPrompt: string = '';
 
-  constructor(private llmFactoryService: LlmFactoryService, private testRunnerService: TestRunnerService) { }
+  constructor(
+    private llmFactoryService: LlmFactoryService,
+    private testRunnerService: TestRunnerService
+  ) { }
+
+  /**
+   * Saves the current test script
+   */
+  saveScript(): void {
+    if (!this.testScript?.trim()) {
+      // TODO: Show error message - script is empty
+      console.warn('Cannot save an empty script');
+      return;
+    }
+
+    this.isSaving = true;
+
+    // TODO: Implement actual save functionality
+    // This is a placeholder for the actual save implementation
+    const req = localStorage.getItem('apilot_last_selected_request_parentId');
+    this.requestScript = localStorage.getItem(req!);
+
+    console.log(req);
+    console.log('Saving script:', this.testScript);
+
+    // Simulate API call
+    setTimeout(() => {
+      this.isSaving = false;
+      // TODO: Show success message
+      console.log('Script saved successfully');
+    }, 1000);
+  }
 
   ngOnInit(): void {
     // Initialize with a sample test script
@@ -88,7 +121,7 @@ export class ToolsPanelComponent implements OnInit {
     this.availableLlmTypes = this.llmFactoryService.getAllLlmTypes();
     this.selectedLlmType = this.llmFactoryService.getCurrentLlmType();
     this.updateCurrentModelName();
-    
+
     // Load selected workspace from localStorage if available
     this.loadSelectedWorkspace();
   }
@@ -187,169 +220,7 @@ export class ToolsPanelComponent implements OnInit {
    * Get a sample test script for demonstration
    */
   private  getSampleTestScript(): string {
-    return `// Sample Test Script
-// This demonstrates how to write tests using the test framework
-
-Test("Math Test", () => {
-    // A simple test that checks basic math operations
-    int result = 2 + 2;
-    Assert(result == 4, "2 + 2 should equal 4");
-    return true;
-});
-
-Test("String Test", () => {
-    // A simple test that checks string operations
-    string test = "Hello" + " " + "World";
-    Assert(test == "Hello World", "String concatenation should work correctly");
-    return true;
-});
-
-// Basic API Test Example
-TestAsync("Simple API Test", async () => {
-    // Create a client with a base URL
-    var client = ConfigureClient("https://jsonplaceholder.typicode.com");
-    
-    // Make a GET request
-    var response = await client.GetAsync("/posts/1");
-    
-    // Assert that the response status code is 200 OK
-    AssertStatusCode(response, HttpStatusCode.OK);
-    
-    // Parse the JSON response using JsonElement
-    var jsonResult = ParseJsonResponse(response);
-    
-    // Check if properties exist
-    Assert(JsonPropertyExists(jsonResult, "id"), "Response should contain 'id' property");
-    Assert(JsonPropertyExists(jsonResult, "title"), "Response should contain 'title' property");
-    
-    // Check property values
-    Assert(JsonPropertyEquals(jsonResult, "id", 1), "Post ID should be 1");
-    
-    return true;
-});
-
-// POST Request Example with JSON
-TestAsync("POST API Test", async () => {
-    // Create a client with a base URL
-    var client = ConfigureClient("https://jsonplaceholder.typicode.com");
-    
-    // Create content for the POST request
-    var content = new StringContent(
-        JsonSerializer.Serialize(new { 
-            title = "Test Post", 
-            body = "This is a test post", 
-            userId = 1 
-        }),
-        Encoding.UTF8,
-        "application/json"
-    );
-    
-    // Make a POST request
-    var response = await client.PostAsync("/posts", content);
-    
-    // Assert that the response status code is in the success range (200-299)
-    AssertStatusCodeRange(response, 200, 299);
-    
-    // Parse the JSON response
-    var jsonResult = ParseJsonResponse(response);
-    
-    // Check if the created post has an ID
-    Assert(JsonPropertyExists(jsonResult, "id"), "Created post should have an ID");
-    Assert(JsonPropertyExists(jsonResult, "title"), "Created post should have a title");
-    Assert(JsonPropertyEquals(jsonResult, "title", "Test Post"), "Post title should match what we sent");
-    
-    return true;
-});
-
-// Complex Nested JSON Example
-TestAsync("Nested JSON Test", async () => {
-    // Create a client with a base URL
-    var client = ConfigureClient("https://api.github.com", new Dictionary<string, string> {
-        { "User-Agent", "API-Test-Framework" }
-    });
-    
-    // Make a GET request to GitHub API
-    var response = await client.GetAsync("/repos/microsoft/vscode");
-    
-    // Assert that the response status code is OK
-    AssertStatusCode(response, HttpStatusCode.OK);
-    
-    // Parse the JSON response
-    var jsonResult = ParseJsonResponse(response);
-    
-    // Check basic properties
-    Assert(JsonPropertyExists(jsonResult, "name"), "Repository should have a name");
-    Assert(JsonPropertyEquals(jsonResult, "name", "vscode"), "Repository name should be 'vscode'");
-    
-    // Check nested properties manually
-    // Get the owner object
-    if (jsonResult.TryGetProperty("owner", out JsonElement ownerElement)) {
-        // Check owner properties
-        Assert(JsonPropertyExists(ownerElement, "login"), "Owner should have a login name");
-        Assert(JsonPropertyEquals(ownerElement, "login", "microsoft"), "Owner login should be 'microsoft'");
-        
-        // Check nested properties manually
-        if (ownerElement.TryGetProperty("type", out JsonElement typeElement)) {
-            Assert(typeElement.GetString() == "Organization", "Owner type should be 'Organization'");
-        }
-        else {
-            Assert(false, "Owner should have a type property");
-        }
-    }
-    else {
-        Assert(false, "Repository should have an owner property");
-    }
-    
-    return true;
-});
-
-// Array Data Test Example
-TestAsync("JSON Array Test", async () => {
-    // Create a client with a base URL
-    var client = ConfigureClient("https://jsonplaceholder.typicode.com");
-    
-    // Make a GET request to fetch a list of users
-    var response = await client.GetAsync("/users");
-    
-    // Assert that the response status code is OK
-    AssertStatusCode(response, HttpStatusCode.OK);
-    
-    // Parse the JSON response (which should be an array)
-    var jsonResult = ParseJsonResponse(response);
-    
-    // Verify we got an array
-    Assert(jsonResult.ValueKind == JsonValueKind.Array, "Response should be a JSON array");
-    
-    // Check if the array contains a user with a specific username using manual iteration
-    bool foundBretUser = false;
-    bool foundUserWithBizEmail = false;
-    
-    foreach (JsonElement user in jsonResult.EnumerateArray()) {
-        // Check for user with username "Bret"
-        if (user.TryGetProperty("username", out JsonElement usernameProp) && 
-            usernameProp.ValueKind == JsonValueKind.String && 
-            usernameProp.GetString() == "Bret") {
-            foundBretUser = true;
-        }
-        
-        // Check for user with .biz email domain
-        if (user.TryGetProperty("email", out JsonElement emailProp) && 
-            emailProp.ValueKind == JsonValueKind.String && 
-            emailProp.GetString().EndsWith(".biz")) {
-            foundUserWithBizEmail = true;
-        }
-        
-        // If we found both, we can break early
-        if (foundBretUser && foundUserWithBizEmail) {
-            break;
-        }
-    }
-    
-    Assert(foundBretUser, "User array should contain a user with username 'Bret'");
-    Assert(foundUserWithBizEmail, "Should find at least one user with a .biz email domain");
-    
-    return true;
-});`;
+    return ``;
   }
 
   /**
@@ -374,15 +245,15 @@ TestAsync("JSON Array Test", async () => {
 
     // Get the current LLM service
     const llmService = this.llmFactoryService.getCurrentLlm();
-    
+
     // Create an enhanced prompt with workspace information if available
     let enhancedPrompt = prompt;
-    
+
     // Add workspace information to the prompt if available
     if (this.selectedWorkspace) {
       // Create a simplified workspace object with only the necessary information
       const workspaceInfo = this.prepareWorkspaceInfoForPrompt();
-      
+
       // Add workspace context to the prompt
       enhancedPrompt = `${prompt}\n\nWorkspace Context:\n${JSON.stringify(workspaceInfo, null, 2)}`;
     }
@@ -580,14 +451,14 @@ private loadSelectedWorkspace(): void {
  */
 private prepareWorkspaceInfoForPrompt(): any {
   if (!this.selectedWorkspace) return null;
-  
+
   // Create a simplified version of the workspace with only relevant information
   const workspaceInfo: any = {
     name: this.selectedWorkspace.name,
     description: this.selectedWorkspace.description,
     collections: []
   };
-  
+
   // Add collection information
   if (this.selectedWorkspace.collections && this.selectedWorkspace.collections.length > 0) {
     workspaceInfo.collections = this.selectedWorkspace.collections.map((collection: any) => {
@@ -596,7 +467,7 @@ private prepareWorkspaceInfoForPrompt(): any {
         description: collection.description,
         requests: []
       };
-      
+
       // Add request information
       if (collection.requests && collection.requests.length > 0) {
         collectionInfo.requests = collection.requests.map((request: any) => {
@@ -610,11 +481,11 @@ private prepareWorkspaceInfoForPrompt(): any {
           };
         });
       }
-      
+
       return collectionInfo;
     });
   }
-  
+
   // Add environment information if available
   if (this.selectedWorkspace.environments && this.selectedWorkspace.environments.length > 0) {
     workspaceInfo.environments = this.selectedWorkspace.environments.map((env: any) => {
@@ -624,7 +495,7 @@ private prepareWorkspaceInfoForPrompt(): any {
       };
     });
   }
-  
+
   return workspaceInfo;
 }
 

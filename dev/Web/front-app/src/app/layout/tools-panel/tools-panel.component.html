@@ -36,17 +36,30 @@
         ></ngx-monaco-editor>
       </div>
       <div class="editor-actions">
-        <button
-          class="run-button"
-          (click)="runTests()"
-          [disabled]="isRunning"
-        >
-          <div class="button-content">
-            <mat-spinner *ngIf="isRunning" diameter="20" class="spinner"></mat-spinner>
-            <mat-icon *ngIf="!isRunning">play_arrow</mat-icon>
-            {{ isRunning ? 'Running Tests...' : 'Run Tests' }}
-          </div>
-        </button>
+        <div class="button-group">
+          <button
+            class="run-button"
+            (click)="runTests()"
+            [disabled]="isRunning"
+          >
+            <div class="button-content">
+              <mat-spinner *ngIf="isRunning" diameter="20" class="spinner"></mat-spinner>
+              <mat-icon *ngIf="!isRunning">play_arrow</mat-icon>
+              {{ isRunning ? 'Running Tests...' : 'Run Tests' }}
+            </div>
+          </button>
+          <button
+            class="save-button"
+            (click)="saveScript()"
+            [disabled]="isRunning"
+          >
+            <div class="button-content">
+              <mat-icon>save</mat-icon>
+              Save Script
+            </div>
+          </button>
+        </div>
+
       </div>
 
       <!-- Error message for test script -->

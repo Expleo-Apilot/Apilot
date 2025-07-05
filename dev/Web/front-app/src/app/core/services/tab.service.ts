@@ -254,10 +254,14 @@ export class TabService {
    * @param tab The tab containing the request details to store
    */
   private storeSelectedRequestDetails(tab: RequestTab): void {
+    if (!tab || !tab.name) return;
+    
     try {
-      // Create a sanitized key from the request name
+      // Create a unique key for this request using its name, parentId and a timestamp
+      const timestamp = new Date().getTime();
       const sanitizedName = tab.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-      const storageKey = `${this.SELECTED_REQUEST_KEY}${sanitizedName}_${tab.id}`;
+      const parentIdSuffix = tab.parentId ? `_parent_${tab.parentId}` : '';
+      const storageKey = `${this.SELECTED_REQUEST_KEY}${sanitizedName}${parentIdSuffix}_${timestamp}`;
       
       // Store the request details
       const requestDetails = {
@@ -283,6 +287,14 @@ export class TabService {
       
       // Store the key of the most recently selected request
       localStorage.setItem('apilot_last_selected_request', storageKey);
+      
+      // Store the parentId separately for quick access
+      if (tab.parentId) {
+        localStorage.setItem('apilot_last_selected_request_parentId', tab.parentId.toString());
+      } else {
+        // Clear the parentId if it's not set
+        localStorage.removeItem('apilot_last_selected_request_parentId');
+      }
     } catch (error) {
       console.error('Error storing selected request details:', error);
     }
@@ -311,14 +323,34 @@ export class TabService {
           });
           
           // Return the most recently selected one
-          return JSON.parse(localStorage.getItem(sortedKeys[0]) || 'null');
+          const result = JSON.parse(localStorage.getItem(sortedKeys[0]) || 'null');
+          
+          // If parentId is not in the result but we have it in localStorage, add it
+          if (result && !result.parentId) {
+            const parentId = localStorage.getItem('apilot_last_selected_request_parentId');
+            if (parentId) {
+              result.parentId = parseInt(parentId, 10);
+            }
+          }
+          
+          return result;
         }
         return null;
       } else {
         // Return the last selected request
         const lastSelectedKey = localStorage.getItem('apilot_last_selected_request');
         if (lastSelectedKey) {
-          return JSON.parse(localStorage.getItem(lastSelectedKey) || 'null');
+          const result = JSON.parse(localStorage.getItem(lastSelectedKey) || 'null');
+          
+          // If parentId is not in the result but we have it in localStorage, add it
+          if (result && !result.parentId) {
+            const parentId = localStorage.getItem('apilot_last_selected_request_parentId');
+            if (parentId) {
+              result.parentId = parseInt(parentId, 10);
+            }
+          }
+          
+          return result;
         }
         return null;
       }

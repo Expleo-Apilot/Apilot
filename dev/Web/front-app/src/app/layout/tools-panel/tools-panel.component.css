@@ -129,19 +129,26 @@
 .editor-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 12px 16px;
+  padding: 12px;
   border-top: 1px solid var(--border-color);
+  background-color: var(--request-editor-bg);
 }
 
-.run-button {
+/* Button group for action buttons */
+.button-group {
   display: flex;
-  align-items: center;
   gap: 8px;
+}
+
+/* Base button styles */
+.run-button,
+.save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 16px;
-  background-color: var(--primary-color);
-  color: white;
   border: none;
-  border-radius: var(--border-radius);
+  border-radius: 4px;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   cursor: pointer;
@@ -156,17 +163,56 @@
   gap: 8px;
 }
 
-.run-button:hover {
+.run-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: 1px solid var(--primary-color);
+}
+
+.run-button:hover:not(:disabled) {
   background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .run-button:disabled {
-  background-color: var(--text-disabled);
+  background-color: #b39ddb;
+  border-color: #b39ddb;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  opacity: 0.7;
+}
+
+.save-button {
+  background-color: var(--primary-light);
+  color: white;
+  border: 1px solid var(--primary-light);
+}
+
+.save-button:hover:not(:disabled) {
+  background-color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.save-button:disabled {
+  background-color: #b39ddb;
+  border-color: #b39ddb;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Dark theme overrides */
+.dark-theme .save-button {
+  background-color: var(--primary-dark);
+  color: white;
+  border-color: var(--primary-dark);
+}
+
+.dark-theme .save-button:hover:not(:disabled) {
+  background-color: var(--primary-color);
+}
+
+.dark-theme .save-button:disabled {
+  background-color: #4A148C;
+  opacity: 0.7;
 }
 
 .spinner-container {
