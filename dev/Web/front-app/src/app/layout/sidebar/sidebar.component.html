@@ -18,6 +18,10 @@
     <!-- History Section -->
     <div *ngSwitchCase="'history'" class="content-area history-area">
       <div class="content-header">
+        <div class="history-header-title">
+          <mat-icon class="header-icon">history</mat-icon>
+          <span>Request History</span>
+        </div>
         <div class="search-area">
           <mat-icon class="filter-icon">search</mat-icon>
           <input type="text" placeholder="Search histories..."
@@ -31,46 +35,74 @@
             <mat-icon>close</mat-icon>
           </button>
         </div>
+        <div class="history-actions-header">
+          <button mat-icon-button class="action-button" title="Clear all history" (click)="confirmClearHistory($event)">
+            <mat-icon>delete_sweep</mat-icon>
+          </button>
+        </div>
       </div>
 
       <div class="history-container">
         <!-- Empty state when no history items are found -->
-        <div *ngIf="filteredHistories?.length === 0" class="empty-search-result">
+        <div *ngIf="!filteredHistories || filteredHistories.length === 0" class="empty-search-result">
           <mat-icon>history</mat-icon>
           <span>No history items found</span>
+          <p class="empty-state-subtext">Your API request history will appear here</p>
         </div>
 
-        <!-- History items list -->
-        <div *ngFor="let history of filteredHistories" class="history-item">
-          <div class="history-content">
-            <!-- Method badge -->
-            <div class="method-badge">
-              <span class="request-method" [ngClass]="history.requests?.httpMethod?.toLowerCase()">{{ history.requests?.httpMethod }}</span>
+        <!-- History date grouping -->
+        <ng-container *ngIf="filteredHistories && filteredHistories.length > 0">
+          <div class="history-date-group" *ngFor="let group of groupedHistories | keyvalue">
+            <div class="history-date-header">
+              <span>{{ group.key }}</span>
             </div>
+            
+            <!-- History items list -->
+            <div *ngFor="let history of group.value" class="history-item">
+              <div class="history-content">
+                <!-- Left side delete button -->
+                <div class="left-actions">
+                  <button mat-icon-button class="action-button delete-button" (click)="deleteHistoryItem(history.id, $event)" title="Delete history item">
+                    <mat-icon class="delete-icon">delete_outline</mat-icon>
+                    <span class="delete-tooltip">Delete</span>
+                    <span class="ripple-effect"></span>
+                  </button>
+                </div>
+                
+                <!-- Main content area (clickable) -->
+                <div class="main-content" (click)="loadHistoryRequest(history)">
+                  <!-- Method badge -->
+                  <div class="method-badge">
+                    <span class="request-method" [ngClass]="history.requests?.httpMethod?.toLowerCase()">{{ history.requests?.httpMethod }}</span>
+                  </div>
 
-            <!-- Request details -->
-            <div class="history-details">
-              <!-- Full URL display -->
-              <div class="history-url-container" [title]="history.requests?.url || 'No URL'">
-                <span class="history-full-url">{{ history.requests?.url || 'No URL' }}</span>
+                  <!-- Request details -->
+                  <div class="history-details">
+                    <!-- Full URL display -->
+                    <div class="history-url-container">
+                      <div class="history-url-path" [title]="getUrlPath(history.requests?.url) || 'No URL'">
+                        <span class="history-path">{{ getUrlPath(history.requests?.url) || 'No URL' }}</span>
+                      </div>
+                      <div class="history-url-domain" [title]="getUrlDomain(history.requests?.url) || ''">
+                        <span class="history-domain">{{ getUrlDomain(history.requests?.url) || '' }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Status and time info -->
+                    <div class="history-meta">
+                      <span class="history-status" *ngIf="history.response?.status" [ngClass]="getStatusClass(history.response?.status)">
+                        {{ history.response?.status }}
+                      </span>
+                      <span class="history-timestamp" [title]="history.timeStamp | date:'medium'">
+                        {{ history.timeStamp | date:'h:mm a' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              <!-- Timestamp with relative time format -->
-              <div class="history-meta">
-                <span class="history-timestamp" [title]="history.timeStamp | date:'medium'">
-                  {{ history.timeStamp | date:'MMM d, h:mm a' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Action buttons -->
-            <div class="history-actions">
-              <button mat-icon-button class="action-button" (click)="deleteHistoryItem(history.id, $event)" title="Delete history item">
-                <mat-icon class="small-icon">delete</mat-icon>
-              </button>
             </div>
           </div>
-        </div>
+        </ng-container>
       </div>
     </div>
 

@@ -32,6 +32,7 @@ export interface HistoriesResponse {
 
 export interface PerformRequestDto {
   method: HttpMethod;
+  httpMethod?: HttpMethod; // Added for UI display purposes
   url: string;
   params:  { [key: string]: string };
   headers: { [key: string]: string };
