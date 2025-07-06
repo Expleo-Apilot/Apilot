@@ -1,5 +1,6 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
 import { PrismService } from '../../../services/prism.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 /**
  * Script Component for API test scripts
@@ -49,7 +50,7 @@ pm.test('Response time is less than 200ms', () => {
 });`
   };
 
-  constructor(private prism: PrismService) {}
+  constructor(private prism: PrismService, private snackBar: MatSnackBar) {}
 
   ngAfterViewInit(): void {
     this.prism.highlightElement(this.editorRef.nativeElement);
@@ -63,6 +64,17 @@ pm.test('Response time is less than 200ms', () => {
 
   loadExample(): void {
     this.scriptContent = this.examples[this.scriptType];
+    this.scriptChanged.emit(this.scriptContent);
+    this.prism.highlightElement(this.editorRef.nativeElement);
+    this.snackBar.open('Example script loaded', 'Dismiss', {
+      duration: 3000,
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom'
+    });
+  }
+  
+  clearScript(): void {
+    this.scriptContent = '';
     this.scriptChanged.emit(this.scriptContent);
     this.prism.highlightElement(this.editorRef.nativeElement);
   }

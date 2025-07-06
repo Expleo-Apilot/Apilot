@@ -69,6 +69,9 @@ export class ToolsPanelComponent implements OnInit {
   // Workspace information
   selectedWorkspace: any = null;
 
+  // Theme settings
+  isDarkTheme: boolean = false;
+
   // Real-time typing effect
   private typingInterval: any;
   private typingSpeed: number = 10; // ms per character
