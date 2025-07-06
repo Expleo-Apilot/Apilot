@@ -1,4 +1,4 @@
-﻿using Apilot.Domain.Enums;
+using Apilot.Domain.Enums;
 using dev.Application.DTOs.Response;
 
 namespace dev.Application.DTOs.Request;
@@ -12,6 +12,7 @@ public class RequestDto
     public Dictionary<string, string> Headers { get; set; } = new();
     public AuthenticationDto.AuthenticationDto? Authentication { get; set; }
     public object? Body { get; set; }
+    public object? Script { get; set; }
     public Dictionary<string, string>? Parameters { get; set; } = new();
     
     public int? FolderId { get; set; }

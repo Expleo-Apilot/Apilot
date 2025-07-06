@@ -12,8 +12,8 @@ public class RequestEntity : BaseEntity
     public required Dictionary<string, string> Headers { get; set; }
     public AuthenticationDto? Authentication { get; set; }
     public object? Body { get; set; }
+    public object? Script { get; set; }
     public Dictionary<string, string>? Parameters { get; set; } = new Dictionary<string, string>();
-    
     
     public int? FolderId { get; set; }
     public Folder Folder { get; set; } = null!;

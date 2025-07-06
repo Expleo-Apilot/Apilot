@@ -1,4 +1,4 @@
-﻿using Apilot.Domain.Enums;
+using Apilot.Domain.Enums;
 
 namespace dev.Application.DTOs.Request;
 

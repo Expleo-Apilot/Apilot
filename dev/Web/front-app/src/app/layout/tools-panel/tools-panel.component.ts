@@ -2,6 +2,8 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { LlmFactoryService, LlmType } from '../../core/services/llm-factory.service';
 import { LlmService } from '../../core/services/llm.service';
 import { TestRunnerService, TestResult, TestResponse } from '../../core/services/test-runner.service';
+import { RequestService } from '../../core/services/request.service';
+import { TestScript } from '../../core/models/request.model';
 import { NgIf } from '@angular/common';
 import { catchError, finalize, of } from 'rxjs';
 
@@ -82,35 +84,62 @@ export class ToolsPanelComponent implements OnInit {
 
   constructor(
     private llmFactoryService: LlmFactoryService,
-    private testRunnerService: TestRunnerService
+    private testRunnerService: TestRunnerService,
+    private requestService: RequestService
   ) { }
 
   /**
-   * Saves the current test script
+   * Saves the current test script to the backend
+   * Uses the RequestService to persist the script for the currently selected request
    */
   saveScript(): void {
     if (!this.testScript?.trim()) {
-      // TODO: Show error message - script is empty
       console.warn('Cannot save an empty script');
+      return;
+    }
+
+    // Get the currently selected request ID from localStorage
+    const requestIdStr = localStorage.getItem('apilot_last_selected_request_parentId');
+    if (!requestIdStr) {
+      console.error('No request selected. Please select a request before saving a script.');
+      return;
+    }
+
+    const requestId = parseInt(requestIdStr, 10);
+    if (isNaN(requestId)) {
+      console.error('Invalid request ID:', requestIdStr);
       return;
     }
 
     this.isSaving = true;
 
-    // TODO: Implement actual save functionality
-    // This is a placeholder for the actual save implementation
-    const req = localStorage.getItem('apilot_last_selected_request_parentId');
-    this.requestScript = localStorage.getItem(req!);
+    // Create the TestScript object to send to the backend
+    const testScript: TestScript = {
+      Script: this.testScript,
+      RequestId: requestId
+    };
 
-    console.log(req);
-    console.log('Saving script:', this.testScript);
-
-    // Simulate API call
-    setTimeout(() => {
-      this.isSaving = false;
-      // TODO: Show success message
-      console.log('Script saved successfully');
-    }, 1000);
+    // Call the request service to save the script
+    this.requestService.saveScript(testScript)
+      .pipe(
+        finalize(() => {
+          this.isSaving = false;
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          if (response.isSuccess) {
+            console.log('Script saved successfully');
+            // Store the script in localStorage for persistence between page reloads
+            localStorage.setItem(`apilot_script_${requestId}`, this.testScript);
+          } else {
+            console.error('Failed to save script:', response.error);
+          }
+        },
+        error: (error) => {
+          console.error('Error saving script:', error);
+        }
+      });
   }
 
   ngOnInit(): void {

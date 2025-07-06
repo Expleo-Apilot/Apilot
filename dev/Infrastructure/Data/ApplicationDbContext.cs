@@ -3,6 +3,7 @@ using dev.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Environment = dev.Domain.Entities.Environment;
 
 namespace dev.Infrastructure.Data;
@@ -106,8 +107,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
                 req.Property(a => a.Body)
                     .HasConversion(
-                        v => JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                        v => JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()));
+                        v => v != null ? JsonSerializer.Serialize(v, new JsonSerializerOptions()) : null,
+                        v => !string.IsNullOrEmpty(v) ? JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()) : null);
 
 
                 req.OwnsOne(r => r.Authentication, authentication =>
@@ -138,8 +139,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             })
             .Property(a => a.Body)
             .HasConversion(
-                v => JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                v => JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()));
+                v => v != null ? JsonSerializer.Serialize(v, new JsonSerializerOptions()) : null,
+                v => !string.IsNullOrEmpty(v) ? JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()) : null);
 
 
 
@@ -159,6 +160,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasConversion(
                 v => JsonSerializer.Serialize(v, new JsonSerializerOptions()),
                 v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, new JsonSerializerOptions()) ?? new Dictionary<string, string>());
+                
+        modelBuilder.Entity<RequestEntity>()
+            .Property(r => r.Script)
+            .HasConversion(
+                v => v != null ? JsonSerializer.Serialize(v, new JsonSerializerOptions()) : null,
+                v => !string.IsNullOrEmpty(v) ? JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()) : null);
 
         modelBuilder.Entity<ResponseEntity>()
             .Property(r => r.Headers)
@@ -170,8 +177,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<ResponseEntity>()
             .Property(a => a.Body)
             .HasConversion(
-                v => JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                v => JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()));
+                v => v != null ? JsonSerializer.Serialize(v, new JsonSerializerOptions()) : null,
+                v => !string.IsNullOrEmpty(v) ? JsonSerializer.Deserialize<object>(v, new JsonSerializerOptions()) : null);
+        
+       
+      
         
         // Configure Collaboration relationships
         modelBuilder.Entity<Collection>()
