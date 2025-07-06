@@ -1,29 +1,42 @@
 <mat-toolbar class="header">
   <div class="left-section">
-    <span class="api-icon floating">
+    <div class="api-icon floating" [class.pulse]="apiIconHovered" (mouseenter)="apiIconHovered = true" (mouseleave)="apiIconHovered = false">
       <mat-icon>api</mat-icon>
-    </span>
+    </div>
     <div class="brand-container">
       <span class="bracket">(</span>
       <span class="brand">Expleo</span>
       <span class="bracket">)</span>
     </div>
-    <button class="workspace-tab" mat-button [disabled]="!isLoggedIn" (click)="toggleWorkspaceMenu($event)">Workspaces</button>
+    <button class="workspace-tab" mat-button [disabled]="!isLoggedIn" (click)="toggleWorkspaceMenu($event)">
+      <mat-icon>workspaces</mat-icon>
+      <span>Workspaces</span>
+    </button>
   </div>
 
   <div class="center-section">
     <mat-icon class="search-icon">search</mat-icon>
-    <input placeholder="Search Apilot" class="search-input" />
+    <input placeholder="Search Apilot..." class="search-input" aria-label="Search" />
+    <button mat-icon-button class="voice-search-button" aria-label="Voice search">
+      <mat-icon>mic</mat-icon>
+    </button>
   </div>
 
   <div class="right-section">
     <!-- Sign in button when not authenticated -->
+    <button *ngIf="!isLoggedIn" mat-flat-button class="signin-button" routerLink="/login">
+      <mat-icon>login</mat-icon>
+      Sign In
+    </button>
+    
     <!-- Invite button when authenticated -->
     <button *ngIf="isLoggedIn" mat-flat-button color="accent" class="invite-button" (click)="toggleInviteModal()">
       <mat-icon>person_add</mat-icon>
-      Invite
+      <span>Invite</span>
     </button>
-    <div class="user-section" *ngIf="isLoggedIn">
+    
+    <!-- User profile section -->
+    <div class="user-section" *ngIf="isLoggedIn" [matMenuTriggerFor]="userMenu">
       <span class="username" *ngIf="currentUser">
         {{ currentUser.firstName || currentUser.username || 'User' }}
       </span>
@@ -31,17 +44,31 @@
         <mat-icon>account_circle</mat-icon>
       </button>
     </div>
-    <button mat-icon-button aria-label="Settings">
-      <mat-icon>settings</mat-icon>
-    </button>
-    <button mat-icon-button (click)="toggleTheme()" aria-label="Toggle theme">
+    
+    <!-- User dropdown menu -->
+    <mat-menu #userMenu="matMenu" xPosition="before" class="user-menu">
+      <button mat-menu-item>
+        <mat-icon>person</mat-icon>
+        <span>My Profile</span>
+      </button>
+      <button mat-menu-item>
+        <mat-icon>settings</mat-icon>
+        <span>Settings</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon class="logout-icon">exit_to_app</mat-icon>
+        <span>Logout</span>
+      </button>
+    </mat-menu>
+    
+    <!-- Theme toggle -->
+    <button mat-icon-button (click)="toggleTheme()" aria-label="Toggle theme" class="theme-toggle">
       <mat-icon>{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
+    
     <!-- Collaboration notifications -->
     <app-invitation-notifications *ngIf="isLoggedIn"></app-invitation-notifications>
-    <button mat-icon-button *ngIf="isLoggedIn" (click)="logout()" aria-label="Logout" class="logout-button">
-      <mat-icon>exit_to_app</mat-icon>
-    </button>
   </div>
 </mat-toolbar>
 

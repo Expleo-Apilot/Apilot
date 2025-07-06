@@ -45,6 +45,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Subscription management
   private subscriptions = new Subscription();
 
+  // Navigation state
   activeNavItem: NavItem = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
@@ -2759,6 +2760,198 @@ export class SidebarComponent implements OnInit, OnDestroy {
     });
   }
   
+
+  
+
+  
+  /**
+   * Gets the first three keys from an environment variables object
+   * @param variables The environment variables object
+   * @returns Array of up to three variable keys
+   */
+  getFirstThreeKeys(variables: any): string[] {
+    if (!variables) return [];
+    return Object.keys(variables).slice(0, 3);
+  }
+  
+  /**
+   * Masks a variable value for display in the UI
+   * @param value The variable value to mask
+   * @returns Masked value (shows first few characters and replaces rest with dots)
+   */
+  maskValue(value: string): string {
+    if (!value) return '';
+    if (value.length <= 4) return '****';
+    return value.substring(0, 4) + '****';
+  }
+  
+  /**
+   * Gets a theme index for an environment card based on its ID
+   * @param id The environment ID
+   * @returns A theme index from 0-4
+   */
+  getThemeIndex(id: number): number {
+    return id % 5; // 5 different themes (0-4)
+  }
+  
+  /**
+   * Formats a date for display in the UI
+   * @param dateString The date string to format
+   * @returns Formatted date string
+   */
+  formatDate(dateString: string | Date): string {
+    if (!dateString) return '';
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  
+  /**
+   * Gets the total count of variables across all environments
+   * @returns Total variable count
+   */
+  getTotalVariablesCount(): number {
+    if (!this.environments || this.environments.length === 0) return 0;
+    return this.environments.reduce((total, env) => {
+      return total + (env.variables ? Object.keys(env.variables).length : 0);
+    }, 0);
+  }
+  
+  /**
+   * Sorts environments by the specified field and direction
+   * @param field Field to sort by (name, variables, updated)
+   * @param direction Sort direction (asc, desc)
+   */
+  sortEnvironments(field: string, direction: 'asc' | 'desc'): void {
+    if (!this.environments || this.environments.length === 0) return;
+    
+    const sortedEnvs = [...this.environments];
+    
+    switch (field) {
+      case 'name':
+        sortedEnvs.sort((a, b) => {
+          const comparison = a.name.localeCompare(b.name);
+          return direction === 'asc' ? comparison : -comparison;
+        });
+        break;
+      case 'variables':
+        sortedEnvs.sort((a, b) => {
+          const aCount = a.variables ? Object.keys(a.variables).length : 0;
+          const bCount = b.variables ? Object.keys(b.variables).length : 0;
+          return direction === 'asc' ? aCount - bCount : bCount - aCount;
+        });
+        break;
+      case 'updated':
+        sortedEnvs.sort((a, b) => {
+          const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : new Date(a.createdAt).getTime();
+          const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : new Date(b.createdAt).getTime();
+          return direction === 'asc' ? aDate - bDate : bDate - aDate;
+        });
+        break;
+    }
+    
+    this.environments = sortedEnvs;
+    this.filterEnvironments(this.environmentSearchTerm);
+    
+    this.snackBar.open(`Environments sorted by ${field} (${direction === 'asc' ? 'ascending' : 'descending'})`, 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Clones an existing environment
+   * @param environment Environment to clone
+   * @param event Mouse event
+   */
+  cloneEnvironment(environment: Environment, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    const clonedEnv: Partial<Environment> = {
+      name: `${environment.name} (Copy)`,
+      workSpaceId: environment.workSpaceId,
+      variables: {...environment.variables}
+    };
+    
+    // In a real implementation, you would call the API to create the cloned environment
+    console.log('Cloning environment:', environment.id, clonedEnv);
+    this.snackBar.open('Environment cloned successfully', 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Exports an environment to a JSON file
+   * @param environment Environment to export
+   * @param event Mouse event
+   */
+  exportEnvironment(environment: Environment, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    const exportData = {
+      name: environment.name,
+      variables: environment.variables,
+      exportedAt: new Date().toISOString(),
+      exportedBy: 'Current User' // In a real app, use the actual username
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileName = `${environment.name.replace(/\s+/g, '_')}_environment.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileName);
+    linkElement.click();
+    
+    this.snackBar.open(`Environment "${environment.name}" exported successfully`, 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Exports all environments to a JSON file
+   */
+  exportAllEnvironments(): void {
+    if (!this.environments || this.environments.length === 0) return;
+    
+    const exportData = {
+      environments: this.environments.map(env => ({
+        name: env.name,
+        variables: env.variables,
+        id: env.id
+      })),
+      exportedAt: new Date().toISOString(),
+      exportedBy: 'Current User', // In a real app, use the actual username
+      workspaceId: this.workspaceId
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileName = `workspace_${this.workspaceId}_environments.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileName);
+    linkElement.click();
+    
+    this.snackBar.open(`All environments exported successfully`, 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Opens modal to add a variable to an environment
+   * @param environmentId Environment ID
+   * @param event Mouse event
+   */
+  openAddVariableModal(environmentId: number, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    // Find the environment
+    const environment = this.environments.find(env => env.id === environmentId);
+    if (!environment) return;
+    
+    this.currentEnvironment = environment;
+    this.newVariable = { key: '', value: '' };
+    
+    console.log('Opening add variable modal for environment:', environmentId);
+    // In a real implementation, you would open a modal dialog here
+    this.snackBar.open('Add variable functionality coming soon', 'Close', { duration: 2000 });
+  }
+
   ngOnDestroy(): void {
     // Unsubscribe from all subscriptions to prevent memory leaks
     if (this.subscriptions) {

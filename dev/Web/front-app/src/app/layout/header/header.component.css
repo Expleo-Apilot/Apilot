@@ -3,14 +3,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 18px;
-  height: 48px;
+  padding: 0 20px;
+  height: 56px;
   background-color: var(--header-bg);
   color: var(--header-color);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
   border-bottom: 1px solid var(--border-color);
   z-index: 10;
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  position: sticky;
+  top: 0;
 }
 
 /* style for left section */
@@ -18,11 +20,11 @@
 .left-section, .center-section, .right-section {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .left-section {
-  gap: 10px;
+  gap: 16px;
 }
 
 .nav-toggle button {
@@ -40,44 +42,61 @@
   display: flex;
   align-items: center;
   font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
-  font-size: 1.08rem;
-  font-weight: 500;
+  font-size: 1.15rem;
+  font-weight: 600;
   color: var(--primary-color);
   transition: color 0.3s ease;
+  letter-spacing: 0.5px;
 }
 
 .bracket {
   color: var(--primary-color);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: bold;
   transition: color 0.3s ease;
+  opacity: 0.85;
 }
 
 .brand {
-  font-weight: 500;
-  font-size: 1.08rem;
+  font-weight: 600;
+  font-size: 1.15rem;
   color: var(--primary-color);
   margin: 0 4px;
   letter-spacing: 0.5px;
   transition: color 0.3s ease;
+  text-transform: uppercase;
 }
 
 .user-section {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  border-radius: 20px;
+  gap: 10px;
+  padding: 4px 12px;
+  border-radius: 24px;
   background-color: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.user-section:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 .dark-theme .user-section {
   background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark-theme .user-section:hover {
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .username {
   font-size: 14px;
   font-weight: 500;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .logout-button {
@@ -93,21 +112,45 @@
 
 .center-section {
   flex: 1;
-  max-width: 420px;
-  margin: 0 18px;
-  padding: 0 10px;
-  border-radius: 20px;
+  max-width: 460px;
+  margin: 0 24px;
+  padding: 0 16px;
+  border-radius: 28px;
   background: var(--sidebar-filter-bg);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  height: 36px;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  height: 40px;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+}
+
+.center-section:hover, .center-section:focus-within {
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+  border-color: var(--primary-color);
+}
+
+.voice-search-button {
+  color: var(--text-secondary);
+  margin-left: -8px;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.voice-search-button:hover {
+  color: var(--primary-color);
+  opacity: 1;
+  background-color: rgba(var(--primary-color-rgb), 0.08);
 }
 
 .search-icon {
-  margin-right: 7px;
-  font-size: 18px;
+  margin-right: 10px;
+  font-size: 20px;
   color: var(--text-secondary);
   transition: color 0.3s ease;
+}
+
+.center-section:focus-within .search-icon {
+  color: var(--primary-color);
 }
 
 .search-input {
@@ -116,8 +159,11 @@
   background: transparent;
   flex: 1;
   color: var(--header-color);
-  font-size: 0.97rem;
-  padding: 0 2px;
+  font-size: 1rem;
+  padding: 0 4px;
+  height: 100%;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  letter-spacing: 0.3px;
 }
 
 /* style for right section */
@@ -127,31 +173,76 @@
 }
 
 .invite-button, .signin-button {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 18px;
-  font-weight: 500;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 20px;
+  font-weight: 600;
   font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-right: 8px;
+  gap: 6px;
+  margin-right: 12px;
   background: linear-gradient(90deg, var(--primary-dark) 60%, var(--primary-light) 100%) !important;
   color: #fff !important;
-  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.2);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.25);
   min-width: 0;
-  transition: box-shadow 0.3s ease, background 0.3s ease;
+  transition: all 0.3s ease;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.invite-button:hover, .signin-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(var(--primary-color-rgb), 0.35);
 }
 
 .invite-button mat-icon {
   font-size: 18px;
-  margin-right: 2px;
+  margin-right: 4px;
+  transition: transform 0.3s ease;
+}
+
+.invite-button:hover mat-icon {
+  transform: scale(1.1);
 }
 
 .mat-icon-button {
-  margin: 0 2px;
-  width: 32px;
-  height: 32px;
+  margin: 0 3px;
+  width: 36px;
+  height: 36px;
+  transition: all 0.3s ease;
+}
+
+.mat-icon-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.dark-theme .mat-icon-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle {
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+}
+
+.theme-toggle:hover::after {
+  width: 100%;
+  height: 100%;
 }
 
 .mat-icon-button mat-icon {
@@ -161,24 +252,47 @@
 .api-icon {
   display: flex;
   align-items: center;
-  margin-right: 4px;
-  height: 28px;
+  justify-content: center;
+  margin-right: 6px;
+  height: 36px;
+  width: 36px;
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.api-icon:hover {
+  transform: scale(1.1);
+  background-color: rgba(var(--primary-color-rgb), 0.15);
 }
 
 .api-icon mat-icon {
   font-size: 22px;
   color: var(--primary-color);
   transition: color 0.3s ease, transform 0.3s ease;
+  filter: drop-shadow(0 2px 3px rgba(var(--primary-color-rgb), 0.3));
 }
 
 .api-icon.floating mat-icon {
   animation: floatY 1.8s ease-in-out infinite;
 }
 
+.api-icon.pulse {
+  animation: pulse 1.2s ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
 @keyframes floatY {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-  100% { transform: translateY(0); }
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-4px) rotate(5deg); }
+  50% { transform: translateY(-8px) rotate(0deg); }
+  75% { transform: translateY(-4px) rotate(-5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
 button[aria-label="Toggle workspace menu"] {
@@ -491,6 +605,28 @@ button[aria-label="Toggle workspace menu"] {
   width: 100%;
 }
 
+.workspace-tab {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background-color: transparent;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-tab mat-icon {
+  font-size: 18px;
+  margin-right: 2px;
+}
+
+.workspace-tab:not([disabled]):hover {
+  background-color: rgba(var(--primary-color-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-color-rgb), 0.2);
+}
+
 .workspace-tab[disabled] {
   opacity: 0.6;
   cursor: not-allowed;
@@ -506,14 +642,41 @@ button[aria-label="Toggle workspace menu"] {
 @media (max-width: 700px) {
   .center-section {
     max-width: 180px;
-    margin: 0 4px;
-    padding: 0 4px;
+    margin: 0 8px;
+    padding: 0 8px;
   }
   .brand-container, .brand {
-    font-size: 0.98rem;
+    font-size: 1rem;
   }
   .workspace-tab {
     font-size: 0.93rem;
-    padding: 2px 10px;
+    padding: 4px 12px;
+  }
+  .header {
+    padding: 0 12px;
+  }
+  .invite-button, .signin-button {
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-container {
+    display: none;
+  }
+  .center-section {
+    max-width: 140px;
+  }
+  .voice-search-button {
+    display: none;
+  }
+  .workspace-tab span {
+    display: none;
+  }
+  .workspace-tab {
+    padding: 6px 10px;
+  }
+  .invite-button span {
+    display: none;
   }
 }
