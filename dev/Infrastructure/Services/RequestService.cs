@@ -1,5 +1,7 @@
 using AutoMapper;
+using Azure.Core;
 using dev.Application.DTOs.Request;
+using dev.Application.DTOs.TestScript;
 using dev.Application.Interfaces;
 using dev.Application.Interfaces.Services;
 using dev.Domain.Entities;
@@ -419,9 +421,31 @@ public class RequestService : IRequestService
         }
     }
 
-    
-    
-   public async Task DeleteRequestAsync(int id)
+    public async Task UpdateScriptAsync(CreateTestScriptDto requestDto)
+    {
+        try
+        {
+            var req = await _context.Requests.FirstOrDefaultAsync(r => r.Id == requestDto.RequestId);
+            if (req != null)
+            {
+                req.Script = requestDto.Script;
+                req.UpdatedAt = DateTime.UtcNow;
+                req.UpdatedBy = _currentUserService.UserName ?? "unknown"; 
+                
+                
+                _context.Requests.Update(req);
+                await _context.SaveChangesAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+
+    public async Task DeleteRequestAsync(int id)
 {
     _logger.LogInformation("Deleting request with ID: {Id} and all associated responses", id);
 

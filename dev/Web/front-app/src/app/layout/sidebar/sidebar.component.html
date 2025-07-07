@@ -18,6 +18,10 @@
     <!-- History Section -->
     <div *ngSwitchCase="'history'" class="content-area history-area">
       <div class="content-header">
+        <div class="history-header-title">
+          <mat-icon class="header-icon">history</mat-icon>
+          <span>Request History</span>
+        </div>
         <div class="search-area">
           <mat-icon class="filter-icon">search</mat-icon>
           <input type="text" placeholder="Search histories..."
@@ -31,71 +35,117 @@
             <mat-icon>close</mat-icon>
           </button>
         </div>
+        <div class="history-actions-header">
+          <button mat-icon-button class="action-button" title="Clear all history" (click)="confirmClearHistory($event)">
+            <mat-icon>delete_sweep</mat-icon>
+          </button>
+        </div>
       </div>
 
       <div class="history-container">
         <!-- Empty state when no history items are found -->
-        <div *ngIf="filteredHistories?.length === 0" class="empty-search-result">
+        <div *ngIf="!filteredHistories || filteredHistories.length === 0" class="empty-search-result">
           <mat-icon>history</mat-icon>
           <span>No history items found</span>
+          <p class="empty-state-subtext">Your API request history will appear here</p>
         </div>
 
-        <!-- History items list -->
-        <div *ngFor="let history of filteredHistories" class="history-item">
-          <div class="history-content">
-            <!-- Method badge -->
-            <div class="method-badge">
-              <span class="request-method" [ngClass]="history.requests?.httpMethod?.toLowerCase()">{{ history.requests?.httpMethod }}</span>
+        <!-- History date grouping -->
+        <ng-container *ngIf="filteredHistories && filteredHistories.length > 0">
+          <div class="history-date-group" *ngFor="let group of groupedHistories | keyvalue">
+            <div class="history-date-header">
+              <span>{{ group.key }}</span>
             </div>
+            
+            <!-- History items list -->
+            <div *ngFor="let history of group.value" class="history-item">
+              <div class="history-content">
+                <!-- Left side delete button -->
+                <div class="left-actions">
+                  <button mat-icon-button class="action-button delete-button" (click)="deleteHistoryItem(history.id, $event)" title="Delete history item">
+                    <mat-icon class="delete-icon">delete_outline</mat-icon>
+                    <span class="delete-tooltip">Delete</span>
+                    <span class="ripple-effect"></span>
+                  </button>
+                </div>
+                
+                <!-- Main content area (clickable) -->
+                <div class="main-content" (click)="loadHistoryRequest(history)">
+                  <!-- Method badge -->
+                  <div class="method-badge">
+                    <span class="request-method" [ngClass]="history.requests?.httpMethod?.toLowerCase()">{{ history.requests?.httpMethod }}</span>
+                  </div>
 
-            <!-- Request details -->
-            <div class="history-details">
-              <!-- Full URL display -->
-              <div class="history-url-container" [title]="history.requests?.url || 'No URL'">
-                <span class="history-full-url">{{ history.requests?.url || 'No URL' }}</span>
+                  <!-- Request details -->
+                  <div class="history-details">
+                    <!-- Full URL display -->
+                    <div class="history-url-container">
+                      <div class="history-url-path" [title]="getUrlPath(history.requests?.url) || 'No URL'">
+                        <span class="history-path">{{ getUrlPath(history.requests?.url) || 'No URL' }}</span>
+                      </div>
+                      <div class="history-url-domain" [title]="getUrlDomain(history.requests?.url) || ''">
+                        <span class="history-domain">{{ getUrlDomain(history.requests?.url) || '' }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Status and time info -->
+                    <div class="history-meta">
+                      <span class="history-status" *ngIf="history.response?.status" [ngClass]="getStatusClass(history.response?.status)">
+                        {{ history.response?.status }}
+                      </span>
+                      <span class="history-timestamp" [title]="history.timeStamp | date:'medium'">
+                        {{ history.timeStamp | date:'h:mm a' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              <!-- Timestamp with relative time format -->
-              <div class="history-meta">
-                <span class="history-timestamp" [title]="history.timeStamp | date:'medium'">
-                  {{ history.timeStamp | date:'MMM d, h:mm a' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Action buttons -->
-            <div class="history-actions">
-              <button mat-icon-button class="action-button" (click)="deleteHistoryItem(history.id, $event)" title="Delete history item">
-                <mat-icon class="small-icon">delete</mat-icon>
-              </button>
             </div>
           </div>
-        </div>
+        </ng-container>
       </div>
     </div>
 
     <!-- Environment Section -->
     <div *ngSwitchCase="'environments'" class="content-area environments-area">
-      <div class="content-header">
-        <div class="action-buttons">
-          <button mat-icon-button (click)="toggleEnvironmentsMenu($event)" title="Environment options">
-            <mat-icon>more_vert</mat-icon>
-          </button>
+      <!-- Professional header matching collections style -->
+      <div class="env-header">
+        <div class="env-search-wrapper">
+          <div class="env-search-container">
+            <mat-icon class="filter-icon">search</mat-icon>
+            <input type="text" placeholder="Find environments..."
+                   class="env-search-input"
+                   [(ngModel)]="environmentSearchTerm"
+                   (ngModelChange)="filterEnvironments($event)">
+            <button *ngIf="environmentSearchTerm"
+                    mat-icon-button
+                    class="clear-search-btn"
+                    (click)="filterEnvironments('')">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
         </div>
-        <div class="search-area">
-          <mat-icon class="filter-icon">search</mat-icon>
-          <input type="text" placeholder="Search environments..."
-                 class="search-input"
-                 [(ngModel)]="environmentSearchTerm"
-                 (ngModelChange)="filterEnvironments($event)">
-          <button *ngIf="environmentSearchTerm"
-                  mat-icon-button
-                  class="clear-search-btn"
-                  (click)="filterEnvironments('')">
-            <mat-icon>close</mat-icon>
+        
+        <div class="env-header-actions">
+          <button mat-fab class="action-fab primary-fab" title="Create new environment" (click)="openNewEnvironmentModal()">
+            <mat-icon>add</mat-icon>
           </button>
+          <div class="secondary-actions">
+            <button mat-mini-fab class="action-fab" title="Import environment" (click)="importEnvironment()">
+              <mat-icon>upload_file</mat-icon>
+            </button>
+            <button mat-mini-fab class="action-fab" title="Export all environments" 
+                    [disabled]="!environments || environments.length === 0"
+                    (click)="exportAllEnvironments()">
+              <mat-icon>download</mat-icon>
+            </button>
+
+          </div>
+
         </div>
       </div>
+
+      <!-- Empty state is handled in the environments-container section -->
 
       <!-- Environments Menu Dropdown -->
       <div *ngIf="showEnvironmentsMenu" class="environments-menu-overlay">
@@ -112,45 +162,75 @@
       </div>
 
       <div class="environments-container">
-        <div class="environments-list">
-          <!-- Empty state when no environment items are found -->
-          <div *ngIf="filteredEnvironments?.length === 0" class="empty-search-result">
-            <mat-icon>layers</mat-icon>
-            <span>No environments found</span>
+        <!-- Empty state when no environment items are found -->
+        <div *ngIf="!filteredEnvironments || filteredEnvironments.length === 0" class="empty-env-state">
+          <div class="empty-env-icon">
+            <mat-icon>public</mat-icon>
           </div>
+          <h3>No environments found</h3>
+          <p>Create an environment to manage your API variables</p>
+          <button mat-raised-button color="primary" (click)="openNewEnvironmentModal()">
+            <mat-icon>add</mat-icon>
+            Create Environment
+          </button>
+        </div>
 
-          <div class="environments-section">
-            <div class="section-header">
-              <span class="section-title">My Environments</span>
+        <!-- Environment items list -->
+        <div *ngIf="filteredEnvironments && filteredEnvironments.length > 0" class="environments-list">
+          <!-- Environment item with professional design matching collections style -->
+          <div *ngFor="let environment of filteredEnvironments" 
+               class="env-item" 
+               [ngClass]="'env-theme-' + getThemeIndex(environment.id)"
+               (click)="navigateToEnvironment(environment.id, $event)">
+            
+            <!-- Environment icon -->
+            <div class="env-icon">
+              <mat-icon>public</mat-icon>
             </div>
             
-            <!-- Environment items list -->
-            <div *ngFor="let environment of filteredEnvironments" class="environment-item">
-              <div class="environment-content" (click)="navigateToEnvironment(environment.id, $event)">
-                <div class="environment-icon">
-                  <mat-icon>layers</mat-icon>
+            <!-- Environment content -->
+            <div class="env-content">
+              <div class="env-name">{{ environment.name }}</div>
+              <div class="env-details">
+                <div class="env-detail-item" *ngIf="environment.variables">
+                  <mat-icon class="env-detail-icon">key</mat-icon>
+                  <span>{{ Object.keys(environment.variables).length }} variables</span>
                 </div>
-                <div class="environment-details">
-                  <div class="environment-name" [title]="environment.name">
-                    {{ environment.name }}
-                  </div>
-                  <div class="environment-variables">
-                    {{ Object.keys(environment.variables || {}).length }} variables
-                  </div>
-                </div>
-                <!-- Action buttons -->
-                <div class="environment-actions">
-                  <button mat-icon-button class="action-button small" (click)="openEditEnvironmentModal(environment, $event)" title="Edit environment">
-                    <mat-icon class="small-icon">edit</mat-icon>
-                  </button>
-                  <button mat-icon-button class="action-button small" (click)="openDeleteEnvironmentModal(environment, $event)" title="Delete environment">
-                    <mat-icon class="small-icon">delete</mat-icon>
-                  </button>
+                <div class="env-detail-item" *ngIf="environment.createdAt">
+                  <mat-icon class="env-detail-icon">calendar_today</mat-icon>
+                  <span>{{ formatDate(environment.createdAt) }}</span>
                 </div>
               </div>
+              
+
             </div>
+            
+            <!-- Environment actions -->
+            <div class="env-actions">
+              <div class="env-action-group">
+
+                <button mat-mini-fab class="action-fab" 
+                        (click)="exportEnvironment(environment, $event)" 
+                        title="Export environment">
+                  <mat-icon>download</mat-icon>
+                </button>
+                <button mat-mini-fab class="action-fab" 
+                        (click)="openEditEnvironmentModal(environment, $event)" 
+                        title="Edit environment">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-mini-fab class="action-fab" 
+                        (click)="openDeleteEnvironmentModal(environment, $event)" 
+                        title="Delete environment">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </div>
+            
+
           </div>
         </div>
+
       </div>
     </div>
 

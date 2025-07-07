@@ -23,6 +23,7 @@ export interface Request {
   headers: { [key: string]: string };
   authentication?: Authentication;
   body?: any;
+  script?: any;
   parameters?: { [key: string]: string };
   folderId?: number | null;
   collectionId?: number | null;
@@ -59,6 +60,12 @@ export interface CreateRequestDto {
   };
 }
 
+// Test Script interface matching the backend CreateTestScriptDto
+export interface TestScript {
+  Script: any; // Can be any object, typically will be a string containing JavaScript code
+  RequestId: number;
+}
+
 // Helper interfaces for frontend use
 export interface RequestFormData {
   url: string;
@@ -71,18 +78,25 @@ export interface RequestFormData {
 }
 
 // Converter functions to transform between frontend and backend models
+export function createTestScript(script: any, requestId: number): TestScript {
+  return {
+    Script: script,
+    RequestId: requestId
+  };
+}
+
 export function convertFormDataToRequest(formData: RequestFormData, name: string, collectionId?: number, folderId?: number, isShared?: boolean): CreateRequestDto {
   // Convert KeyValuePair arrays to dictionaries
   const headers: { [key: string]: string } = {};
   formData.headers
     .filter(h => h.enabled && h.key.trim() !== '')
     .forEach(h => headers[h.key] = h.value);
-  
+
   const parameters: { [key: string]: string } = {};
   formData.params
     .filter(p => p.enabled && p.key.trim() !== '')
     .forEach(p => parameters[p.key] = p.value);
-  
+
   // Create authentication object if not NONE
   let authentication: Authentication | undefined;
   if (formData.authType !== AuthType.NONE) {
@@ -91,7 +105,7 @@ export function convertFormDataToRequest(formData: RequestFormData, name: string
       authData: formData.authData || {}
     };
   }
-  
+
   // Parse body if it's JSON, otherwise use as is
   let parsedBody = null;
   if (formData.body) {
@@ -117,3 +131,5 @@ export function convertFormDataToRequest(formData: RequestFormData, name: string
     IsShared: isShared || false
   };
 }
+
+

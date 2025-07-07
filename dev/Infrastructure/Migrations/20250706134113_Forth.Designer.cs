@@ -12,8 +12,8 @@ using dev.Infrastructure.Data;
 namespace dev.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250618144148_Init")]
-    partial class Init
+    [Migration("20250706134113_Forth")]
+    partial class Forth
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -569,6 +569,9 @@ namespace dev.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Parameters")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Script")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("SyncId")

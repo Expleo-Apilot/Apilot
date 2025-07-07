@@ -1392,8 +1392,6 @@
 }
 
 .environment-icon {
-  display: flex;
-  align-items: center;
   justify-content: center;
   margin-right: 12px;
 }
@@ -1776,27 +1774,124 @@
   background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.03));
 }
 
-/* History item styles - Professional Postman-like UI */
+/* History Section - Enhanced Professional UI */
+
+/* History header styling */
+.history-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.header-icon {
+  color: var(--primary-color);
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.history-actions-header {
+  display: flex;
+  align-items: center;
+}
+
+/* History container with improved scrolling */
+.history-container {
+  overflow-y: auto;
+  height: calc(100vh - var(--header-height) - 1px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--primary-color-rgb), 0.3) transparent;
+  padding: 0 8px;
+}
+
+.history-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-container::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--primary-color-rgb), 0.3);
+  border-radius: 4px;
+}
+
+.history-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.5);
+}
+
+/* Date grouping styles */
+.history-date-group {
+  margin-bottom: 16px;
+}
+
+.history-date-header {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid rgba(var(--border-color-rgb), 0.1);
+  margin-bottom: 6px;
+}
+
+/* Enhanced empty state */
+.empty-search-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-search-result mat-icon {
+  font-size: 40px;
+  height: 40px;
+  width: 40px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+  color: var(--primary-color);
+}
+
+.empty-search-result span {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.empty-state-subtext {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 /* History item container */
 .history-item {
   padding: 10px 12px;
-  border-radius: 4px;
+  border-radius: 8px;
   margin-bottom: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
+  background-color: rgba(var(--sidebar-bg-rgb), 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .history-item:hover {
   background-color: var(--sidebar-hover-bg);
   border-left-color: var(--primary-color);
+  transform: translateX(2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
 }
 
 /* History content layout */
 .history-content {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* Method badge styling */
@@ -1807,6 +1902,48 @@
   min-width: 50px;
 }
 
+.request-method {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+  background-color: #9e9e9e;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+/* HTTP Method Colors */
+.get {
+  background: linear-gradient(135deg, #61affe 0%, #2196f3 100%);
+}
+
+.post {
+  background: linear-gradient(135deg, #49cc90 0%, #4caf50 100%);
+}
+
+.put {
+  background: linear-gradient(135deg, #fca130 0%, #ff9800 100%);
+}
+
+.delete {
+  background: linear-gradient(135deg, #f93e3e 0%, #e53935 100%);
+}
+
+.patch {
+  background: linear-gradient(135deg, #50e3c2 0%, #00bcd4 100%);
+}
+
+.head {
+  background: linear-gradient(135deg, #9012fe 0%, #673ab7 100%);
+}
+
+.options {
+  background: linear-gradient(135deg, #0d5aa7 0%, #0277bd 100%);
+}
+
 /* Request details container */
 .history-details {
   flex: 1;
@@ -1815,33 +1952,79 @@
   min-width: 0; /* Ensures text truncation works properly */
 }
 
-/* URL container with full URL */
+/* URL container with domain and path */
 .history-url-container {
   display: flex;
   flex-direction: column;
   width: 100%;
   overflow: hidden;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-/* Full URL styling - clear and readable */
-.history-full-url {
+.history-url-path {
+  margin-bottom: 2px;
+}
+
+.history-path {
   font-size: 13px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
   line-height: 1.3;
-  margin-bottom: 4px;
 }
 
-/* Metadata container for timestamp */
+.history-domain {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status and metadata styling */
 .history-meta {
   display: flex;
   align-items: center;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.history-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background-color: #f5f5f5;
+  color: #757575;
+}
+
+/* Status code colors */
+.status-success {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+}
+
+.status-info {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+}
+
+.status-redirect {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+}
+
+.status-client-error {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.status-server-error {
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9c27b0;
 }
 
 /* Timestamp styling */
@@ -1866,11 +2049,128 @@
   opacity: 1;
 }
 
+/* Left side actions container */
+.left-actions {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.history-item:hover .left-actions {
+  width: 40px;
+  opacity: 1;
+}
+
+/* Main content area (clickable) */
+.main-content {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.main-content:hover {
+  transform: translateX(2px);
+}
+
 /* Action button styling */
 .history-actions .action-button {
-  width: 28px;
-  height: 28px;
-  line-height: 28px;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Delete button specific styling */
+.delete-button {
+  overflow: visible;
+  border-radius: 50%;
+  background-color: rgba(255, 59, 48, 0.05);
+  border: 1px solid rgba(255, 59, 48, 0.1);
+}
+
+.delete-button:hover {
+  background-color: rgba(255, 59, 48, 0.15);
+  transform: scale(1.1);
+}
+
+.delete-button:active {
+  transform: scale(0.95);
+}
+
+/* Custom ripple effect */
+.ripple-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 59, 48, 0.2);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.delete-button:active .ripple-effect {
+  animation: ripple 0.5s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.delete-icon {
+  color: rgba(255, 59, 48, 0.8);
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.delete-button:hover .delete-icon {
+  color: rgb(255, 59, 48);
+  animation: deleteShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes deleteShake {
+  0%, 100% { transform: rotate(0); }
+  20%, 60% { transform: rotate(-6deg); }
+  40%, 80% { transform: rotate(6deg); }
+}
+
+.delete-tooltip {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.delete-button:hover .delete-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 
 /* Small icon inside action buttons */
@@ -1879,6 +2179,14 @@
   width: 16px;
   height: 16px;
   line-height: 16px;
+  color: #f44336;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.history-actions .small-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 /* Enhanced animations */

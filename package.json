@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "@angular/animations": "^19.2.9",
-    "angular-split": "^19.0.0"
+    "@types/prismjs": "^1.26.5",
+    "angular-split": "^19.0.0",
+    "prismjs": "^1.30.0"
   }
 }

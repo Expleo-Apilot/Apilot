@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError, first, switchMap } from 'rxjs/operators';
 import { API_BASE_URL } from '../../constants';
 import { HistoryService } from './history.service';
 import { CreateHistoryDto } from '../models/history/history-request.model';
@@ -99,6 +100,7 @@ export class HttpClientService {
         workSpaceId: workspaceId,
         Requests: {
           method: method, // Match the PerformRequestDto interface which expects 'method' not 'httpMethod'
+          httpMethod: method, // Add httpMethod property for display in the UI
           url: processedUrl, // Save the processed URL with replaced variables
           headers: headersDict,
           params: paramsDict,
@@ -107,17 +109,52 @@ export class HttpClientService {
         }
       };
       
-      // Save to history
-      this.historyService.SaveHistory(historyData).subscribe({
-        next: (response) => {
+      // Save to history - use first() to complete the observable after first emission
+      // This prevents duplicate history saving since we're not subscribing here
+      return this.historyService.SaveHistory(historyData).pipe(
+        first(),
+        switchMap((response: any) => {
           console.log('Request saved to history successfully', response);
-        },
-        error: (error) => {
+          // Now send the actual HTTP request
+          return this.performHttpRequest(processedUrl, method, headersDict, paramsDict, processedBody);
+        }),
+        catchError((error: any) => {
           console.error('Error saving request to history', error);
-        }
-      });
+          // Still proceed with the HTTP request even if history saving fails
+          return this.performHttpRequest(processedUrl, method, headersDict, paramsDict, processedBody);
+        })
+      );
     }
 
+    // For requests that don't need to be saved to history
+    return this.performHttpRequest(processedUrl, method, headersDict, paramsDict, processedBody);
+  }
+
+  /**
+   * Performs the actual HTTP request after history has been saved
+   * @param url Processed URL with variables replaced
+   * @param method HTTP method to use
+   * @param headers Processed headers with variables replaced
+   * @param params Processed parameters with variables replaced
+   * @param body Processed body with variables replaced
+   * @returns Observable of the HTTP response
+   */
+  private performHttpRequest(
+    url: string,
+    method: HttpMethod,
+    headers: Record<string, string>,
+    params: Record<string, string>,
+    body?: any
+  ): Observable<any> {
+    // Create the request payload
+    const requestPayload = {
+      url: url,
+      method: method,
+      headers: headers,
+      parameters: params,
+      body: body
+    };
+    
     // Send the HTTP request with authorization header and processed data
     return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions());
   }

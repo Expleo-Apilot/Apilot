@@ -1,1 +1,29 @@
-<p>script works!</p>
+<div class="script-container">
+  <div class="script-header">
+    <h3>
+      <mat-icon aria-hidden="true">{{ scriptType === 'pre-request' ? 'code' : 'science' }}</mat-icon>
+      {{ scriptType === 'pre-request' ? 'Pre-request Script' : 'Tests' }}
+    </h3>
+    <button (click)="loadExample()" aria-label="Load example script">
+      <mat-icon aria-hidden="true">insert_drive_file</mat-icon>
+      Load Example
+    </button>
+  </div>
+  
+  <div class="editor-wrapper">
+    <pre><code #editor class="language-javascript">
+      <textarea
+        [(ngModel)]="scriptContent"
+        (change)="onScriptChange(scriptContent)"
+        placeholder="Write your JavaScript code here..."
+        aria-label="{{ scriptType === 'pre-request' ? 'Pre-request script editor' : 'Test script editor' }}"
+      ></textarea>
+    </code></pre>
+    
+    <div class="editor-actions" *ngIf="scriptContent">
+      <button class="clear-button" (click)="clearScript()" aria-label="Clear script">
+        <mat-icon aria-hidden="true">clear</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

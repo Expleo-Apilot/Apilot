@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ScriptComponent } from './script/script.component';
 
 
@@ -9,7 +10,8 @@ import { ScriptComponent } from './script/script.component';
     ScriptComponent
   ],
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule
   ]
 })
 export class ScriptAreaModule { }

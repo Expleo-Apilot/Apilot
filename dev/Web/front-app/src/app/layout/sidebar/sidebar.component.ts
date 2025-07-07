@@ -45,6 +45,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Subscription management
   private subscriptions = new Subscription();
 
+  // Navigation state
   activeNavItem: NavItem = 'collections';
   showCollectionsMenu = false;
   menuPosition = { top: '0px', left: '0px' };
@@ -52,6 +53,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // History properties
   histories: any[] = [];
   filteredHistories: any[] = [];
+  groupedHistories: { [key: string]: any[] } = {};
   historySearchTerm: string = '';
 
   // Environment properties
@@ -186,6 +188,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     });
     this.subscriptions.add(routeSub);
+    
+    // Subscribe to history changes to update the UI automatically
+    const historySub = this.historyService.historiesChanged$.subscribe(() => {
+      this.loadHistories();
+    });
+    this.subscriptions.add(historySub);
 
     // Initialize your collectionForm properly here to avoid undefined errors
     this.collectionForm = {
@@ -1389,24 +1397,23 @@ export class SidebarComponent implements OnInit, OnDestroy {
    * Load histories for the current workspace
    */
   loadHistories(): void {
-    // Use workspace ID from route to get workspace-specific histories
-    if (!this.workspaceId) {
-      // If no workspace ID is available yet, get it from the route
-      const routeSub = this.route.params.subscribe(params => {
-        const id = +params['id'];
-        if (id) {
-          this.workspaceId = id;
-          this.fetchHistoriesByWorkspaceId(this.workspaceId);
-        } else {
-          console.error('No workspace ID available');
-          this.snackBar.open('No workspace ID available', 'Close', { duration: 3000 });
+    if (!this.workspaceId) return;
+    
+    this.historyService.GetHistoryByWorkspaceId(this.workspaceId).subscribe({
+      next: (response: any) => {
+        if (response && response.data) {
+          // Sort histories in reverse chronological order (newest first)
+          this.histories = response.data.sort((a: any, b: any) => {
+            return new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime();
+          });
+          this.filterHistories(this.historySearchTerm);
         }
-      });
-      this.subscriptions.add(routeSub);
-    } else {
-      // If workspace ID is already available, use it directly
-      this.fetchHistoriesByWorkspaceId(this.workspaceId);
-    }
+      },
+      error: (error: any) => {
+        console.error('Error loading histories:', error);
+        this.snackBar.open('Failed to load request history', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   /**
@@ -1640,89 +1647,47 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fetch histories by workspace ID
-   * @param workspaceId The ID of the workspace to get histories for
-   */
-  private fetchHistoriesByWorkspaceId(workspaceId: number): void {
-    console.log(`Fetching histories for workspace ID: ${workspaceId}`);
-    this.historyService.GetHistoryByWorkspaceId(workspaceId).subscribe({
-      next: (response) => {
-        if (response.isSuccess && response.data) {
-          this.histories = response.data;
-          this.filteredHistories = [...this.histories];
-          console.log(`Loaded ${this.histories.length} histories for workspace ID ${workspaceId}:`, this.histories);
-
-          // Debug the structure of the first history item
-          if (this.histories.length > 0) {
-            console.log('First history item structure:', JSON.stringify(this.histories[0], null, 2));
-            console.log('URL from first history:', this.histories[0].requests?.url);
-            console.log('Method from first history:', this.histories[0].requests?.httpMethod);
-          }
-        } else {
-          console.error(`Error loading histories for workspace ID ${workspaceId}:`, response.error);
-          this.snackBar.open('Failed to load histories', 'Close', { duration: 3000 });
-        }
-      },
-      error: (error) => {
-        console.error(`Error loading histories for workspace ID ${workspaceId}:`, error);
-        this.snackBar.open('Failed to load histories', 'Close', { duration: 3000 });
-      }
-    });
-  }
-
-  // Filter histories based on search term
-  filterHistories(searchTerm: string) {
-    this.historySearchTerm = searchTerm.toLowerCase();
-
-    if (!this.historySearchTerm) {
-      this.filteredHistories = [...this.histories];
-      return;
-    }
-
-    this.filteredHistories = this.histories.filter(history => {
-      // Filter by URL or method
-      return history.requests?.url?.toLowerCase().includes(this.historySearchTerm) ||
-             history.requests?.httpMethod?.toLowerCase().includes(this.historySearchTerm);
-    });
-  }
-
-  /**
-   * Filter environments based on search term
+   * Filter history items based on search term
    * @param searchTerm The search term to filter by
    */
-
+  filterHistories(searchTerm: string): void {
+    this.historySearchTerm = searchTerm;
+    
+    if (!searchTerm) {
+      this.filteredHistories = [...this.histories];
+    } else {
+      const term = searchTerm.toLowerCase();
+      this.filteredHistories = this.histories.filter(history => {
+        const url = history.requests?.url?.toLowerCase() || '';
+        const method = history.requests?.httpMethod?.toLowerCase() || '';
+        return url.includes(term) || method.includes(term);
+      });
+    }
+    
+    // Group histories by date
+    this.groupHistoriesByDate();
+  }
 
   /**
-   * Open a history item in a new tab
-   * @param history The history item to open
+   * Delete a history item
+   * @param id The ID of the history item to delete
+   * @param event The mouse event
    */
-  openHistoryItem(history: any) {
-    // Get domain for tab name display
-    const domain = this.getDomainFromUrl(history.requests.url);
-
-    // Convert the string method to the HttpMethod enum
-    const methodString = history.requests.httpMethod || 'GET';
-    const method = HttpMethod[methodString as keyof typeof HttpMethod] || HttpMethod.GET;
-
-    console.log('Opening history item with method:', methodString, 'converted to:', method);
-    console.log('History item details:', history);
-
-    // Create a new tab with the history request data
-    this.tabService.createNewTab({
-      name: `${methodString} ${domain}`,
-      url: history.requests.url,
-      method: method, // Use the converted enum value
-      body: history.requests.body || '',
-      headers: history.requests.headers ? Object.entries(history.requests.headers).map(([key, value]) => ({
-        key,
-        value: value as string,
-        enabled: true
-      })) : [],
-      params: history.requests.parameters ? Object.entries(history.requests.parameters).map(([key, value]) => ({
-        key,
-        value: value as string,
-        enabled: true
-      })) : []
+  deleteHistoryItem(id: number, event: MouseEvent): void {
+    event.stopPropagation(); // Prevent triggering the parent click event
+    
+    this.historyService.DeleteHistory(id).subscribe({
+      next: () => {
+        // Remove the item from the local arrays
+        this.histories = this.histories.filter(h => h.id !== id);
+        this.filterHistories(this.historySearchTerm); // This will also update groupedHistories
+        
+        this.snackBar.open('History item deleted', 'Close', { duration: 2000 });
+      },
+      error: (error: any) => {
+        console.error('Error deleting history item:', error);
+        this.snackBar.open('Failed to delete history item', 'Close', { duration: 3000 });
+      }
     });
   }
 
@@ -1762,28 +1727,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Delete a history item
-  deleteHistoryItem(id: number, event: Event) {
-    event.stopPropagation(); // Prevent opening the history item
-
-    this.historyService.DeleteHistory(id).subscribe({
-      next: (response) => {
-        if (response.isSuccess) {
-          // Remove from local arrays
-          this.histories = this.histories.filter(h => h.id !== id);
-          this.filteredHistories = this.filteredHistories.filter(h => h.id !== id);
-          this.snackBar.open('History item deleted', 'Close', { duration: 3000 });
-        } else {
-          console.error('Error deleting history:', response.error);
-          this.snackBar.open('Failed to delete history item', 'Close', { duration: 3000 });
-        }
-      },
-      error: (error) => {
-        console.error('Error deleting history:', error);
-        this.snackBar.open('Failed to delete history item', 'Close', { duration: 3000 });
-      }
-    });
-  }
 
   // Toggle expand state of an item (collection or folder)
   toggleExpand(id: number, itemType: 'collection' | 'folder' = 'collection') {
@@ -2635,6 +2578,378 @@ export class SidebarComponent implements OnInit, OnDestroy {
     
     // Handle any other case by returning a default empty row
     return [{ key: '', value: '', enabled: true }];
+  }
+
+  /**
+   * Group history items by date
+   */
+  groupHistoriesByDate(): void {
+    this.groupedHistories = {};
+    
+    if (!this.filteredHistories.length) return;
+    
+    this.filteredHistories.forEach(history => {
+      const date = new Date(history.timeStamp);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      let dateKey: string;
+      
+      if (date.toDateString() === today.toDateString()) {
+        dateKey = 'Today';
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        dateKey = 'Yesterday';
+      } else {
+        dateKey = date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric',
+          year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+        });
+      }
+      
+      if (!this.groupedHistories[dateKey]) {
+        this.groupedHistories[dateKey] = [];
+      }
+      
+      this.groupedHistories[dateKey].push(history);
+    });
+    
+    // Sort items within each date group in reverse chronological order (newest first)
+    for (const dateKey in this.groupedHistories) {
+      if (this.groupedHistories.hasOwnProperty(dateKey)) {
+        this.groupedHistories[dateKey].sort((a: any, b: any) => {
+          return new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime();
+        });
+      }
+    }
+  }
+  
+  /**
+   * Extract domain from URL
+   * @param url The URL to extract domain from
+   */
+  getUrlDomain(url: string): string {
+    if (!url) return '';
+    
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch (e) {
+      return '';
+    }
+  }
+  
+  /**
+   * Extract path from URL
+   * @param url The URL to extract path from
+   */
+  getUrlPath(url: string): string {
+    if (!url) return '';
+    
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname + urlObj.search;
+    } catch (e) {
+      return url; // Return the original string if it's not a valid URL
+    }
+  }
+  
+  /**
+   * Get CSS class based on HTTP status code
+   * @param status The HTTP status code
+   */
+  getStatusClass(status: number): string {
+    if (status >= 200 && status < 300) {
+      return 'status-success';
+    } else if (status >= 300 && status < 400) {
+      return 'status-redirect';
+    } else if (status >= 400 && status < 500) {
+      return 'status-client-error';
+    } else if (status >= 500) {
+      return 'status-server-error';
+    } else {
+      return '';
+    }
+  }
+  
+  /**
+   * Load a history request into a new tab
+   * @param history The history item to load
+   */
+  loadHistoryRequest(history: any): void {
+    if (!history || !history.requests) {
+      this.snackBar.open('Invalid history item', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    const requestData = history.requests;
+    
+    // Extract headers from the request
+    const headers = requestData.headers ? this.objectToKeyValuePairs(requestData.headers) : [];
+    
+    // Extract parameters from the request
+    const params = requestData.parameters ? this.objectToKeyValuePairs(requestData.parameters) : [];
+    
+    // Ensure we have at least one empty row for user input if no data exists
+    if (headers.length === 0) {
+      headers.push({ key: '', value: '', enabled: true });
+    }
+    
+    if (params.length === 0) {
+      params.push({ key: '', value: '', enabled: true });
+    }
+    
+    // Determine authentication information
+    const authType = requestData.authentication?.authType || AuthType.NONE;
+    const authData = requestData.authentication?.authData || {};
+    
+    // Create new tab with the request data
+    const newTab = this.tabService.createNewTab({
+      name: `${requestData.httpMethod} ${this.getUrlPath(requestData.url)}`,
+      url: requestData.url || '',
+      method: requestData.httpMethod,
+      params: params,
+      headers: headers,
+      body: typeof requestData.body === 'string' ? requestData.body : JSON.stringify(requestData.body, null, 2) || '',
+      bodyType: 'json', // Default to JSON, app can detect proper type based on content
+      authType: authType,
+      basicAuthUsername: authData['username'] || '',
+      basicAuthPassword: authData['password'] || '',
+      bearerToken: authData['token'] || '',
+      parentId: history.id,
+      parentType: 'collection' // Using 'collection' as the parentType since 'history' is not an allowed value
+    });
+    
+    // Notify user
+    this.snackBar.open(`Request loaded from history`, 'Close', { duration: 2000 });
+  }
+  
+  // Duplicate deleteHistoryItem function removed
+  
+  /**
+   * Confirm clearing all history items
+   * @param event The mouse event
+   */
+  confirmClearHistory(event: MouseEvent): void {
+    event.stopPropagation();
+    
+    if (confirm('Are you sure you want to clear all history items? This action cannot be undone.')) {
+      this.clearAllHistory();
+    }
+  }
+  
+  /**
+   * Clear all history items for the current workspace
+   */
+  clearAllHistory(): void {
+    if (!this.workspaceId) return;
+    
+    this.historyService.ClearHistories(this.workspaceId).subscribe({
+      next: () => {
+        this.histories = [];
+        this.filteredHistories = [];
+        this.groupedHistories = {};
+        
+        this.snackBar.open('All history items cleared', 'Close', { duration: 2000 });
+      },
+      error: (error: any) => {
+        console.error('Error clearing history:', error);
+        this.snackBar.open('Failed to clear history', 'Close', { duration: 3000 });
+      }
+    });
+  }
+  
+
+  
+
+  
+  /**
+   * Gets the first three keys from an environment variables object
+   * @param variables The environment variables object
+   * @returns Array of up to three variable keys
+   */
+  getFirstThreeKeys(variables: any): string[] {
+    if (!variables) return [];
+    return Object.keys(variables).slice(0, 3);
+  }
+  
+  /**
+   * Masks a variable value for display in the UI
+   * @param value The variable value to mask
+   * @returns Masked value (shows first few characters and replaces rest with dots)
+   */
+  maskValue(value: string): string {
+    if (!value) return '';
+    if (value.length <= 4) return '****';
+    return value.substring(0, 4) + '****';
+  }
+  
+  /**
+   * Gets a theme index for an environment card based on its ID
+   * @param id The environment ID
+   * @returns A theme index from 0-4
+   */
+  getThemeIndex(id: number): number {
+    return id % 5; // 5 different themes (0-4)
+  }
+  
+  /**
+   * Formats a date for display in the UI
+   * @param dateString The date string to format
+   * @returns Formatted date string
+   */
+  formatDate(dateString: string | Date): string {
+    if (!dateString) return '';
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  
+  /**
+   * Gets the total count of variables across all environments
+   * @returns Total variable count
+   */
+  getTotalVariablesCount(): number {
+    if (!this.environments || this.environments.length === 0) return 0;
+    return this.environments.reduce((total, env) => {
+      return total + (env.variables ? Object.keys(env.variables).length : 0);
+    }, 0);
+  }
+  
+  /**
+   * Sorts environments by the specified field and direction
+   * @param field Field to sort by (name, variables, updated)
+   * @param direction Sort direction (asc, desc)
+   */
+  sortEnvironments(field: string, direction: 'asc' | 'desc'): void {
+    if (!this.environments || this.environments.length === 0) return;
+    
+    const sortedEnvs = [...this.environments];
+    
+    switch (field) {
+      case 'name':
+        sortedEnvs.sort((a, b) => {
+          const comparison = a.name.localeCompare(b.name);
+          return direction === 'asc' ? comparison : -comparison;
+        });
+        break;
+      case 'variables':
+        sortedEnvs.sort((a, b) => {
+          const aCount = a.variables ? Object.keys(a.variables).length : 0;
+          const bCount = b.variables ? Object.keys(b.variables).length : 0;
+          return direction === 'asc' ? aCount - bCount : bCount - aCount;
+        });
+        break;
+      case 'updated':
+        sortedEnvs.sort((a, b) => {
+          const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : new Date(a.createdAt).getTime();
+          const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : new Date(b.createdAt).getTime();
+          return direction === 'asc' ? aDate - bDate : bDate - aDate;
+        });
+        break;
+    }
+    
+    this.environments = sortedEnvs;
+    this.filterEnvironments(this.environmentSearchTerm);
+    
+    this.snackBar.open(`Environments sorted by ${field} (${direction === 'asc' ? 'ascending' : 'descending'})`, 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Clones an existing environment
+   * @param environment Environment to clone
+   * @param event Mouse event
+   */
+  cloneEnvironment(environment: Environment, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    const clonedEnv: Partial<Environment> = {
+      name: `${environment.name} (Copy)`,
+      workSpaceId: environment.workSpaceId,
+      variables: {...environment.variables}
+    };
+    
+    // In a real implementation, you would call the API to create the cloned environment
+    console.log('Cloning environment:', environment.id, clonedEnv);
+    this.snackBar.open('Environment cloned successfully', 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Exports an environment to a JSON file
+   * @param environment Environment to export
+   * @param event Mouse event
+   */
+  exportEnvironment(environment: Environment, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    const exportData = {
+      name: environment.name,
+      variables: environment.variables,
+      exportedAt: new Date().toISOString(),
+      exportedBy: 'Current User' // In a real app, use the actual username
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileName = `${environment.name.replace(/\s+/g, '_')}_environment.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileName);
+    linkElement.click();
+    
+    this.snackBar.open(`Environment "${environment.name}" exported successfully`, 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Exports all environments to a JSON file
+   */
+  exportAllEnvironments(): void {
+    if (!this.environments || this.environments.length === 0) return;
+    
+    const exportData = {
+      environments: this.environments.map(env => ({
+        name: env.name,
+        variables: env.variables,
+        id: env.id
+      })),
+      exportedAt: new Date().toISOString(),
+      exportedBy: 'Current User', // In a real app, use the actual username
+      workspaceId: this.workspaceId
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileName = `workspace_${this.workspaceId}_environments.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileName);
+    linkElement.click();
+    
+    this.snackBar.open(`All environments exported successfully`, 'Close', { duration: 2000 });
+  }
+  
+  /**
+   * Opens modal to add a variable to an environment
+   * @param environmentId Environment ID
+   * @param event Mouse event
+   */
+  openAddVariableModal(environmentId: number, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    // Find the environment
+    const environment = this.environments.find(env => env.id === environmentId);
+    if (!environment) return;
+    
+    this.currentEnvironment = environment;
+    this.newVariable = { key: '', value: '' };
+    
+    console.log('Opening add variable modal for environment:', environmentId);
+    // In a real implementation, you would open a modal dialog here
+    this.snackBar.open('Add variable functionality coming soon', 'Close', { duration: 2000 });
   }
 
   ngOnDestroy(): void {

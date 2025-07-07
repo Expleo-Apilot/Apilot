@@ -3,7 +3,7 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { Request, CreateRequestDto } from '../models/request.model';
+import { Request, CreateRequestDto, TestScript } from '../models/request.model';
 
 interface ApiResponse<T> {
   isSuccess: boolean;
@@ -16,12 +16,12 @@ interface ApiResponse<T> {
 })
 export class RequestService {
   private baseUrl = environment.apiUrl || 'http://localhost:5051';
-  
+
   // BehaviorSubject to notify subscribers when requests change
   private _requestsChanged = new BehaviorSubject<{action: string, data?: any}>({
     action: 'init'
   });
-  
+
   // Observable that components can subscribe to
   public requestsChanged$ = this._requestsChanged.asObservable();
 
@@ -74,7 +74,7 @@ export class RequestService {
    */
   getRequest(id: number): Observable<ApiResponse<Request>> {
     let params = new HttpParams().set('id', id.toString());
-    return this.http.get<ApiResponse<Request>>(`${this.baseUrl}/GetRequest`, { 
+    return this.http.get<ApiResponse<Request>>(`${this.baseUrl}/GetRequest`, {
       params,
       headers: this.getAuthHeaders()
     });
@@ -87,7 +87,7 @@ export class RequestService {
    */
   getRequestsByCollectionId(collectionId: number): Observable<ApiResponse<Request[]>> {
     let params = new HttpParams().set('id', collectionId.toString());
-    return this.http.get<ApiResponse<Request[]>>(`${this.baseUrl}/GetRequestsByCollectionId`, { 
+    return this.http.get<ApiResponse<Request[]>>(`${this.baseUrl}/GetRequestsByCollectionId`, {
       params,
       headers: this.getAuthHeaders()
     });
@@ -100,7 +100,7 @@ export class RequestService {
    */
   getRequestsByFolderId(folderId: number): Observable<ApiResponse<Request[]>> {
     let params = new HttpParams().set('id', folderId.toString());
-    return this.http.get<ApiResponse<Request[]>>(`${this.baseUrl}/GetRequestsByFolderId`, { 
+    return this.http.get<ApiResponse<Request[]>>(`${this.baseUrl}/GetRequestsByFolderId`, {
       params,
       headers: this.getAuthHeaders()
     });
@@ -133,7 +133,7 @@ export class RequestService {
    */
   deleteRequest(id: number): Observable<ApiResponse<{}>> {
     let params = new HttpParams().set('id', id.toString());
-    return this.http.delete<ApiResponse<{}>>(`${this.baseUrl}/DeleteRequest`, { 
+    return this.http.delete<ApiResponse<{}>>(`${this.baseUrl}/DeleteRequest`, {
       params,
       headers: this.getAuthHeaders()
     })
@@ -158,4 +158,30 @@ export class RequestService {
   executeRequest(request: Partial<Request>): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/ExecuteRequest`, request, this.getHttpOptions());
   }
+
+  /**
+   * Save a script for a request
+   * @param testScript The script to save with its associated requestId
+   * @returns Observable of the API response
+   */
+  saveScript(testScript: TestScript): Observable<ApiResponse<{}>> {
+    return this.http.post<ApiResponse<{}>>(`${this.baseUrl}/SaveScript`, testScript, this.getHttpOptions())
+      .pipe(
+        tap(response => {
+          if (response.isSuccess) {
+            // Notify subscribers that a request script has been updated
+            this._requestsChanged.next({
+              action: 'updateScript',
+              data: { id: testScript.RequestId, script: testScript.Script }
+            });
+          }
+        })
+      );
+  }
+
+  /**
+   * @deprecated Use saveScript instead
+   */
+
+
 }

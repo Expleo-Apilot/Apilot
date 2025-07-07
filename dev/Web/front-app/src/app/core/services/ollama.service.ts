@@ -67,6 +67,9 @@ export class OllamaService implements LlmService {
    * @returns Observable with the generated test code
    */
   generateTestCode(prompt: string): Observable<LlmResponse> {
+    const request = localStorage.getItem("apilot_last_selected_request");
+    const requestFinal = localStorage.getItem(request!);
+    console.log(requestFinal);
     // Enhance the prompt to specifically generate C# test code compatible with our test framework
     const enhancedPrompt = `Generate C# API test code using our custom test framework. Follow these guidelines exactly:
 
@@ -107,18 +110,18 @@ TestAsync("Verify User API", async () => {
         var client = ConfigureClient("https://api.example.com", new Dictionary<string, string> {
             { "Authorization", "Bearer token" }
         });
-        
+
         // Make API request
         var response = await client.GetAsync("/users/1");
-        
+
         // Verify status code
         AssertStatusCode(response, HttpStatusCode.OK);
-        
+
         // Parse and verify JSON response
         var jsonResult = ParseJsonResponse(response);
         Assert(JsonPropertyExists(jsonResult, "name"), "User should have name property");
         Assert(JsonPropertyEquals(jsonResult, "active", true), "User should be active");
-        
+
         return true;
     } catch (Exception ex) {
         Assert(false, $"Test failed with error: {ex.Message}");
@@ -126,12 +129,15 @@ TestAsync("Verify User API", async () => {
     }
 });
 
-Based on this request: "${prompt}"
-Generate ONLY the test code, no explanations or markdown formatting.`;
+Based on this prompt: "${prompt}"
+Based on this request: "${requestFinal}"
+Generate ONLY the C# test code.
+remove any comments
+remove the word csharp`;
 
     return this.generateText(enhancedPrompt);
   }
-  
+
   /**
    * Get the name of the model being used
    * @returns The model name

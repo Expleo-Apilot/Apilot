@@ -28,7 +28,7 @@ namespace dev.Api.Controllers
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             // Ensure we're using the correct API key format
-            _defaultApiKey = "2rYoaDl2VizSq6QmG2TvHEKw1QSFU4AM";
+            _defaultApiKey = "6vJPWu1GXCqtWBPpk0pgUPMTRUyOPRBm";
             _logger.LogInformation("MistralController initialized");
         }
 
