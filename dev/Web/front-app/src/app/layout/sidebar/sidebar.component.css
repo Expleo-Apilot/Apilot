@@ -1,5 +1,16 @@
 /* src/app/layout/sidebar/sidebar.component.css */
+@import url('./response-styles.css');
 /* Base styles */
+
+/* No responses message styling */
+.no-responses-message {
+  padding: 10px 15px;
+  color: #666;
+  font-style: italic;
+  font-size: 0.9em;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
 :root {
   --sidebar-width: 320px; /* Increased from 280px */
   --nav-width: 68px;     /* Increased from 56px */

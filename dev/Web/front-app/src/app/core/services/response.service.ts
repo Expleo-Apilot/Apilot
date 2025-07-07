@@ -130,4 +130,18 @@ export class ResponseService {
         })
       );
   }
+
+  /**
+   * Get responses for a specific request
+   * @param requestId The ID of the request to get responses for
+   * @returns Observable of the API response containing an array of responses
+   */
+  getResponsesByRequestId(requestId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/GetResponsesByRequestId?id=${requestId}`, this.getHttpOptions())
+      .pipe(
+        tap(response => {
+          console.log('Responses retrieved for request:', requestId, response);
+        })
+      );
+  }
 }

@@ -5,6 +5,7 @@ import { ResponseService } from '../../../core/services/response.service';
 import { ClipboardService, ClipboardNotification } from '../../../core/services/clipboard.service';
 import { Subscription } from 'rxjs';
 import { RequestService } from '../../../core/services/request.service';
+import { TabService } from '../../../core/services/tab.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CreateRequestDto, convertFormDataToRequest, RequestFormData, Authentication } from '../../../core/models/request.model';
 import { HttpMethod } from '../../../core/models/http-method.enum';
@@ -29,6 +30,13 @@ interface ResponseCookie {
 }
 
 declare const monaco: any;
+
+// Extend Window interface to include tabService
+declare global {
+  interface Window {
+    tabService: any;
+  }
+}
 
 @Component({
   selector: 'app-response',
@@ -78,6 +86,7 @@ export class ResponseComponent implements OnInit, OnChanges, OnDestroy {
     private responseService: ResponseService,
     private clipboardService: ClipboardService,
     private requestService: RequestService,
+    private tabService: TabService,
     private snackBar: MatSnackBar
   ) { }
 
@@ -159,7 +168,66 @@ export class ResponseComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.isSaving = true;
+    
+    // Get the current tab to find its parent ID (which is the request ID)
+    this.responseService.currentTabId$.subscribe(currentTabId => {
+      if (currentTabId) {
+        // Use the injected tab service to access the tab data
+        const tabs = this.tabService.tabs;
+        const currentTab = tabs.find(tab => tab.id === currentTabId);
+        if (currentTab && currentTab.parentId) {
+          // Use the parent ID (request ID) directly
+          const requestId = currentTab.parentId;
+          
+          // Create response data object
+          const responseData = {
+            statusCode: this.statusCode,
+            statusText: this.statusText,
+            headers: this.responseHeaders || [],
+            cookies: this.cookies || [],
+            body: this.formattedBody || '',
+            responseTime: this.responseTime || 0,
+            responseSize: this.responseSize || 0
+          };
+          
+          // Convert the parentId to a number if it's not already
+          const requestIdNumber = typeof requestId === 'string' ? parseInt(requestId, 10) : requestId;
+          // Save the response using the dedicated endpoint with the existing request ID
+          this.saveResponseData(responseData, requestIdNumber);
+        } else {
+          // No parent ID found, which means this is a new request that hasn't been saved yet
+          this.saveResponseWithNewRequest();
+        }
+      } else {
+        // No current tab ID, fall back to creating a new request
+        this.saveResponseWithNewRequest();
+      }
+    }).unsubscribe(); // Unsubscribe immediately after use
+  }
 
+  private saveResponseData(responseData: any, requestId: number): void {
+    this.responseService.saveResponse(responseData, requestId).subscribe({
+      next: (response: any) => {
+        this.isSaving = false;
+        if (response.isSuccess) {
+          this.snackBar.open('Response saved successfully', 'Close', { duration: 3000 });
+        } else {
+          // Always show the same generic error message regardless of the specific error
+          this.snackBar.open('Error save response', 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+        }
+      },
+      error: (error: any) => {
+        this.isSaving = false;
+        // Always show the same generic error message regardless of the specific error
+        this.snackBar.open('Error save response', 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+        // Log the actual error for debugging purposes
+        console.error('Response save error:', error);
+      }
+    });
+  }
+
+  // Helper method to save response by first creating a new request
+  private saveResponseWithNewRequest(): void {
     // First, save a minimal request to get a request ID
     const urlPath = this.requestUrl?.split('?')[0] || 'unknown';
     const requestName = `${this.requestMethod || 'GET'} ${urlPath}`;
@@ -213,27 +281,18 @@ export class ResponseComponent implements OnInit, OnChanges, OnDestroy {
                 errorMessage = error.message;
               }
               
-              this.snackBar.open(errorMessage, 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
               console.error('Error saving response:', error);
             }
           });
         } else {
           this.isSaving = false;
-          const errorMessage = requestResponse.error || 'Failed to create request for response';
-          this.snackBar.open(errorMessage, 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+          this.snackBar.open('Error save response', 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+          console.error('Error creating request for response');
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isSaving = false;
-        let errorMessage = 'An error occurred while creating request for response';
-        
-        if (error.error && error.error.error) {
-          errorMessage = error.error.error;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        this.snackBar.open(errorMessage, 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
+        this.snackBar.open('Error save response', 'Dismiss', { duration: 7000, panelClass: ['error-snackbar'] });
         console.error('Error creating request for response:', error);
       }
     });
