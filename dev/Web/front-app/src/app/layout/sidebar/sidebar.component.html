@@ -383,11 +383,9 @@
                       <div class="response-icon">
                         <span class="response-status" [ngClass]="getStatusClass(response.statusCode)">{{ response.statusCode }}</span>
                       </div>
-                      <span class="response-name">{{ response.statusText || 'Response' }} ({{ formatDate(response.createdAt) }})</span>
-                      <div class="response-actions">
-                        <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'response', response.id || 0); $event.stopPropagation();">
-                          <mat-icon class="small-icon">more_horiz</mat-icon>
-                        </button>
+                      <div class="response-content">
+                        <span class="response-name">{{ response.statusText || 'Response' }}</span>
+                        <span class="response-date">{{ formatDate(response.createdAt) }}</span>
                       </div>
                     </div>
                     </div>
@@ -464,11 +462,9 @@
                             <div class="response-icon">
                               <span class="response-status" [ngClass]="getStatusClass(response.statusCode)">{{ response.statusCode }}</span>
                             </div>
-                            <span class="response-name">{{ response.statusText || 'Response' }} ({{ formatDate(response.createdAt) }})</span>
-                            <div class="response-actions">
-                              <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'response', response.id || 0); $event.stopPropagation();">
-                                <mat-icon class="small-icon">more_horiz</mat-icon>
-                              </button>
+                            <div class="response-content">
+                              <span class="response-name">{{ response.statusText || 'Response' }}</span>
+                              <span class="response-date">{{ formatDate(response.createdAt) }}</span>
                             </div>
                           </div>
                           </div>
