@@ -18,6 +18,13 @@ interface EditorOptions {
   fontSize: number;
   tabSize: number;
   wordWrap: string;
+  scrollbar?: {
+    vertical?: string;
+    horizontal?: string;
+    verticalScrollbarSize?: number;
+    horizontalScrollbarSize?: number;
+    alwaysConsumeMouseWheel?: boolean;
+  };
 }
 
 // TestResult interface is now imported from test-runner.service.ts
@@ -35,10 +42,17 @@ export class ToolsPanelComponent implements OnInit, OnDestroy {
     language: 'csharp',
     automaticLayout: true,
     minimap: { enabled: false },
-    scrollBeyondLastLine: false,
+    scrollBeyondLastLine: true,
     fontSize: 14,
     tabSize: 2,
-    wordWrap: 'on'
+    wordWrap: 'on',
+    scrollbar: {
+      vertical: 'visible',
+      horizontal: 'visible',
+      verticalScrollbarSize: 12,
+      horizontalScrollbarSize: 12,
+      alwaysConsumeMouseWheel: false
+    }
   };
 
   // Test script code
