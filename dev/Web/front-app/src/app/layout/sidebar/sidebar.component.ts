@@ -2691,41 +2691,94 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Extract parameters from the request
     const params = requestData.parameters ? this.objectToKeyValuePairs(requestData.parameters) : [];
     
-    // Ensure we have at least one empty row for user input if no data exists
-    if (headers.length === 0) {
-      headers.push({ key: '', value: '', enabled: true });
+    // Extract authentication data
+    const authType = requestData.authentication?.type || AuthType.NONE;
+    const authData = requestData.authentication?.data || {};
+    
+    // Check if there's a cached script in localStorage first
+    const cachedScript = localStorage.getItem(`apilot_script_${history.id}`);
+    
+    if (cachedScript) {
+      // If we have a cached script, create the tab immediately with the script
+      this.createTabWithRequestData(requestData, headers, params, authType, authData, history.id, cachedScript);
+    } else {
+      // Try to fetch the script from the backend
+      this.requestService.getScriptByRequestId(history.id)
+        .subscribe({
+          next: (response) => {
+            // Create the tab with the script if available
+            const script = response.isSuccess && response.data ? response.data.Script : '';
+            
+            // Cache the script in localStorage for future use
+            if (script) {
+              localStorage.setItem(`apilot_script_${history.id}`, script);
+            }
+            
+            this.createTabWithRequestData(requestData, headers, params, authType, authData, history.id, script);
+          },
+          error: (error) => {
+            console.error('Error fetching script for request:', error);
+            // If there's an error, create the tab without the script
+            this.createTabWithRequestData(requestData, headers, params, authType, authData, history.id);
+          }
+        });
     }
+  }
+
+  /**
+   * Generate a name for a request based on its URL
+   * @param url The URL to generate a name from
+   * @returns A name generated from the URL
+   */
+  private generateNameFromUrl(url: string): string {
+    if (!url) return 'New Request';
     
-    if (params.length === 0) {
-      params.push({ key: '', value: '', enabled: true });
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      
+      // Get the last segment of the path
+      const segments = path.split('/');
+      const lastSegment = segments[segments.length - 1] || segments[segments.length - 2] || '';
+      
+      // If we have a meaningful path segment, use it
+      if (lastSegment) {
+        return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
+      }
+      
+      // Otherwise use the hostname
+      return urlObj.hostname;
+    } catch (e) {
+      // If URL parsing fails, return a generic name
+      return 'New Request';
     }
-    
-    // Determine authentication information
-    const authType = requestData.authentication?.authType || AuthType.NONE;
-    const authData = requestData.authentication?.authData || {};
-    
-    // Create new tab with the request data
-    const newTab = this.tabService.createNewTab({
-      name: `${requestData.httpMethod} ${this.getUrlPath(requestData.url)}`,
+  }
+  
+  /**
+   * Helper method to create a new tab with request data
+   */
+  private createTabWithRequestData(requestData: any, headers: any[], params: any[], authType: AuthType, authData: any, historyId: number, script?: string): void {
+    // Create a new tab with the request data
+    this.tabService.createNewTab({
+      name: requestData.name || this.generateNameFromUrl(requestData.url),
       url: requestData.url || '',
-      method: requestData.httpMethod,
-      params: params,
+      method: requestData.httpMethod || HttpMethod.GET,
       headers: headers,
-      body: typeof requestData.body === 'string' ? requestData.body : JSON.stringify(requestData.body, null, 2) || '',
+      params: params,
+      body: requestData.body || '',
       bodyType: 'json', // Default to JSON, app can detect proper type based on content
       authType: authType,
       basicAuthUsername: authData['username'] || '',
       basicAuthPassword: authData['password'] || '',
       bearerToken: authData['token'] || '',
-      parentId: history.id,
-      parentType: 'collection' // Using 'collection' as the parentType since 'history' is not an allowed value
+      parentId: historyId,
+      parentType: 'collection', // Using 'collection' as the parentType since 'history' is not an allowed value
+      script: script || ''
     });
     
     // Notify user
     this.snackBar.open(`Request loaded from history`, 'Close', { duration: 2000 });
   }
-  
-  // Duplicate deleteHistoryItem function removed
   
   /**
    * Confirm clearing all history items

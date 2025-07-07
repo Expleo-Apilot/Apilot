@@ -23,6 +23,7 @@ export interface RequestTab {
   isShared?: boolean;          // Indicates if the request belongs to a shared collection
   targetType?: 'collection' | 'folder';  // Type of target for unsaved draft requests
   targetId?: number;           // ID of target collection or folder for unsaved draft requests
+  script?: string;             // Test script associated with this request
 }
 
 @Injectable({
@@ -119,7 +120,8 @@ export class TabService {
       parentType: initialData?.parentType,
       isShared: initialData?.isShared,
       targetType: initialData?.targetType,
-      targetId: initialData?.targetId
+      targetId: initialData?.targetId,
+      script: initialData?.script || ''
     };
 
     tabs.push(newTab);

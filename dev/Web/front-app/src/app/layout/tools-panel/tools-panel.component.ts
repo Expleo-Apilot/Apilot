@@ -1,11 +1,12 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { LlmFactoryService, LlmType } from '../../core/services/llm-factory.service';
 import { LlmService } from '../../core/services/llm.service';
 import { TestRunnerService, TestResult, TestResponse } from '../../core/services/test-runner.service';
 import { RequestService } from '../../core/services/request.service';
 import { TestScript } from '../../core/models/request.model';
 import { NgIf } from '@angular/common';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, of, Subscription } from 'rxjs';
+import { TabService } from '../../core/services/tab.service';
 
 // Monaco editor options interface
 interface EditorOptions {
@@ -27,7 +28,7 @@ interface EditorOptions {
   templateUrl: './tools-panel.component.html',
   styleUrl: './tools-panel.component.css'
 })
-export class ToolsPanelComponent implements OnInit {
+export class ToolsPanelComponent implements OnInit, OnDestroy {
   // Editor configuration
   editorOptions: EditorOptions = {
     theme: 'vs-light',
@@ -42,6 +43,9 @@ export class ToolsPanelComponent implements OnInit {
 
   // Test script code
   testScript: string = '';
+  
+  // Subscription to track active tab changes
+  private subscriptions: Subscription[] = [];
 
   // Test results
   testResults: TestResult[] = [];
@@ -85,7 +89,8 @@ export class ToolsPanelComponent implements OnInit {
   constructor(
     private llmFactoryService: LlmFactoryService,
     private testRunnerService: TestRunnerService,
-    private requestService: RequestService
+    private requestService: RequestService,
+    private tabService: TabService
   ) { }
 
   /**
@@ -156,6 +161,77 @@ export class ToolsPanelComponent implements OnInit {
 
     // Load selected workspace from localStorage if available
     this.loadSelectedWorkspace();
+    
+    // Subscribe to active tab changes to load the associated script
+    this.subscriptions.push(
+      this.tabService.activeTabId$.subscribe(tabId => {
+        if (tabId) {
+          const activeTab = this.tabService.activeTab;
+          if (activeTab && activeTab.parentId) {
+            this.loadScriptForRequest(activeTab.parentId, activeTab.script);
+          }
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(subscription => subscription.unsubscribe());
+  }
+
+  /**
+   * Load the script for a given request ID
+   * If the script is provided in the tab data, use it directly
+   * Otherwise, fetch it from the backend
+   * @param requestId The ID of the request to load the script for
+   * @param script Optional script content from the tab data
+   */
+  loadScriptForRequest(requestId: number, script?: string): void {
+    // If script is already provided in the tab data, use it directly
+    if (script) {
+      this.testScript = script;
+      return;
+    }
+    
+    // Try to get from localStorage first (for faster loading)
+    const cachedScript = localStorage.getItem(`apilot_script_${requestId}`);
+    if (cachedScript) {
+      this.testScript = cachedScript;
+      
+      // Also update the tab data with the script
+      const activeTabId = this.tabService.activeTabId;
+      if (activeTabId) {
+        this.tabService.updateTabData(activeTabId, { script: cachedScript });
+      }
+      return;
+    }
+    
+    // If not in localStorage, fetch from the backend
+    this.requestService.getScriptByRequestId(requestId)
+      .subscribe({
+        next: (response) => {
+          if (response.isSuccess && response.data) {
+            this.testScript = response.data.Script || '';
+            
+            // Cache in localStorage for faster loading next time
+            localStorage.setItem(`apilot_script_${requestId}`, this.testScript);
+            
+            // Update the tab data with the script
+            const activeTabId = this.tabService.activeTabId;
+            if (activeTabId) {
+              this.tabService.updateTabData(activeTabId, { script: this.testScript });
+            }
+          } else {
+            // No script found or error, set to empty
+            this.testScript = '';
+          }
+        },
+        error: (error) => {
+          console.error('Error loading script for request:', error);
+          this.testScript = '';
+        }
+      });
   }
 
   /**
