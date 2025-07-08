@@ -1,0 +1,65 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  height: calc(100vh - 45px); /* Subtract header height */
+}
+
+/* Styling for the gutter (splitter handles) */
+::ng-deep .as-split-gutter {
+  background-color: var(--background-color) !important;
+  position: relative;
+  cursor: col-resize;
+}
+
+::ng-deep .as-split-area {
+  overflow: hidden !important;
+}
+
+
+::ng-deep .as-split-gutter.gutter-horizontal {
+  cursor: ew-resize; /* Like "Sizeew" in your image */
+}
+
+::ng-deep .as-split-gutter.gutter-vertical {
+  cursor: ns-resize; /* Like "Sizens" in your image */
+}
+
+/* Styling for the content areas */
+.request-pane, .response-pane {
+  height: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+/* Just to make it visually distinct during development */
+.request-pane {
+  background-color: var(--background-color);
+  color:white;
+}
+
+.response-pane {
+  background-color: var(--background-color);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color:white;
+}
+.tools-pane{
+  background-color: var(--background-color);
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  color:white;
+}
+
+/* Dark theme adjustments */
+:host-context(.dark-theme) .request-pane,
+:host-context(.dark-theme) .response-pane {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+:host-context(.dark-theme) .tools-pane {
+  background-color: rgba(255, 255, 255, 0.1);
+}

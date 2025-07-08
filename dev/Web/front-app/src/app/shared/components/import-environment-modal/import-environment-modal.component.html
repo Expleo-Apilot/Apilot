@@ -1,0 +1,140 @@
+<div class="import-environment-modal">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <mat-icon>upload_file</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2>Import Environment</h2>
+        <p>Import environment variables from a JSON export file</p>
+      </div>
+    </div>
+    <button mat-icon-button (click)="cancel()" class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Modal Content -->
+  <div class="modal-content">
+    <!-- File Selection Step -->
+    <div *ngIf="currentStep === 'file-selection'" class="file-selection-step">
+      <div class="upload-section">
+        <div class="file-upload-area"
+             (drop)="onFileDrop($event)"
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             [class.drag-over]="false">
+          <div class="upload-icon">
+            <mat-icon>cloud_upload</mat-icon>
+          </div>
+          <div class="upload-text">
+            <h3>Drop your environment file here</h3>
+            <p>or click to browse</p>
+          </div>
+          <input type="file"
+                 #fileInput
+                 (change)="onFileSelected($event)"
+                 accept=".json"
+                 style="display: none;">
+          <button mat-raised-button
+                  color="primary"
+                  (click)="fileInput.click()"
+                  class="browse-button">
+            <mat-icon>folder_open</mat-icon>
+            Browse Files
+          </button>
+        </div>
+
+        <div class="file-info" *ngIf="selectedFile">
+          <div class="file-details">
+            <mat-icon>description</mat-icon>
+            <div class="file-text">
+              <span class="file-name">{{ selectedFile.name }}</span>
+              <span class="file-size">{{ (selectedFile.size / 1024).toFixed(1) }} KB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Step -->
+    <div *ngIf="currentStep === 'preview' && previewData" class="preview-step">
+      <div class="preview-header">
+        <h3>Preview Import</h3>
+        <button mat-button (click)="changeFile()" class="change-file-button">
+          <mat-icon>edit</mat-icon>
+          Change File
+        </button>
+      </div>
+
+      <div class="preview-content">
+        <div class="import-summary">
+          <div class="summary-item">
+            <mat-icon>folder</mat-icon>
+            <span>{{ previewData.environments.length }} environment(s) to import</span>
+          </div>
+          <div class="summary-item" *ngIf="previewData.exportedAt">
+            <mat-icon>schedule</mat-icon>
+            <span>Exported: {{ previewData.exportedAt | date:'medium' }}</span>
+          </div>
+
+        </div>
+
+        <div class="environments-list">
+          <div *ngFor="let env of previewData.environments; let i = index" class="environment-card">
+            <div class="environment-header">
+              <div class="environment-number">{{ i + 1 }}</div>
+              <div class="environment-name-section">
+                <label>Environment Name:</label>
+                <mat-form-field appearance="outline" class="name-input">
+                  <input matInput
+                         [value]="editableEnvironmentNames[i]"
+                         (input)="updateEnvironmentName(i, $event)"
+                         placeholder="Environment name">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="variables-section" *ngIf="getVariableEntries(env.variables).length > 0">
+              <h4>Variables ({{ getVariableEntries(env.variables).length }})</h4>
+              <div class="variables-grid">
+                <div *ngFor="let variable of getVariableEntries(env.variables)" class="variable-item">
+                  <div class="variable-key">{{ variable.key }}</div>
+                  <div class="variable-value">{{ variable.value }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="getVariableEntries(env.variables).length === 0" class="no-variables">
+              <mat-icon>info</mat-icon>
+              <span>No variables in this environment</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Section -->
+    <div *ngIf="errorMessage" class="error-section">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+  </div>
+
+  <!-- Modal Actions -->
+  <div class="modal-actions">
+    <button mat-button (click)="cancel()" [disabled]="isLoading">
+      Cancel
+    </button>
+    <button mat-raised-button
+            color="primary"
+            (click)="importEnvironments()"
+            [disabled]="!previewData || isLoading"
+            *ngIf="currentStep === 'preview'">
+      <mat-icon *ngIf="isLoading" class="spinning">refresh</mat-icon>
+      <mat-icon *ngIf="!isLoading">upload</mat-icon>
+      {{ isLoading ? 'Importing...' : 'Import Environments' }}
+    </button>
+  </div>
+</div>

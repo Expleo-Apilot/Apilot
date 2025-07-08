@@ -1,0 +1,1144 @@
+<div class="sidebar-container">
+  <div class="sidebar-nav">
+    <div class="nav-item" [class.active]="activeNavItem === 'collections'" (click)="setActiveNavItem('collections')">
+      <mat-icon>folder</mat-icon>
+      <span>Collections</span>
+    </div>
+    <div class="nav-item" [class.active]="activeNavItem === 'environments'" (click)="setActiveNavItem('environments')">
+      <mat-icon>layers</mat-icon>
+      <span>Env</span>
+    </div>
+    <div class="nav-item" [class.active]="activeNavItem === 'history'" (click)="setActiveNavItem('history')">
+      <mat-icon>history</mat-icon>
+      <span>History</span>
+    </div>
+  </div>
+
+  <div class="sidebar-content" [ngSwitch]="activeNavItem">
+    <!-- History Section -->
+    <div *ngSwitchCase="'history'" class="content-area history-area">
+      <div class="content-header">
+        <div class="history-header-title">
+          <mat-icon class="header-icon">history</mat-icon>
+          <span>Request History</span>
+        </div>
+        <div class="search-area">
+          <mat-icon class="filter-icon">search</mat-icon>
+          <input type="text" placeholder="Search histories..."
+                 class="search-input"
+                 [(ngModel)]="historySearchTerm"
+                 (ngModelChange)="filterHistories($event)">
+          <button *ngIf="historySearchTerm"
+                  mat-icon-button
+                  class="clear-search-btn"
+                  (click)="filterHistories('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="history-actions-header">
+          <button mat-icon-button class="action-button" title="Clear all history" (click)="confirmClearHistory($event)">
+            <mat-icon>delete_sweep</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="history-container">
+        <!-- Empty state when no history items are found -->
+        <div *ngIf="!filteredHistories || filteredHistories.length === 0" class="empty-search-result">
+          <mat-icon>history</mat-icon>
+          <span>No history items found</span>
+          <p class="empty-state-subtext">Your API request history will appear here</p>
+        </div>
+
+        <!-- History date grouping -->
+        <ng-container *ngIf="filteredHistories && filteredHistories.length > 0">
+          <div class="history-date-group" *ngFor="let group of groupedHistories | keyvalue">
+            <div class="history-date-header">
+              <span>{{ group.key }}</span>
+            </div>
+            
+            <!-- History items list -->
+            <div *ngFor="let history of group.value" class="history-item">
+              <div class="history-content">
+                <!-- Left side delete button -->
+                <div class="left-actions">
+                  <button mat-icon-button class="action-button delete-button" (click)="deleteHistoryItem(history.id, $event)" title="Delete history item">
+                    <mat-icon class="delete-icon">delete_outline</mat-icon>
+                    <span class="delete-tooltip">Delete</span>
+                    <span class="ripple-effect"></span>
+                  </button>
+                </div>
+                
+                <!-- Main content area (clickable) -->
+                <div class="main-content" (click)="loadHistoryRequest(history)">
+                  <!-- Method badge -->
+                  <div class="method-badge">
+                    <span class="request-method" [ngClass]="history.requests?.httpMethod?.toLowerCase()">{{ history.requests?.httpMethod }}</span>
+                  </div>
+
+                  <!-- Request details -->
+                  <div class="history-details">
+                    <!-- Full URL display -->
+                    <div class="history-url-container">
+                      <div class="history-url-path" [title]="getUrlPath(history.requests?.url) || 'No URL'">
+                        <span class="history-path">{{ getUrlPath(history.requests?.url) || 'No URL' }}</span>
+                      </div>
+                      <div class="history-url-domain" [title]="getUrlDomain(history.requests?.url) || ''">
+                        <span class="history-domain">{{ getUrlDomain(history.requests?.url) || '' }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Status and time info -->
+                    <div class="history-meta">
+                      <span class="history-status" *ngIf="history.response?.status" [ngClass]="getStatusClass(history.response?.status)">
+                        {{ history.response?.status }}
+                      </span>
+                      <span class="history-timestamp" [title]="history.timeStamp | date:'medium'">
+                        {{ history.timeStamp | date:'h:mm a' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Environment Section -->
+    <div *ngSwitchCase="'environments'" class="content-area environments-area">
+      <div class="content-header">
+        <div class="action-buttons">
+          <button mat-icon-button (click)="toggleEnvironmentsMenu($event)">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </div>
+        <div class="search-area">
+          <mat-icon class="filter-icon">search</mat-icon>
+          <input type="text" placeholder="Search environments..."
+                 class="search-input"
+                 [(ngModel)]="environmentSearchTerm"
+                 (ngModelChange)="filterEnvironments($event)">
+          <button *ngIf="environmentSearchTerm"
+                  mat-icon-button
+                  class="clear-search-btn"
+                  (click)="filterEnvironments('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Environments Menu Dropdown -->
+      <div *ngIf="showEnvironmentsMenu" class="environments-menu-overlay">
+        <div class="environments-menu-wrapper" [style.top]="menuPosition.top" [style.left]="menuPosition.left">
+          <div class="menu-item" (click)="openNewEnvironmentModal()">
+            <mat-icon>add</mat-icon>
+            <span>New Environment</span>
+          </div>
+          <div class="menu-item" (click)="importEnvironment()">
+            <mat-icon>upload_file</mat-icon>
+            <span>Import Environment</span>
+          </div>
+          <div class="menu-item" (click)="exportAllEnvironments()" [class.disabled]="!environments || environments.length === 0">
+            <mat-icon>download</mat-icon>
+            <span>Export All</span>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div class="environments-container">
+        <!-- Empty state when no environment items are found -->
+        <div *ngIf="!filteredEnvironments || filteredEnvironments.length === 0" class="empty-env-state">
+          <div class="empty-env-icon">
+            <mat-icon>public</mat-icon>
+          </div>
+          <h3>No environments found</h3>
+          <p>Create an environment to manage your API variables</p>
+          <button mat-raised-button color="primary" (click)="openNewEnvironmentModal()">
+            <mat-icon>add</mat-icon>
+            Create Environment
+          </button>
+        </div>
+
+        <!-- Environment items list -->
+        <div *ngIf="filteredEnvironments && filteredEnvironments.length > 0" class="environments-list">
+          <!-- Environment item with professional design matching collections style -->
+          <div *ngFor="let environment of filteredEnvironments" 
+               class="env-item" 
+               [ngClass]="'env-theme-' + getThemeIndex(environment.id)"
+               (click)="navigateToEnvironment(environment.id, $event)">
+            
+            <!-- Environment icon -->
+            <div class="env-icon">
+              <mat-icon>public</mat-icon>
+            </div>
+            
+            <!-- Environment content -->
+            <div class="env-content">
+              <div class="env-name">{{ environment.name }}</div>
+              <div class="env-details">
+                <div class="env-detail-item" *ngIf="environment.variables">
+                  <mat-icon class="env-detail-icon">key</mat-icon>
+                  <span>{{ Object.keys(environment.variables).length }} variables</span>
+                </div>
+                <div class="env-detail-item" *ngIf="environment.createdAt">
+                  <mat-icon class="env-detail-icon">calendar_today</mat-icon>
+                  <span>{{ formatDate(environment.createdAt) }}</span>
+                </div>
+              </div>
+              
+
+            </div>
+            
+            <!-- Environment actions -->
+            <div class="env-actions">
+              <div class="env-action-group">
+
+                <button mat-mini-fab class="action-fab" 
+                        (click)="exportEnvironment(environment, $event)" 
+                        title="Export environment">
+                  <mat-icon>download</mat-icon>
+                </button>
+                <button mat-mini-fab class="action-fab" 
+                        (click)="openEditEnvironmentModal(environment, $event)" 
+                        title="Edit environment">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-mini-fab class="action-fab" 
+                        (click)="openDeleteEnvironmentModal(environment, $event)" 
+                        title="Delete environment">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </div>
+            
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'collections'" class="content-area collections-area">
+      <div class="content-header">
+        <div class="action-buttons">
+          <button mat-icon-button (click)="toggleCollectionsMenu($event)">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </div>
+        <div class="search-area">
+          <mat-icon class="filter-icon">search</mat-icon>
+          <input type="text" placeholder="Search collections..."
+                 class="search-input"
+                 [(ngModel)]="searchTerm"
+                 (ngModelChange)="filterCollections($event)">
+          <button *ngIf="searchTerm"
+                  mat-icon-button
+                  class="clear-search-btn"
+                  (click)="filterCollections('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Collections Menu Dropdown -->
+      <div *ngIf="showCollectionsMenu" class="collections-menu-overlay">
+        <div class="collections-menu-wrapper" [style.top]="menuPosition.top" [style.left]="menuPosition.left">
+          <div class="menu-item" (click)="createNewCollection()">
+            <mat-icon>add</mat-icon>
+            <span>New Collection</span>
+          </div>
+          <div class="menu-item" (click)="importCollection()">
+            <mat-icon>upload_file</mat-icon>
+            <span>Import Collection</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Context Menu Dropdown -->
+      <div *ngIf="showItemMenu" class="item-menu-overlay">
+        <div class="item-menu-wrapper" [style.top]="itemMenuPosition.top" [style.left]="itemMenuPosition.left">
+          <!-- Collection-specific options -->
+          <ng-container *ngIf="activeItemType === 'collection'">
+            <div class="menu-item" (click)="createNewRequest('collection', activeItemId!)">
+              <mat-icon>add</mat-icon>
+              <span>New Request</span>
+            </div>
+            <div class="menu-item" (click)="createNewFolder(activeItemId!)">
+              <mat-icon>create_new_folder</mat-icon>
+              <span>New Folder</span>
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" (click)="editItem('collection', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('collection', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+
+          <!-- Folder-specific options -->
+          <ng-container *ngIf="activeItemType === 'folder'">
+            <div class="menu-item" (click)="createNewRequest('folder', activeItemId!)">
+              <mat-icon>add</mat-icon>
+              <span>New Request</span>
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" (click)="editItem('folder', activeItemId!)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </div>
+            <div class="menu-item danger" (click)="deleteItem('folder', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+
+          <!-- Request-specific options -->
+          <ng-container *ngIf="activeItemType === 'request'">
+            <div class="menu-item danger" (click)="deleteItem('request', activeItemId!)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="collections-container">
+        <div class="collections-list">
+          <!-- My Collections Section -->
+          <div class="collections-section">
+          <div class="section-header">
+            <span class="section-title">My Collections</span>
+          </div>
+          <div *ngIf="filteredCollections?.length === 0 && searchTerm" class="empty-search-result">
+            <mat-icon>search_off</mat-icon>
+            <span>No collections found</span>
+          </div>
+          <div *ngFor="let collection of filteredCollections" class="collection-item">
+            <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
+              <div class="collection-icon">
+                <mat-icon>{{ isExpanded(collection.id, 'collection') ? 'inventory_2' : 'inventory' }}</mat-icon>
+              </div>
+              <span class="collection-name">{{ collection.name }}</span>
+              <div class="collection-actions">
+                <button mat-icon-button class="action-button" (click)="toggleItemMenu($event, 'collection', collection.id)">
+                  <mat-icon>more_horiz</mat-icon>
+                </button>
+              </div>
+            </div>
+
+          <div *ngIf="isExpanded(collection.id, 'collection')" class="collection-content">
+            <!-- Collection's requests -->
+            <div cdkDropList
+                 [id]="'collection-' + collection.id"
+                 [cdkDropListConnectedTo]="getConnectedLists()"
+                 (cdkDropListDropped)="onDrop($event)"
+                 class="request-list"
+                 [cdkDropListData]="collection.requests">
+              <div *ngFor="let request of collection.requests"
+                   class="request-item"
+                   cdkDrag
+                   [cdkDragData]="request"
+                   (cdkDragStarted)="onDragStarted(request)"
+                   (cdkDragEnded)="onDragEnded()">
+                <div class="request-header" (click)="openRequestInTab(request)">
+                  <div class="request-icon">
+                    <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                  </div>
+                  <span class="request-name">{{ request.name }}</span>
+                  <div class="request-actions">
+                    <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0); $event.stopPropagation();">
+                      <mat-icon class="small-icon">more_horiz</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <!-- Responses for this request -->
+                <div *ngIf="isExpandedResponses(request.id)" class="responses-container">
+                  <!-- Show message when no responses are available -->
+                  <div *ngIf="!requestResponses || !request.id || !requestResponses[request.id] || requestResponses[request.id].length === 0" class="no-responses-message">
+                    <span>No responses available for this request</span>
+                  </div>
+                  <!-- Display responses when available -->
+                  <div *ngIf="requestResponses && request.id !== undefined && requestResponses[request.id] && requestResponses[request.id].length > 0">
+                    <div *ngFor="let response of requestResponses[request.id!]" class="response-item">
+                    <div class="response-header" (click)="openResponseInTab(response, request)">
+                      <div class="response-icon">
+                        <span class="response-status" [ngClass]="getStatusClass(response.statusCode)">{{ response.statusCode }}</span>
+                      </div>
+                      <div class="response-content">
+                        <span class="response-name">{{ response.statusText || 'Response' }}</span>
+                        <span class="response-date">{{ formatDate(response.createdAt) }}</span>
+                      </div>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Toggle responses button -->
+                <div class="toggle-responses" (click)="toggleResponses(request.id, $event)">
+                  <mat-icon class="small-icon">{{ isExpandedResponses(request.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  <span>{{ isExpandedResponses(request.id) ? 'Hide Responses' : 'Show Responses' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Collection's folders -->
+            <div cdkDropList
+                 [id]="'collection-folders-' + collection.id"
+                 [cdkDropListConnectedTo]="getConnectedLists()"
+                 (cdkDropListDropped)="onDrop($event)"
+                 class="folder-list"
+                 [cdkDropListData]="collection.folders">
+              <div *ngFor="let folder of collection.folders"
+                   class="folder-item"
+                   cdkDrag
+                   [cdkDragData]="folder"
+                   (cdkDragStarted)="onDragStarted(folder)"
+                   (cdkDragEnded)="onDragEnded()">
+                <div class="folder-header" (click)="toggleExpand(folder.id, 'folder')">
+                  <div class="folder-icon">
+                    <mat-icon>{{ isExpanded(folder.id, 'folder') ? 'folder_open' : 'folder' }}</mat-icon>
+                  </div>
+                  <span class="folder-name">{{ folder.name }}</span>
+                  <div class="folder-actions">
+                    <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'folder', folder.id)">
+                      <mat-icon class="small-icon">more_horiz</mat-icon>
+                    </button>
+                  </div>
+                </div>
+
+                <div *ngIf="isExpanded(folder.id, 'folder')" class="folder-content">
+                  <!-- Folder's requests -->
+                  <div cdkDropList
+                       [id]="'folder-' + folder.id"
+                       [cdkDropListConnectedTo]="getFolderConnectedLists(folder)"
+                       (cdkDropListDropped)="onDrop($event)"
+                       class="request-list"
+                       [cdkDropListData]="folder.requests">
+                    <div *ngFor="let request of folder.requests"
+                         class="request-item"
+                         cdkDrag
+                         [cdkDragData]="request"
+                         (cdkDragStarted)="onDragStarted(request)"
+                         (cdkDragEnded)="onDragEnded()">
+                      <div class="request-header" (click)="openRequestInTab(request)">
+                        <div class="request-icon">
+                          <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                        </div>
+                        <span class="request-name">{{ request.name }}</span>
+                        <div class="request-actions">
+                          <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0); $event.stopPropagation();">
+                            <mat-icon class="small-icon">more_horiz</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+                      <!-- Responses for this request -->
+                      <div *ngIf="isExpandedResponses(request.id)" class="responses-container">
+                        <!-- Show message when no responses are available -->
+                        <div *ngIf="!requestResponses || !request.id || !requestResponses[request.id] || requestResponses[request.id].length === 0" class="no-responses-message">
+                          <span>No responses available for this request</span>
+                        </div>
+                        <!-- Display responses when available -->
+                        <div *ngIf="requestResponses && request.id !== undefined && requestResponses[request.id] && requestResponses[request.id].length > 0">
+                          <div *ngFor="let response of requestResponses[request.id!]" class="response-item">
+                          <div class="response-header" (click)="openResponseInTab(response, request)">
+                            <div class="response-icon">
+                              <span class="response-status" [ngClass]="getStatusClass(response.statusCode)">{{ response.statusCode }}</span>
+                            </div>
+                            <div class="response-content">
+                              <span class="response-name">{{ response.statusText || 'Response' }}</span>
+                              <span class="response-date">{{ formatDate(response.createdAt) }}</span>
+                            </div>
+                          </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Toggle responses button -->
+                      <div class="toggle-responses" (click)="toggleResponses(request.id, $event)">
+                        <mat-icon class="small-icon">{{ isExpandedResponses(request.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                        <span>{{ isExpandedResponses(request.id) ? 'Hide Responses' : 'Show Responses' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Nested folders -->
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shared Collections Section -->
+        <div class="collections-section" *ngIf="filteredSharedCollections && filteredSharedCollections.length > 0">
+          <div class="section-header">
+            <span class="section-title">Shared With Me</span>
+          </div>
+          <div *ngIf="filteredSharedCollections.length === 0 && searchTerm" class="empty-search-result">
+            <mat-icon>search_off</mat-icon>
+            <span>No shared collections found</span>
+          </div>
+          <div *ngFor="let collection of filteredSharedCollections" class="collection-item shared-collection">
+            <div class="collection-header" (click)="toggleExpand(collection.id, 'collection')">
+              <div class="collection-icon">
+                <mat-icon>folder_shared</mat-icon>
+              </div>
+              <span class="collection-name">{{ collection.name }}</span>
+              <div class="collection-actions">
+                <button mat-icon-button class="action-button" (click)="toggleItemMenu($event, 'collection', collection.id)">
+                  <mat-icon>more_horiz</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="isExpanded(collection.id, 'collection')" class="collection-content">
+              <!-- Collection's requests -->
+              <div cdkDropList
+                   [id]="'collection-' + collection.id"
+                   [cdkDropListConnectedTo]="getConnectedLists()"
+                   (cdkDropListDropped)="onDrop($event)"
+                   class="request-list"
+                   [cdkDropListData]="collection.requests">
+                <div *ngFor="let request of collection.requests"
+                     class="request-item"
+                     cdkDrag
+                     [cdkDragData]="request"
+                     (cdkDragStarted)="onDragStarted(request)"
+                     (cdkDragEnded)="onDragEnded()">
+                  <div class="request-header" (click)="openRequestInTab(request)">
+                    <div class="request-icon">
+                      <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                    </div>
+                    <span class="request-name">{{ request.name }}</span>
+                    <div class="request-actions">
+                      <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0); $event.stopPropagation();">
+                        <mat-icon class="small-icon">more_horiz</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Collection's folders -->
+              <div cdkDropList
+                   [id]="'collection-folders-' + collection.id"
+                   [cdkDropListConnectedTo]="getConnectedLists()"
+                   (cdkDropListDropped)="onDrop($event)"
+                   class="folder-list"
+                   [cdkDropListData]="collection.folders">
+                <div *ngFor="let folder of collection.folders"
+                     class="folder-item"
+                     cdkDrag
+                     [cdkDragData]="folder"
+                     (cdkDragStarted)="onDragStarted(folder)"
+                     (cdkDragEnded)="onDragEnded()">
+                  <div class="folder-header" (click)="toggleExpand(folder.id, 'folder')">
+                    <div class="folder-icon">
+                      <mat-icon>{{ isExpanded(folder.id, 'folder') ? 'folder_open' : 'folder' }}</mat-icon>
+                    </div>
+                    <span class="folder-name">{{ folder.name }}</span>
+                    <div class="folder-actions">
+                      <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'folder', folder.id)">
+                        <mat-icon class="small-icon">more_horiz</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div *ngIf="isExpanded(folder.id, 'folder')" class="folder-content">
+                    <!-- Folder's requests -->
+                    <div cdkDropList
+                         [id]="'folder-' + folder.id"
+                         [cdkDropListConnectedTo]="getFolderConnectedLists(folder)"
+                         (cdkDropListDropped)="onDrop($event)"
+                         class="request-list"
+                         [cdkDropListData]="folder.requests">
+                      <div *ngFor="let request of folder.requests"
+                           class="request-item"
+                           cdkDrag
+                           [cdkDragData]="request"
+                           (cdkDragStarted)="onDragStarted(request)"
+                           (cdkDragEnded)="onDragEnded()">
+                        <div class="request-header" (click)="openRequestInTab(request)">
+                          <div class="request-icon">
+                            <span class="request-method" [ngClass]="request.httpMethod.toLowerCase()">{{ request.httpMethod }}</span>
+                          </div>
+                          <span class="request-name">{{ request.name }}</span>
+                          <div class="request-actions">
+                            <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'request', request.id || 0); $event.stopPropagation();">
+                              <mat-icon class="small-icon">more_horiz</mat-icon>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'environments'" class="content-area environments-area">
+      <div class="content-header">
+        <span class="area-title">Environments</span>
+        <button mat-icon-button><mat-icon>add</mat-icon></button>
+      </div>
+      <div class="environments-list">
+        <div class="environment-item">
+          <span>Development</span>
+        </div>
+        <div class="environment-item">
+          <span>Staging</span>
+        </div>
+        <div class="environment-item">
+          <span>Production</span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'flows'" class="content-area flows-area">
+      <div class="content-header">
+        <span class="area-title">Flows</span>
+        <button mat-icon-button><mat-icon>add</mat-icon></button>
+      </div>
+      <div class="no-flows">
+        <p>No flows available</p>
+        <button mat-button color="primary">Create Flow</button>
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'history'" class="content-area history-area">
+      <div class="content-header">
+        <span class="area-title">History</span>
+        <div class="action-buttons">
+          <button mat-icon-button><mat-icon>filter_list</mat-icon></button>
+          <button mat-icon-button><mat-icon>more_vert</mat-icon></button>
+        </div>
+      </div>
+      <div class="history-list">
+        <div class="history-item">
+          <div class="request-info">
+            <span class="request-method get">GET</span>
+            <span class="request-url">/api/books</span>
+          </div>
+          <span class="request-time">10:30 AM</span>
+        </div>
+        <div class="history-item">
+          <div class="request-info">
+            <span class="request-method post">POST</span>
+            <span class="request-url">/api/books</span>
+          </div>
+          <span class="request-time">Yesterday</span>
+        </div>
+        <div class="history-item">
+          <div class="request-info">
+            <span class="request-method put">PUT</span>
+            <span class="request-url">/api/books/1</span>
+          </div>
+          <span class="request-time">May 5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+
+<!-- Delete Request Confirmation Modal -->
+<div *ngIf="showDeleteRequestModal && currentRequest" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Request</h2>
+      <button mat-icon-button (click)="closeDeleteRequestModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the request <strong>"{{ currentRequest.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteRequestModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteRequest()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Other Modals -->
+<div *ngIf="showNewCollectionModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Create New Collection</h2>
+      <button mat-icon-button (click)="closeNewCollectionModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitNewCollection()">
+        <div class="form-group">
+          <label for="collectionName">Name</label>
+          <input
+            type="text"
+            id="collectionName"
+            name="collectionName"
+            [(ngModel)]="newCollection.name"
+            placeholder="Enter collection name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="form-group">
+          <label for="collectionDescription">Description</label>
+          <textarea
+            id="collectionDescription"
+            name="collectionDescription"
+            [(ngModel)]="newCollection.description"
+            placeholder="Enter collection description"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeNewCollectionModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!newCollection.name">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Import Collection Modal -->
+<div *ngIf="showImportCollectionModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Import Collection</h2>
+      <button mat-icon-button (click)="closeImportCollectionModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitImportCollection()">
+        <div class="import-tabs">
+          <div class="import-tab" [class.active]="!importCollectionUrl" (click)="importCollectionUrl = ''">
+            <mat-icon>upload_file</mat-icon>
+            <span>Upload File</span>
+          </div>
+          <div class="import-tab" [class.active]="importCollectionUrl !== ''" (click)="importCollectionUrl = ' '">
+            <mat-icon>link</mat-icon>
+            <span>Import from URL</span>
+          </div>
+        </div>
+
+        <div *ngIf="!importCollectionUrl" class="form-group">
+          <label for="collectionFile">Collection File</label>
+          <div class="file-input-container">
+            <input
+              type="file"
+              id="collectionFile"
+              name="collectionFile"
+              accept=".json,application/json"
+              #fileInput
+            >
+          </div>
+          <div class="file-format-info">
+            <mat-icon>info</mat-icon>
+            <span>Please select a valid JSON collection file</span>
+          </div>
+        </div>
+
+        <div *ngIf="importCollectionUrl !== ''" class="form-group">
+          <label for="collectionUrl">Collection URL</label>
+          <input
+            type="url"
+            id="collectionUrl"
+            name="collectionUrl"
+            [(ngModel)]="importCollectionUrl"
+            placeholder="https://example.com/collection.json"
+            pattern="https?://.*"
+          >
+          <div class="file-format-info">
+            <mat-icon>info</mat-icon>
+            <span>Enter a URL that points to a valid JSON collection file</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeImportCollectionModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!importCollectionUrl && (!fileInputRef || !fileInputRef.nativeElement || !fileInputRef.nativeElement.files || fileInputRef.nativeElement.files.length === 0)">Import</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Collection Modal -->
+<div *ngIf="showEditCollectionModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Edit Collection</h2>
+      <button mat-icon-button (click)="closeEditCollectionModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitEditCollection()">
+        <div class="form-group">
+          <label for="editCollectionName">Name</label>
+          <input
+            type="text"
+            id="editCollectionName"
+            name="editCollectionName"
+            [(ngModel)]="editCollection.name"
+            placeholder="Enter collection name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="form-group">
+          <label for="editCollectionDescription">Description</label>
+          <textarea
+            id="editCollectionDescription"
+            name="editCollectionDescription"
+            [(ngModel)]="editCollection.description"
+            placeholder="Enter collection description"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeEditCollectionModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!editCollection.name">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteConfirmModal" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Collection</h2>
+      <button mat-icon-button (click)="closeDeleteConfirmModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the collection <strong>"{{ currentCollection?.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone. All requests and folders within this collection will be permanently deleted.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteConfirmModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteCollection()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Folder Modal -->
+<div *ngIf="showNewFolderModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Create New Folder</h2>
+      <button mat-icon-button (click)="closeNewFolderModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitNewFolder()">
+        <div class="form-group">
+          <label for="folderName">Name</label>
+          <input
+            type="text"
+            id="folderName"
+            name="folderName"
+            [(ngModel)]="newFolder.name"
+            placeholder="Enter folder name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeNewFolderModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!newFolder.name">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Folder Modal -->
+<div *ngIf="showEditFolderModal && currentFolder" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Edit Folder</h2>
+      <button mat-icon-button (click)="closeEditFolderModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="submitEditFolder()">
+        <div class="form-group">
+          <label for="editFolderName">Name</label>
+          <input
+            type="text"
+            id="editFolderName"
+            name="editFolderName"
+            [(ngModel)]="editFolder.name"
+            placeholder="Enter folder name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeEditFolderModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!editFolder.name">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Folder Confirmation Modal -->
+<div *ngIf="showDeleteFolderModal && currentFolder" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Folder</h2>
+      <button mat-icon-button (click)="closeDeleteFolderModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the folder <strong>"{{ currentFolder.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone. All requests within this folder will be permanently deleted.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteFolderModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteFolder()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- New Environment Modal -->
+<div *ngIf="showNewEnvironmentModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Create New Environment</h2>
+      <button mat-icon-button (click)="closeNewEnvironmentModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="createNewEnvironment()">
+        <div class="form-group">
+          <label for="environmentName">Name</label>
+          <input
+            type="text"
+            id="environmentName"
+            name="environmentName"
+            [(ngModel)]="newEnvironment.name"
+            placeholder="Enter environment name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeNewEnvironmentModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!newEnvironment.name">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Environment Modal -->
+<div *ngIf="showEditEnvironmentModal && currentEnvironment" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Edit Environment</h2>
+      <button mat-icon-button (click)="closeEditEnvironmentModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <form (ngSubmit)="updateEnvironment()">
+        <div class="form-group">
+          <label for="editEnvironmentName">Name</label>
+          <input
+            type="text"
+            id="editEnvironmentName"
+            name="editEnvironmentName"
+            [(ngModel)]="currentEnvironment.name"
+            placeholder="Enter environment name"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeEditEnvironmentModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!currentEnvironment.name">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Environment Variables Modal -->
+<div *ngIf="showEnvironmentVariablesModal && currentEnvironment" class="modal-overlay">
+  <div class="modal-container environment-variables-modal">
+    <div class="modal-header env-modal-header">
+      <div class="header-content">
+        <div class="env-header-icon-container">
+          <mat-icon class="env-header-icon">tune</mat-icon>
+        </div>
+        <div>
+          <h2>Environment Variables</h2>
+          <div class="modal-subtitle">{{ currentEnvironment.name }}</div>
+        </div>
+      </div>
+      <button mat-icon-button class="close-button" (click)="closeEnvironmentVariablesModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div class="modal-content env-modal-content">
+      <div class="info-box env-info-box">
+        <mat-icon class="env-icon">info</mat-icon>
+        <span>Environment variables are used to store sensitive data and configuration values that can be referenced in your requests.</span>
+      </div>
+      
+      <div class="environment-variables-container">
+        <!-- Variables Table -->
+        <div class="variables-table">
+          <div class="variables-header">
+            <div class="variable-key-header">VARIABLE NAME</div>
+            <div class="variable-value-header">VALUE</div>
+            <div class="variable-actions-header">ACTIONS</div>
+          </div>
+          
+          <!-- Empty state -->
+          <div *ngIf="environmentVariables.length === 0" class="empty-variables-state">
+            <div class="empty-state-icon">
+              <mat-icon>category</mat-icon>
+            </div>
+            <p>No variables defined yet</p>
+            <span>Add your first variable below</span>
+          </div>
+          
+          <!-- Existing Variables -->
+          <div class="variables-list" *ngIf="environmentVariables.length > 0">
+            <div *ngFor="let variable of environmentVariables; let i = index" class="variable-row" [class.even-row]="i % 2 === 0">
+              <div class="variable-input-container">
+                <input 
+                  type="text" 
+                  class="variable-key" 
+                  [(ngModel)]="variable.key" 
+                  placeholder="Variable name"
+                  required
+                  (blur)="updateEnvironmentVariable(i)"
+                >
+              </div>
+              <div class="variable-input-container">
+                <input 
+                  type="text" 
+                  class="variable-value" 
+                  [(ngModel)]="variable.value" 
+                  placeholder="Variable value"
+                  (blur)="updateEnvironmentVariable(i)"
+                >
+              </div>
+              <div class="variable-actions">
+                <button mat-icon-button class="delete-variable" (click)="removeEnvironmentVariable(i)" title="Delete variable">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Add New Variable Form -->
+        <div class="add-variable-section">
+          <h3 class="section-title">Add New Variable</h3>
+          <div class="add-variable-form">
+            <div class="variable-input-container">
+              <input 
+                type="text" 
+                class="variable-key" 
+                [(ngModel)]="newVariable.key" 
+                placeholder="Variable name"
+                required
+              >
+            </div>
+            <div class="variable-input-container">
+              <input 
+                type="text" 
+                class="variable-value" 
+                [(ngModel)]="newVariable.value" 
+                placeholder="Variable value"
+              >
+            </div>
+            <div class="variable-actions">
+              <button mat-flat-button color="primary" class="add-variable-btn" (click)="addEnvironmentVariable()" [disabled]="!newVariable.key.trim()">
+                <mat-icon>add</mat-icon>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-actions env-modal-actions">
+        <button type="button" class="btn-danger env-danger-btn" (click)="openDeleteEnvironmentModal(currentEnvironment, $event)">
+          <mat-icon>delete</mat-icon>
+          Delete Environment
+        </button>
+        <div class="right-actions">
+          <button type="button" class="btn-secondary env-secondary-btn" (click)="closeEnvironmentVariablesModal()">
+            Cancel
+          </button>
+          <button type="button" class="btn-primary env-primary-btn" (click)="saveEnvironmentVariables()">
+            <mat-icon>save</mat-icon>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Environment Confirmation Modal -->
+<div *ngIf="showDeleteEnvironmentModal && currentEnvironment" class="modal-overlay">
+  <div class="modal-container delete-confirm-modal">
+    <div class="modal-header">
+      <h2>Delete Environment</h2>
+      <button mat-icon-button (click)="closeDeleteEnvironmentModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="modal-content">
+      <div class="confirm-message">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p>Are you sure you want to delete the environment <strong>"{{ currentEnvironment.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeDeleteEnvironmentModal()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="deleteEnvironment()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>

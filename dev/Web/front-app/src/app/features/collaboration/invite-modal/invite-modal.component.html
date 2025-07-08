@@ -1,0 +1,111 @@
+<div class="modal-overlay" *ngIf="show">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2 class="modal-title">Invite Collaborator</h2>
+      <button class="close-button" (click)="closeModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="inviteForm" (ngSubmit)="onSubmit()">
+        <!-- Error message -->
+        <div class="alert alert-danger" *ngIf="error">
+          <mat-icon>error_outline</mat-icon>
+          <span style="margin-left: 8px">{{ error }}</span>
+        </div>
+
+        <!-- Success message -->
+        <div class="alert alert-success" *ngIf="success">
+          <mat-icon>check_circle_outline</mat-icon>
+          <span style="margin-left: 8px">{{ success }}</span>
+        </div>
+
+        <!-- Email input -->
+        <div class="form-group">
+          <label for="email">Collaborator Email</label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-control"
+            placeholder="Enter email address"
+            [ngClass]="{'is-invalid': inviteForm.get('email')?.invalid && inviteForm.get('email')?.touched}"
+          >
+          <div class="invalid-feedback" *ngIf="inviteForm.get('email')?.errors?.['required'] && inviteForm.get('email')?.touched">
+            <mat-icon style="font-size: 14px; height: 14px; width: 14px; margin-right: 4px; vertical-align: middle;">error_outline</mat-icon>
+            Email is required
+          </div>
+          <div class="invalid-feedback" *ngIf="inviteForm.get('email')?.errors?.['email'] && inviteForm.get('email')?.touched">
+            <mat-icon style="font-size: 14px; height: 14px; width: 14px; margin-right: 4px; vertical-align: middle;">error_outline</mat-icon>
+            Please enter a valid email address
+          </div>
+        </div>
+
+        <!-- Collection selection -->
+        <div class="form-group">
+          <label for="collection">Collection</label>
+          <select
+            id="collection"
+            formControlName="collectionId"
+            class="form-control"
+            [ngClass]="{'is-invalid': inviteForm.get('collectionId')?.invalid && inviteForm.get('collectionId')?.touched}"
+          >
+            <option value="" disabled>Select a collection</option>
+            <option *ngFor="let collection of collections" [value]="collection.id">
+              {{ collection.name }}
+            </option>
+          </select>
+          <div class="invalid-feedback" *ngIf="inviteForm.get('collectionId')?.errors?.['required'] && inviteForm.get('collectionId')?.touched">
+            <mat-icon style="font-size: 14px; height: 14px; width: 14px; margin-right: 4px; vertical-align: middle;">error_outline</mat-icon>
+            Please select a collection
+          </div>
+          <div class="no-collections" *ngIf="collections.length === 0">
+            <mat-icon style="font-size: 14px; height: 14px; width: 14px; margin-right: 4px; vertical-align: middle;">info</mat-icon>
+            No collections available in the current workspace
+          </div>
+        </div>
+
+        <!-- Permission selection -->
+        <div class="form-group">
+          <label>Permission Level</label>
+          <div class="permission-options">
+            <mat-button-toggle-group formControlName="permission">
+              <mat-button-toggle [value]="CollaborationPermission.View">
+                <mat-icon>visibility</mat-icon> View Only
+              </mat-button-toggle>
+              <mat-button-toggle [value]="CollaborationPermission.Edit">
+                <mat-icon>edit</mat-icon> Edit
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+          <div class="permission-description">
+            <ng-container *ngIf="inviteForm.get('permission')?.value === CollaborationPermission.View">
+              <mat-icon style="vertical-align: middle; margin-right: 4px; color: var(--primary-color, #aa23ff);">visibility</mat-icon>
+              <strong>View Only:</strong> Collaborator can view the collection but cannot make changes
+            </ng-container>
+            <ng-container *ngIf="inviteForm.get('permission')?.value === CollaborationPermission.Edit">
+              <mat-icon style="vertical-align: middle; margin-right: 4px; color: var(--primary-color, #aa23ff);">edit</mat-icon>
+              <strong>Edit:</strong> Collaborator can view and modify the collection
+            </ng-container>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal actions at the bottom -->
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="inviteForm.invalid || loading"
+        (click)="onSubmit()"
+      >
+        <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+        <span *ngIf="!loading">Send Invitation</span>
+      </button>
+    </div>
+    </div>
+  </div>
+

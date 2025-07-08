@@ -1,0 +1,178 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { Collaboration, CollaborationStatus, CollaborationPermission } from '../../../core/models/collaboration.model';
+import { CollaborationService } from '../../../core/services/collaboration.service';
+import { SignalRService } from '../../../core/services/signalr.service';
+import { CollectionService } from '../../../core/services/collection.service';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-invitation-notifications',
+  standalone: false,
+  templateUrl: './invitation-notifications.component.html',
+  styleUrls: ['./invitation-notifications.component.css']
+})
+export class InvitationNotificationsComponent implements OnInit, OnDestroy {
+  // Make CollaborationPermission available to the template
+  CollaborationPermission = CollaborationPermission;
+  
+  pendingInvitations: Collaboration[] = [];
+  showNotificationsPanel = false;
+  loading = false;
+  error = '';
+
+  private invitationSubscription: Subscription | null = null;
+  private statusUpdateSubscription: Subscription | null = null;
+
+  constructor(
+    private collaborationService: CollaborationService,
+    private signalRService: SignalRService,
+    private collectionService: CollectionService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    // Load pending invitations
+    this.loadPendingInvitations();
+
+    // Subscribe to new invitations
+    this.invitationSubscription = this.signalRService.getCollaborationInvitations()
+      .subscribe(invitations => {
+        if (invitations && invitations.length > 0) {
+          // Update the pending invitations list
+          this.pendingInvitations = [...invitations];
+          // Show a browser notification if the panel is not open
+          if (!this.showNotificationsPanel) {
+            this.showBrowserNotification('New collaboration invitation', 'You have received a new collaboration invitation');
+          }
+        }
+      });
+
+    // Subscribe to status updates
+    this.statusUpdateSubscription = this.signalRService.getCollaborationStatusUpdates()
+      .subscribe(update => {
+        if (update) {
+          // Remove the invitation from the list if it was accepted or declined
+          this.pendingInvitations = this.pendingInvitations.filter(inv => inv.id !== update.id);
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (this.invitationSubscription) {
+      this.invitationSubscription.unsubscribe();
+    }
+
+    if (this.statusUpdateSubscription) {
+      this.statusUpdateSubscription.unsubscribe();
+    }
+  }
+
+  loadPendingInvitations(): void {
+    this.loading = true;
+    this.error = '';
+
+    this.collaborationService.getPendingCollaborationsForUser().subscribe({
+      next: (response) => {
+        this.loading = false;
+        console.log('Pending invitations response:', response);
+        if (response.success && response.data) {
+          this.pendingInvitations = response.data;
+          // Log the permissions to debug the issue
+          console.log('Pending invitations with permissions:', 
+            this.pendingInvitations.map(inv => ({
+              id: inv.id,
+              collectionName: inv.collectionName,
+              permission: inv.permission,
+              permissionType: inv.permission === CollaborationPermission.View ? 'View' : 'Edit'
+            })));
+        } else {
+          this.error = response.message || 'Failed to load invitations';
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err.error?.message || err.message || 'An error occurred while loading invitations';
+      }
+    });
+  }
+
+  toggleNotificationsPanel(): void {
+    this.showNotificationsPanel = !this.showNotificationsPanel;
+
+    // Reload pending invitations when opening the notifications panel
+    if (this.showNotificationsPanel) {
+      this.loadPendingInvitations();
+    }
+    this.loadPendingInvitations()
+    console.log("invitations" )
+  }
+
+  updateInvitationStatus(collaborationId: number, status: number): void {
+    this.loading = true;
+
+    this.collaborationService.updateCollaborationStatus({
+      collaborationId: collaborationId,
+      status: status
+    }).subscribe({
+      next: (response) => {
+        this.loading = false;
+        if (response.success) {
+          // Remove the invitation from the list
+          this.pendingInvitations = this.pendingInvitations.filter(inv => inv.id !== collaborationId);
+
+          // If there are no more pending invitations, close the notifications panel
+          if (this.pendingInvitations.length === 0) {
+            this.showNotificationsPanel = false;
+          }
+          
+          // If the invitation was accepted (status 1), refresh collections
+          if (status === 1) { // CollaborationStatus.Accepted
+            this.refreshCollections();
+          }
+        } else {
+          this.error = response.message || 'Failed to update invitation status';
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err.error?.message || err.message || 'An error occurred while updating invitation status';
+      }
+    });
+  }
+  
+  /**
+   * Refreshes the collections to display newly shared collections
+   * This is called after accepting a collaboration invitation
+   */
+  private refreshCollections(): void {
+    // Reload the current route to refresh the collections in the sidebar
+    const currentUrl = this.router.url;
+    this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+      this.router.navigate([currentUrl]);
+    });
+    
+    // Show a browser notification to inform the user
+    this.showBrowserNotification(
+      'Collection shared successfully', 
+      'The shared collection is now available in your collections list'
+    );
+  }
+
+  /**
+   * Shows a browser notification if permissions are granted
+   * @param title Notification title
+   * @param body Notification body text
+   */
+  private showBrowserNotification(title: string, body: string): void {
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification(title, { body });
+        }
+      });
+    }
+  }
+}

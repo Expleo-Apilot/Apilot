@@ -1,0 +1,74 @@
+<div class="notifications-container">
+  <button class="notification-button" (click)="toggleNotificationsPanel()" matTooltip="Collaboration invitations" aria-label="View collaboration invitations">
+    <mat-icon [class.has-notifications]="pendingInvitations.length > 0">{{ pendingInvitations.length > 0 ? 'notifications_active' : 'notifications_none' }}</mat-icon>
+    <span class="notification-badge" *ngIf="pendingInvitations.length > 0" [attr.aria-label]="pendingInvitations.length + ' pending invitations'">{{ pendingInvitations.length }}</span>
+  </button>
+
+  <div class="notifications-panel" *ngIf="showNotificationsPanel" role="dialog" aria-labelledby="panel-title">
+    <div class="panel-header">
+      <h3 id="panel-title">
+        <div class="header-icon">
+          <mat-icon>people_alt</mat-icon>
+        </div>
+        Collaboration Invitations
+      </h3>
+      <button class="close-button" (click)="toggleNotificationsPanel()" matTooltip="Close panel" aria-label="Close invitations panel">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="panel-content">
+      <div class="loading-container" *ngIf="loading" aria-live="polite">
+        <mat-spinner diameter="24" color="primary"></mat-spinner>
+        <span class="loading-text">Loading invitations<span class="loading-dots">...</span></span>
+      </div>
+
+      <div class="error-message" *ngIf="error" aria-live="assertive">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error }}</span>
+        <button class="retry-button" (click)="loadPendingInvitations()" matTooltip="Retry loading invitations" aria-label="Retry loading invitations">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+
+      <div class="empty-state" *ngIf="!loading && !error && pendingInvitations.length === 0" aria-live="polite">
+        <div class="empty-state-icon">
+          <mat-icon>check_circle_outline</mat-icon>
+        </div>
+        <p>All caught up!</p>
+        <span class="empty-state-subtitle">No invitations At the Moment</span>
+      </div>
+
+      <div class="invitation-list" *ngIf="!loading && !error && pendingInvitations.length > 0" role="list" aria-label="Pending collaboration invitations">
+        <div class="compact-invitation-item" *ngFor="let invitation of pendingInvitations; let last = last" [class.last-item]="last" role="listitem">
+          <div class="invitation-header">
+            <div class="invitation-icon">
+              <mat-icon>folder_shared</mat-icon>
+            </div>
+            <div class="invitation-main-content">
+              <div class="invitation-title-row">
+                <h4 class="collection-name" [matTooltip]="invitation.collectionName">{{ invitation.collectionName }}</h4>
+                <div class="permission-badge" [ngClass]="{view: invitation.permission === CollaborationPermission.View, edit: invitation.permission === CollaborationPermission.Edit}">
+                  <mat-icon>{{ invitation.permission === CollaborationPermission.View ? 'visibility' : 'edit' }}</mat-icon>
+                  {{invitation.permission.valueOf()}}
+                </div>
+              </div>
+              <div class="invitation-details-row">
+                <span class="invited-by">From <strong>{{ invitation.invitedByUserEmail }}</strong></span>
+                <span class="invitation-date">{{ invitation.createdAt | date:'shortDate' }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="compact-invitation-actions">
+            <button class="decline-button" (click)="updateInvitationStatus(invitation.id,2)" matTooltip="Decline this invitation">
+              <mat-icon>close</mat-icon>
+            </button>
+            <button class="accept-button" (click)="updateInvitationStatus(invitation.id,1)" matTooltip="Accept this invitation">
+              <mat-icon>check</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

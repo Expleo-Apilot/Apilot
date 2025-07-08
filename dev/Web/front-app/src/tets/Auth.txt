@@ -1,0 +1,56 @@
+AuTh:
+1): /api/Auth/register
+
+request body:
+
+{
+  "firstName": "samir",
+  "lastName": "ziani",
+  "email": "samir@gmail.com",
+  "username": "Samir5636",
+  "password": "Samir5636@123",
+  "confirmPassword": "Samir5636@123"
+}
+
+2)
+
+{
+  "success": true,
+  "message": "User registered successfully.",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5NWExNmU3Ni02OWY3LTRmMGItOTM0Zi1hZGU3OWQ5Yjg1MGYiLCJlbWFpbCI6InNhbWlyQGdtYWlsLmNvbSIsImp0aSI6IjJiZTgyN2Q5LTkwZTktNGUxMS1hYzk2LWUxMDViYjllY2IyYSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJTYW1pcjU2MzYiLCJmaXJzdE5hbWUiOiJzYW1pciIsImxhc3ROYW1lIjoiemlhbmkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzQ4NzAxMTcwLCJpc3MiOiJBcGlsb3RBUEkiLCJhdWQiOiJBcGlsb3RDbGllbnQifQ.BRrJ_u4etwIVvq269MecCgqZ5eAV2zd_v-eUaSkXJco",
+  "userId": "95a16e76-69f7-4f0b-934f-ade79d9b850f",
+  "username": "Samir5636",
+  "email": "samir@gmail.com",
+  "firstName": "samir",
+  "lastName": "ziani",
+  "roles": [
+    "User"
+  ]
+}
+
+
+2)-http://localhost:5051/api/Auth/login
+
+{
+  "email": "samir@gmail.com",
+  "password": "Samir5636@123"
+}
+
+response:
+
+
+{
+  "success": true,
+  "message": "Login successful.",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5NWExNmU3Ni02OWY3LTRmMGItOTM0Zi1hZGU3OWQ5Yjg1MGYiLCJlbWFpbCI6InNhbWlyQGdtYWlsLmNvbSIsImp0aSI6Ijc5MjE1MzhkLTYwYTItNGU0ZC05MTYyLWViNjJhZDdlYjNhOSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJTYW1pcjU2MzYiLCJmaXJzdE5hbWUiOiJzYW1pciIsImxhc3ROYW1lIjoiemlhbmkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzQ4NzAxMzE1LCJpc3MiOiJBcGlsb3RBUEkiLCJhdWQiOiJBcGlsb3RDbGllbnQifQ.gMFCs4ir1NEN4lq3jZ_TY9DYNPSVGb6rFeWxD4Ofkws",
+  "userId": "95a16e76-69f7-4f0b-934f-ade79d9b850f",
+  "username": "Samir5636",
+  "email": "samir@gmail.com",
+  "firstName": "samir",
+  "lastName": "ziani",
+  "roles": [
+    "User"
+  ]
+}
+
+

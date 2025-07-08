@@ -1,0 +1,229 @@
+workspace test :
+1)-post:
+http://localhost:5051/CreateWorkspace
+Request body:
+
+{
+  "name": "workspaceTest",
+  "description": "string"
+}
+
+response body:
+{
+  "isSuccess": true,
+  "data": {
+    "id": 6,
+    "name": "workspaceTest",
+    "description": "string",
+    "createdAt": "2025-05-23T20:38:53.7651739+01:00",
+    "updatedAt": null,
+    "createdBy": "admin",
+    "updatedBy": null,
+    "lastSyncDate": null,
+    "syncId": "ead95027-cbd5-4d3d-b9c8-3a5aa57d5071",
+    "collections": [],
+    "environments": [],
+    "histories": []
+  },
+  "error": null
+}
+
+2-1)- get:
+
+http://localhost:5051/GetWorkspaces
+Response body
+
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "samirWorkspace",
+      "description": "for test",
+      "createdAt": "2025-05-19T15:29:22.6255247",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "289aeb3e-e4cc-4f65-ad2f-a1a94e0da358",
+      "collections": [],
+      "environments": [],
+      "histories": []
+    },
+    {
+      "id": 2,
+      "name": "samirworkspace",
+      "description": "workspase for samir",
+      "createdAt": "2025-05-20T22:11:28.4813176",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "05e22ed7-16b7-4754-b575-f73912b49efe",
+      "collections": [],
+      "environments": [],
+      "histories": []
+    },
+    {
+      "id": 3,
+      "name": "ouailWorkspace ",
+      "description": "test workspace ",
+      "createdAt": "2025-05-22T14:50:11.4695324",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "07dabb8a-058f-4a66-bd6f-e637702c3917",
+      "collections": [],
+      "environments": [],
+      "histories": []
+    },
+    {
+      "id": 4,
+      "name": "Work",
+      "description": "",
+      "createdAt": "2025-05-22T15:03:17.6546527",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "1802b623-260d-41f5-88d5-bef7bc3116c9",
+      "collections": [],
+      "environments": [],
+      "histories": []
+    },
+    {
+      "id": 5,
+      "name": "samirWorckspace1",
+      "description": "string",
+      "createdAt": "2025-05-23T11:17:03.0967861",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "95b48383-f4d0-4141-af5c-97d1559e6a25",
+      "collections": [],
+      "environments": [],
+      "histories": []
+    },
+    {
+      "id": 6,
+      "name": "workspaceTest",
+      "description": "string",
+      "createdAt": "2025-05-23T20:38:53.7651739",
+      "updatedAt": null,
+      "createdBy": "admin",
+      "updatedBy": null,
+      "lastSyncDate": null,
+      "syncId": "ead95027-cbd5-4d3d-b9c8-3a5aa57d5071",
+      "collections": [],
+      "environments": [],
+      "histories": []
+    }
+  ],
+  "error": null
+}
+
+
+
+2.2)-get 
+http://localhost:5051/GetWorkspace?id=1
+	
+Response body
+{
+  "isSuccess": true,
+  "data": {
+    "id": 1,
+    "name": "samirWorkspace",
+    "description": "for test",
+    "createdAt": "2025-05-19T15:29:22.6255247",
+    "updatedAt": null,
+    "createdBy": "admin",
+    "updatedBy": null,
+    "lastSyncDate": null,
+    "syncId": "289aeb3e-e4cc-4f65-ad2f-a1a94e0da358",
+    "collections": [
+      {
+        "id": 1,
+        "name": "samirColection",
+        "description": "for test",
+        "workSpaceId": 1,
+        "createdAt": "2025-05-19T15:30:55.2879757",
+        "updatedAt": null,
+        "createdBy": "admin",
+        "updatedBy": null,
+        "lastSyncDate": null,
+        "syncId": "c48d2bd1-a408-4efc-83d3-c9ccf7d68776",
+        "folders": [],
+        "requests": []
+      },
+      {
+        "id": 2,
+        "name": "samirColeection",
+        "description": "collection Test",
+        "workSpaceId": 1,
+        "createdAt": "2025-05-22T17:18:37.6544807",
+        "updatedAt": null,
+        "createdBy": "admin",
+        "updatedBy": null,
+        "lastSyncDate": null,
+        "syncId": "1f2753bc-8e5c-4b92-b805-61a2938c1a3c",
+        "folders": [],
+        "requests": []
+      }
+    ],
+    "environments": [
+      {
+        "id": 1,
+        "name": "samirWorkspace",
+        "workSpaceId": 1,
+        "variables": {
+          "additionalProp1": "samir",
+          "additionalProp2": "string",
+          "additionalProp3": "string",
+          "div": "ana"
+        },
+        "createdAt": "2025-05-22T17:25:42.3039324",
+        "updatedAt": "2025-05-22T16:34:35.1002994",
+        "createdBy": "admin",
+        "updatedBy": "admin",
+        "lastSyncDate": null,
+        "syncId": "c0405552-ab01-4db9-8afe-ed155277b3e7"
+      }
+    ],
+    "histories": []
+  },
+  "error": null
+}
+
+
+3)- put
+http://localhost:5051/UpdateWorkspace
+request body:
+{
+  "id": 1,
+  "name": "TestWork",
+  "description": "string"
+}
+
+response body:
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+
+4:Delete:
+http://localhost:5051/DeleteWorkspace?id=6
+response body:
+{
+  "isSuccess": true,
+  "data": {},
+  "error": null
+}
+
+
+
+
+

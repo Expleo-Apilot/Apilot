@@ -1,0 +1,207 @@
+<div class="border">
+  <div class="test-script-panel" [ngClass]="{'dark-theme': isDarkTheme}">
+    <!-- Tab navigation -->
+    <div class="tab-navigation">
+      <button
+        class="tab-button"
+        [class.active]="activeTab === 'script'"
+        (click)="switchTab('script')"
+        aria-label="Switch to Test Script tab"
+      >
+        <mat-icon aria-hidden="true">code</mat-icon>
+        Test Script
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab === 'results'"
+        [class.has-results]="hasRun"
+        [class.all-passed]="hasRun && allTestsPassed"
+        [class.has-failures]="hasRun && !allTestsPassed"
+        (click)="switchTab('results')"
+        aria-label="Switch to Test Results tab"
+      >
+        <mat-icon aria-hidden="true">{{ hasRun ? (allTestsPassed ? 'check_circle' : 'error') : 'analytics' }}</mat-icon>
+        Test Results
+        <span class="results-badge" *ngIf="hasRun" [attr.aria-label]="passedTests + ' of ' + totalTests + ' tests passed'">
+          {{ passedTests }}/{{ totalTests }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Script editor tab -->
+    <div class="tab-content" [class.active]="activeTab === 'script'">
+      <div class="editor-container">
+        <ngx-monaco-editor
+          class="code-editor"
+          [options]="editorOptions"
+          [(ngModel)]="testScript"
+        ></ngx-monaco-editor>
+      </div>
+      <div class="editor-actions">
+        <div class="button-group">
+          <button
+            class="run-button action-button"
+            (click)="runTests()"
+            [disabled]="isRunning"
+            aria-label="Run tests"
+            matTooltip="Execute test script"
+            matTooltipPosition="above"
+          >
+            <div class="button-content">
+              <div class="icon-container">
+                <mat-spinner *ngIf="isRunning" diameter="20" class="spinner" aria-hidden="true"></mat-spinner>
+                <mat-icon *ngIf="!isRunning" aria-hidden="true">play_circle</mat-icon>
+              </div>
+              <span class="button-text">{{ isRunning ? 'Running...' : 'Run Tests' }}</span>
+            </div>
+          </button>
+          <button
+            class="save-button action-button"
+            (click)="saveScript()"
+            [disabled]="isRunning"
+            aria-label="Save script"
+            matTooltip="Save current script"
+            matTooltipPosition="above"
+          >
+            <div class="button-content">
+              <div class="icon-container">
+                <mat-icon aria-hidden="true">save</mat-icon>
+              </div>
+              <span class="button-text">Save Script</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error message for test script -->
+      <div class="error-message test-script-error" *ngIf="errorMessage">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- AI Prompt Input with Model Selection -->
+      <div class="prompt-container" role="region" aria-label="AI Prompt Section">
+        <h3 class="section-title">
+          <mat-icon aria-hidden="true">psychology</mat-icon>
+          AI Assistant
+        </h3>
+        
+        <!-- Model Selection -->
+        <div class="model-selection">
+          <span class="model-label">Model:</span>
+          <mat-button-toggle-group 
+            [value]="selectedLlmType" 
+            (change)="changeLlmType($event.value)"
+            aria-label="Select AI model type"
+          >
+            <mat-button-toggle *ngFor="let type of availableLlmTypes" [value]="type">
+              {{ type }}
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+          <span class="current-model" [attr.title]="'Current model: ' + currentModelName">
+            <mat-icon aria-hidden="true" class="model-icon">smart_toy</mat-icon>
+            {{ currentModelName }}
+          </span>
+        </div>
+
+        <!-- Prompt Input -->
+        <div class="prompt-input-wrapper" [class.processing]="isProcessingPrompt">
+          <label for="ai-prompt-input" class="visually-hidden">Enter your prompt</label>
+          <textarea
+            id="ai-prompt-input"
+            class="prompt-input"
+            placeholder="Ask the AI to generate test code or provide assistance..."
+            [(ngModel)]="promptInput"
+            (keydown)="handlePromptKeyEvent($event)"
+            [disabled]="isProcessingPrompt"
+            aria-label="AI prompt input"
+            [attr.aria-busy]="isProcessingPrompt"
+          ></textarea>
+          <div class="prompt-actions">
+            <div class="spinner-container" *ngIf="isProcessingPrompt">
+              <mat-spinner diameter="22" aria-label="Processing prompt"></mat-spinner>
+            </div>
+            <button
+              mat-icon-button
+              color="primary"
+              (click)="processPrompt()"
+              [disabled]="isProcessingPrompt || !promptInput.trim()"
+              matTooltip="Send prompt"
+              aria-label="Send prompt"
+            >
+              <mat-icon aria-hidden="true">send</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Character count -->
+        <div class="prompt-info" *ngIf="promptInput.length > 0">
+          <span class="char-count" [class.near-limit]="promptInput.length > 3800" [class.at-limit]="promptInput.length > 4000">
+            {{ promptInput.length }} / 4096 characters
+          </span>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" *ngIf="errorMessage" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          {{ errorMessage }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Test results tab -->
+    <div class="tab-content" [class.active]="activeTab === 'results'">
+      <div class="results-container" *ngIf="hasRun">
+        <div class="results-summary" [attr.aria-label]="allTestsPassed ? 'All tests passed' : 'Some tests failed'">
+          <div class="summary-icon" [class.passed]="allTestsPassed" [class.failed]="!allTestsPassed">
+            <mat-icon aria-hidden="true">{{ allTestsPassed ? 'check_circle' : 'error' }}</mat-icon>
+          </div>
+          <div class="summary-text">
+            <h3>{{ allTestsPassed ? 'All Tests Passed' : 'Tests Failed' }}</h3>
+            <p>{{ passedTests }} of {{ totalTests }} tests passed</p>
+          </div>
+        </div>
+
+        <div class="results-list" role="list" aria-label="Test results">
+          <div
+            *ngFor="let result of testResults; let i = index"
+            class="result-item"
+            [class.passed]="result.passed"
+            [class.failed]="!result.passed"
+            role="listitem"
+            [attr.aria-label]="'Test ' + (i + 1) + ': ' + result.name + ' - ' + (result.passed ? 'Passed' : 'Failed')"
+          >
+            <div class="result-status">
+              <mat-icon aria-hidden="true">{{ result.passed ? 'check_circle' : 'cancel' }}</mat-icon>
+            </div>
+            <div class="result-details">
+              <h4>{{ result.name }}</h4>
+              <!-- Error messages removed as requested -->
+            </div>
+            <div class="result-time" *ngIf="result.duration !== undefined">
+              {{ result.duration }}ms
+            </div>
+          </div>
+        </div>
+
+        <div class="results-actions">
+          <button 
+            class="clear-button" 
+            (click)="clearResults()"
+            aria-label="Clear test results"
+          >
+            <mat-icon aria-hidden="true">delete</mat-icon>
+            Clear Results
+          </button>
+        </div>
+      </div>
+
+      <div class="no-results" *ngIf="!hasRun" aria-label="No test results available">
+        <mat-icon aria-hidden="true">science</mat-icon>
+        <p>No test results yet. Run your tests to see results here.</p>
+      </div>
+    </div>
+  </div>
+
+
+</div>

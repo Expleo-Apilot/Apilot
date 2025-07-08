@@ -1,0 +1,513 @@
+.request-editor {
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.request-editor, .request-editor * {
+  color: var(--text-color);
+}
+
+.mat-button, .mat-select-value, .mat-form-field-label, .mat-input-element {
+  color: var(--text-color) ;
+}
+
+.url-method-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.env-selector {
+  flex: 0 0 100px;
+  flex-shrink: 0;
+  color: var(--text-color);
+}
+
+.env-selector .mat-form-field {
+  width: 100%;
+}
+
+.env-selector .mat-select-value {
+  font-size: 13px;
+}
+
+.env-selector ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.dark-theme .env-selector ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--request-editor-input-bg);
+}
+
+.env-selector ::ng-deep .mat-mdc-text-field-wrapper {
+  padding: 0px 23px !important;
+}
+
+.env-selector ::ng-deep .mat-mdc-form-field-infix {
+  padding: 8px 0 !important;
+  min-height: unset !important;
+  width: 80px;
+}
+
+.method-select {
+  flex: 0 0 100px;
+  flex-shrink: 0;
+  color: var(--text-color);
+}
+
+.method-select ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.dark-theme .method-select ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--request-editor-input-bg);
+}
+
+.method-select ::ng-deep .mat-mdc-text-field-wrapper {
+  padding: 0px 23px !important;
+}
+
+.method-select ::ng-deep .mat-mdc-form-field-infix {
+  padding: 8px 0 !important;
+  min-height: unset !important;
+  width: 80px;
+}
+
+.url-input {
+  flex-grow: 1;
+}
+
+.url-input ::ng-deep .mat-mdc-form-field-infix {
+  padding: 8px 0 !important;
+  min-height: unset !important;
+  color: var(--text-color) !important;
+}
+
+.dark-theme .url-input ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--request-editor-input-bg);
+  border-color: var(--request-editor-border);
+}
+
+.dark-theme .url-input ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
+  border-color: var(--request-editor-focus-border);
+  box-shadow: 0 0 0 1px var(--request-editor-focus-border);
+}
+
+.full-width {
+  width: 100%;
+}
+
+.send-button-container {
+  display: flex;
+  margin-left: 8px;
+}
+
+.send-button {
+  border-radius: 4px 0 0 4px !important;
+  border-right: none !important;
+  background-color: #7c4dff;
+  color: white;
+  min-width: 80px;
+  margin-top: -20px;
+}
+
+.dropdown-button {
+  border-radius: 0 4px 4px 0 !important;
+  padding: 0 4px !important;
+  min-width: 36px !important;
+  background-color: #7c4dff;
+  color: white;
+  margin-top: -20px;
+}
+
+.dropdown-button .mat-icon {
+  margin: 0;
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+  line-height: 20px;
+}
+
+.send-button:hover:not([disabled]),
+.dropdown-button:hover:not([disabled]) {
+  background-color: #651fff;
+}
+
+.send-button[disabled],
+.dropdown-button[disabled] {
+  background-color: rgba(124, 77, 255, 0.5);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.send-button button {
+  background-color: var(--primary-color);
+  height: 40px !important;
+  border-radius: 5px !important;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-theme .send-button button {
+  background-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.3);
+}
+
+.dark-theme .send-button button:hover {
+  background-color: var(--primary-dark);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
+}
+
+.custom-colored-tab{
+  color: var(--text-color) ;
+}
+
+.request-tabs{
+  overflow: auto;
+}
+
+.request-tabs ::ng-deep .mat-mdc-tab-header {
+  background-color: var(--background-color);
+  border-radius: 4px 4px 0 0;
+}
+
+.dark-theme .request-tabs ::ng-deep .mat-mdc-tab-header {
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.request-tabs ::ng-deep .mat-mdc-tab {
+  min-width: 80px;
+  padding: 0 ;
+}
+
+.request-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+  flex: 1;
+  background-color: var(--background-color);
+  border-radius: 0 0 4px 4px;
+}
+
+.dark-theme .request-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-top: none;
+}
+
+.tab-content {
+  padding: 16px;
+  height: 350px; 
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.key-value-table {
+  width: 100%;
+  height: 280px; 
+  overflow-y: auto;
+  overflow-x: auto; 
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  position: relative;
+}
+
+table {
+  width: 100%;
+  min-width: 650px; 
+  border-collapse: collapse;
+  table-layout: fixed;
+  position: relative;
+  margin: 0;
+  border: none;
+}
+
+th, td {
+  padding: 4px 8px;
+  vertical-align: middle;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+th {
+  text-align: left;
+  font-weight: 500;
+  color: #666;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  background-color: var(--background-color);
+  z-index: 1;
+}
+
+.dark-theme th {
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+}
+
+.enable-column {
+  width: 70px;
+  min-width: 70px;
+  max-width: 70px;
+}
+
+.action-column {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  text-align: center;
+}
+
+td mat-form-field {
+  margin: 0;
+  width: 100%;
+}
+
+td ::ng-deep .mat-mdc-form-field-infix {
+  padding: 8px 0 !important;
+  min-height: unset !important;
+  width: 100% !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+td input {
+  width: 100%;
+  font-size: 14px;
+}
+
+td ::ng-deep .mat-mdc-form-field-wrapper {
+  padding-bottom: 0;
+  margin: 0 !important;
+}
+
+td ::ng-deep .mat-mdc-text-field-wrapper {
+  padding: 0 8px !important;
+  height: 36px !important;
+}
+
+td ::ng-deep .mat-mdc-form-field-flex {
+  height: 36px !important;
+}
+
+.key-value-table::-webkit-scrollbar {
+  width: 6px;
+  height: 6px; 
+}
+
+.key-value-table::-webkit-scrollbar-track {
+  background: var(--background-color);
+  border-radius: 4px;
+}
+
+.key-value-table::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 4px;
+  border: 1px solid var(--background-color);
+}
+
+table th:nth-child(2),
+table td:nth-child(2) {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+
+table th:nth-child(3),
+table td:nth-child(3) {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+tbody tr:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.dark-theme tbody tr:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.fixed-table {
+  width: 100%;
+}
+
+.editor-container {
+  height: 280px; 
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-top: 12px;
+  transition: border-color 0.3s ease;
+}
+
+.get-body-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 280px; 
+  background-color: var(--request-editor-input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.add-row {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.add-row button {
+  font-size: 14px;
+  color: var(--primary-color);
+  transition: color 0.3s ease;
+}
+
+form {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+::ng-deep .mat-tab-group {
+  display: flex;
+  flex-direction: column;
+  height: 400px; 
+}
+
+::ng-deep .mat-tab-body-wrapper {
+  height: 350px; 
+}
+
+.body-type-selector {
+  margin-bottom: 12px;
+}
+
+.body-type-selector ::ng-deep .mat-button-toggle-group {
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.body-type-selector ::ng-deep .mat-button-toggle {
+  background-color: var(--background-color);
+  color: var(--primary-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.body-type-selector ::ng-deep .mat-button-toggle-checked {
+  background-color: var(--sidebar-hover-bg);
+  color: var(--primary-dark);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.auth-type-selector {
+  max-width: 300px;
+  margin-bottom: 16px;
+}
+
+.auth-content {
+  padding: 16px;
+  background-color: var(--request-editor-input-bg);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  height: 230px;
+  overflow-y: auto;
+}
+
+/* Auth form fields styling */
+.auth-field {
+  margin-bottom: 16px;
+}
+
+.auth-basic, .auth-bearer, .auth-oauth, .auth-apikey {
+  padding: 8px 0;
+}
+
+.auth-none p {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Custom scrollbar for auth content */
+.auth-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.auth-content::-webkit-scrollbar-track {
+  background: var(--background-color);
+  border-radius: 4px;
+}
+
+.auth-content::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 4px;
+  border: 1px solid var(--background-color);
+}
+
+mat-spinner {
+  margin: 0 auto;
+}
+
+.processed-url {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: var(--request-editor-input-bg);
+  border-radius: 4px;
+  font-size: 12px;
+  word-break: break-all;
+  transition: background-color 0.3s ease;
+}
+
+.url-label {
+  color: var(--text-secondary);
+  margin-right: 8px;
+  transition: color 0.3s ease;
+}
+
+.url-value {
+  color: var(--method-put-color);
+  font-family: monospace;
+  transition: color 0.3s ease;
+}
+
+.display-url {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: var(--request-editor-input-bg);
+  border-radius: 4px;
+  font-size: 12px;
+  word-break: break-all;
+  transition: background-color 0.3s ease;
+}
+
+.url-label {
+  color: var(--text-secondary);
+  margin-right: 8px;
+  transition: color 0.3s ease;
+}
+
+.url-value {
+  color: var(--method-put-color);
+  font-family: monospace;
+  transition: color 0.3s ease;
+}
+
+
+
+

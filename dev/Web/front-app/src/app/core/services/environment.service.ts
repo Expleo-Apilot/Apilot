@@ -1,0 +1,184 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import {
+  Environment,
+  CreateEnvironmentRequest,
+  UpdateEnvironmentRequest,
+  AddVariableToEnvironmentRequest,
+  UpdateVariableInEnvironmentRequest,
+  AddVariablesToEnvironmentRequest,
+  RemoveVariableFromEnvironmentRequest,
+  ImportEnvironmentsRequest,
+  EnvironmentResponse,
+  EnvironmentsResponse
+} from '../models/environment.model';
+import { ApiResponse } from '../models/api-response.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class EnvironmentService {
+  private baseUrl = 'http://localhost:5051';
+  
+  // Subject to notify subscribers when environments change (create/update/delete)
+  private environmentsChanged = new Subject<number>();
+  
+  // Observable that components can subscribe to
+  public environmentsChanged$ = this.environmentsChanged.asObservable();
+
+  constructor(private http: HttpClient) {}
+
+  private getAuthHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+  }
+
+  private getHttpOptions() {
+    return {
+      headers: this.getAuthHeaders()
+    };
+  }
+
+
+  createEnvironment(request: CreateEnvironmentRequest): Observable<EnvironmentResponse> {
+    return this.http.post<EnvironmentResponse>(
+      `${this.baseUrl}/CreateEnvironment`,
+      request,
+      this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(request.workSpaceId);
+        }
+      })
+    );
+  }
+
+
+  getAllEnvironments(): Observable<EnvironmentsResponse> {
+    return this.http.get<EnvironmentsResponse>(
+      `${this.baseUrl}/GetEnvironments`,
+      this.getHttpOptions()
+    );
+  }
+
+
+  getEnvironmentById(id: number): Observable<EnvironmentResponse> {
+    return this.http.get<EnvironmentResponse>(
+      `${this.baseUrl}/GetEnvironment`,
+      {
+        ...this.getHttpOptions(),
+        params: { id: id.toString() }
+      }
+    );
+  }
+
+  getEnvironmentsByWorkspaceId(workspaceId: number): Observable<EnvironmentsResponse> {
+    return this.http.get<EnvironmentsResponse>(
+      `${this.baseUrl}/GetEnvironmentsByWorkspaceId`,
+      {
+        ...this.getHttpOptions(),
+        params: { id: workspaceId.toString() }
+      }
+    );
+  }
+
+
+  updateEnvironment(request: UpdateEnvironmentRequest): Observable<ApiResponse<void>> {
+    return this.http.put<ApiResponse<void>>(
+      `${this.baseUrl}/UpdateEnvironment`,
+      request,
+      this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess && request.workspaceId) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(request.workspaceId);
+        }
+      })
+    );
+  }
+
+
+  deleteEnvironment(id: number, workspaceId: number): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(
+      `${this.baseUrl}/DeleteEnvironment`,
+      {
+        ...this.getHttpOptions(),
+        params: { id: id.toString() }
+      }
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(workspaceId);
+        }
+      })
+    );
+  }
+
+
+  addVariablesToEnvironment(request: AddVariablesToEnvironmentRequest): Observable<EnvironmentResponse> {
+    return this.http.post<EnvironmentResponse>(
+      `${this.baseUrl}/AddVariablesToEnvironment`,
+      request,
+      this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess && response.data) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(response.data.workSpaceId);
+        }
+      })
+    );
+  }
+
+  addVariableToEnvironment(request: AddVariableToEnvironmentRequest): Observable<ApiResponse<void>> {
+    return this.http.post<ApiResponse<void>>(
+      `${this.baseUrl}/AddVariableToEnvironment`,
+      request,
+      this.getHttpOptions()
+    );
+  }
+
+
+  updateVariableInEnvironment(request: UpdateVariableInEnvironmentRequest): Observable<ApiResponse<void>> {
+    return this.http.put<ApiResponse<void>>(
+      `${this.baseUrl}/UpdateVariableInEnvironment`,
+      request,
+      this.getHttpOptions()
+    );
+  }
+
+
+  removeVariableFromEnvironment(request: RemoveVariableFromEnvironmentRequest): Observable<ApiResponse<void>> {
+    // For DELETE requests with body, we need to use the HttpClient's request method
+    return this.http.request<ApiResponse<void>>(
+      'DELETE',
+      `${this.baseUrl}/RemoveVariableFromEnvironment`,
+      {
+        ...this.getHttpOptions(),
+        body: request  // Send the request as the body instead of query parameters
+      }
+    );
+  }
+
+  importEnvironments(request: ImportEnvironmentsRequest): Observable<ApiResponse<Environment[]>> {
+    return this.http.post<ApiResponse<Environment[]>>(
+      `${this.baseUrl}/ImportEnvironments`,
+      request,
+      this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(request.workspaceId);
+        }
+      })
+    );
+  }
+}
