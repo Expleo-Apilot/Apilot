@@ -2,6 +2,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { Subscription, forkJoin } from 'rxjs';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
@@ -32,6 +33,7 @@ import { Request, KeyValuePair, Authentication } from '../../core/models/request
 import { AuthType } from '../../core/models/auth-type.enum';
 import { Folder, CreateFolderRequest } from '../../core/models/folder.model';
 import { HttpMethod } from '../../core/models/http-method.enum';
+import { ImportEnvironmentModalComponent } from '../../shared/components/import-environment-modal/import-environment-modal.component';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
@@ -155,7 +157,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private historyService: HistoryService,
     private snackBar: MatSnackBar,
     private variableReplacementService: VariableReplacementService,
-    private responseService: ResponseService // Inject ResponseService
+    private responseService: ResponseService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit() {
@@ -311,7 +314,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
   };
   
   importEnvironment(): void {
-    console.log('Environment import functionality to be implemented');
+    // Close the environments menu
+    this.closeEnvironmentsMenu();
+    
+    const dialogRef = this.dialog.open(ImportEnvironmentModalComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: { workspaceId: this.workspaceId }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        this.snackBar.open(`Successfully imported ${result.importedCount} environment(s)`, 'Close', {
+          duration: 3000
+        });
+        // Refresh the environments list
+        this.loadEnvironments();
+      }
+    });
   }
   
   /**

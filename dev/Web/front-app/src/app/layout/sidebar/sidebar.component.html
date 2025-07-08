@@ -108,44 +108,26 @@
 
     <!-- Environment Section -->
     <div *ngSwitchCase="'environments'" class="content-area environments-area">
-      <!-- Professional header matching collections style -->
-      <div class="env-header">
-        <div class="env-search-wrapper">
-          <div class="env-search-container">
-            <mat-icon class="filter-icon">search</mat-icon>
-            <input type="text" placeholder="Find environments..."
-                   class="env-search-input"
-                   [(ngModel)]="environmentSearchTerm"
-                   (ngModelChange)="filterEnvironments($event)">
-            <button *ngIf="environmentSearchTerm"
-                    mat-icon-button
-                    class="clear-search-btn"
-                    (click)="filterEnvironments('')">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-        </div>
-        
-        <div class="env-header-actions">
-          <button mat-fab class="action-fab primary-fab" title="Create new environment" (click)="openNewEnvironmentModal()">
-            <mat-icon>add</mat-icon>
+      <div class="content-header">
+        <div class="action-buttons">
+          <button mat-icon-button (click)="toggleEnvironmentsMenu($event)">
+            <mat-icon>more_vert</mat-icon>
           </button>
-          <div class="secondary-actions">
-            <button mat-mini-fab class="action-fab" title="Import environment" (click)="importEnvironment()">
-              <mat-icon>upload_file</mat-icon>
-            </button>
-            <button mat-mini-fab class="action-fab" title="Export all environments" 
-                    [disabled]="!environments || environments.length === 0"
-                    (click)="exportAllEnvironments()">
-              <mat-icon>download</mat-icon>
-            </button>
-
-          </div>
-
+        </div>
+        <div class="search-area">
+          <mat-icon class="filter-icon">search</mat-icon>
+          <input type="text" placeholder="Search environments..."
+                 class="search-input"
+                 [(ngModel)]="environmentSearchTerm"
+                 (ngModelChange)="filterEnvironments($event)">
+          <button *ngIf="environmentSearchTerm"
+                  mat-icon-button
+                  class="clear-search-btn"
+                  (click)="filterEnvironments('')">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
       </div>
-
-      <!-- Empty state is handled in the environments-container section -->
 
       <!-- Environments Menu Dropdown -->
       <div *ngIf="showEnvironmentsMenu" class="environments-menu-overlay">
@@ -158,8 +140,14 @@
             <mat-icon>upload_file</mat-icon>
             <span>Import Environment</span>
           </div>
+          <div class="menu-item" (click)="exportAllEnvironments()" [class.disabled]="!environments || environments.length === 0">
+            <mat-icon>download</mat-icon>
+            <span>Export All</span>
+          </div>
         </div>
       </div>
+
+
 
       <div class="environments-container">
         <!-- Empty state when no environment items are found -->

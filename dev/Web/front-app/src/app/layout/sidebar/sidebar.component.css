@@ -278,6 +278,68 @@
   opacity: 0.7;
 }
 
+/* Environments Menu Dropdown Styles */
+.environments-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.environments-menu-wrapper {
+  position: absolute;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  padding: 8px 0;
+  pointer-events: all;
+  z-index: 1001;
+}
+
+.environments-menu-wrapper .menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--primary-color);
+}
+
+.environments-menu-wrapper .menu-item:hover {
+  background-color: var(--hover-color);
+}
+
+.environments-menu-wrapper .menu-item mat-icon {
+  margin-right: 12px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--primary-color);
+}
+
+.environments-menu-wrapper .menu-item span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Style the Environment dropdown button to match Collections */
+.environments-area .action-buttons button[mat-icon-button] {
+  color: var(--primary-color);
+}
+
+.environments-area .action-buttons button[mat-icon-button]:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.environments-area .action-buttons button[mat-icon-button] mat-icon {
+  color: var(--primary-color);
+}
+
 .empty-search-result span {
   font-size: 14px;
   font-weight: 500;

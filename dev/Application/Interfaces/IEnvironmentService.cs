@@ -1,4 +1,4 @@
-﻿using dev.Application.DTOs.Environment;
+using dev.Application.DTOs.Environment;
 
 namespace dev.Application.Interfaces;
 
@@ -10,7 +10,7 @@ public interface IEnvironmentService
     Task<List<EnvironmentDto>> GetEnvironmentsByWorkspaceIdAsync(int workspaceId);
     
     Task UpdateEnvironmentAsync(UpdateEnvironmentRequest request);
-    Task<EnvironmentDto> AddVariablesToEnvironment(AddVariablesToEnvironmentRequest request);
+    Task<EnvironmentDto> AddVariablesToEnvironmentAsync(AddVariablesToEnvironmentRequest request);
     Task DeleteEnvironmentAsync(int id);
     
     
