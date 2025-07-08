@@ -22,6 +22,7 @@ public class PerformRequestController : ControllerBase
     public async Task<IActionResult> PerformRequest([FromBody] PerformRequestDto performRequestDto)
     {
         
+        Console.WriteLine("Test :"+performRequestDto.HttpMethod);
         object result;
 
         switch (performRequestDto.HttpMethod)
@@ -32,6 +33,7 @@ public class PerformRequestController : ControllerBase
 
             case ApiHttpMethod.POST:
                 result = await _mediator.Send(new PostRequestCommand { RequestDto = performRequestDto });
+               
                 break;
 
             case ApiHttpMethod.PUT:

@@ -564,8 +564,8 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
       }
 
       const loadingSnackBarRef = this.snackBar.open(
-        isExistingRequest ? 'Updating request...' : 'Saving request...', 
-        '', 
+        isExistingRequest ? 'Updating request...' : 'Saving request...',
+        '',
         { duration: undefined }
       );
 
@@ -646,9 +646,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
               this.snackBar.open('Request updated successfully', 'Close', { duration: 3000 });
             } else {
               const errorMessage = response.error || 'An unknown error occurred';
-              this.snackBar.open(errorMessage, 'Dismiss', { 
-                duration: 5000, 
-                panelClass: ['error-snackbar'] 
+              this.snackBar.open(errorMessage, 'Dismiss', {
+                duration: 5000,
+                panelClass: ['error-snackbar']
               });
             }
           },
@@ -868,7 +868,6 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
     if (this.requestForm.invalid) {
       return;
     }
-
     this.route.paramMap.pipe(
       take(1)
     ).subscribe((params: ParamMap) => {
@@ -1006,9 +1005,9 @@ export class RequestEditorComponent implements OnInit, OnDestroy {
           this.snackBar.open('Request updated successfully', 'Close', { duration: 3000 });
         } else {
           const errorMessage = response.error || 'An unknown error occurred';
-          this.snackBar.open(errorMessage, 'Dismiss', { 
-            duration: 5000, 
-            panelClass: ['error-snackbar'] 
+          this.snackBar.open(errorMessage, 'Dismiss', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
           });
         }
       },

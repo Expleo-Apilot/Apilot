@@ -51,39 +51,29 @@ export class HttpClientService {
     // Pass isUrl=true so that variable replacement knows to handle URL variables differently
     const processedUrl = this.variableReplacementService.replaceVariables(url, true);
     console.log('URL after variable replacement:', processedUrl);
-    
+
     // Process headers - replace variables in both keys and values
     const processedHeaders = this.processKeyValuePairsWithVariables(headers.filter(h => h.enabled));
-    
+
     // Process parameters - replace variables in both keys and values
     const processedParams = this.processKeyValuePairsWithVariables(params.filter(p => p.enabled));
-    
+
     // Process body - replace variables in the request body if it's a string or object
     let processedBody = body;
     if (body) {
       processedBody = this.variableReplacementService.replaceVariablesInObject(body);
     }
-    
+
     // Process authentication if present
     let processedAuth = auth;
     if (auth) {
       processedAuth = this.variableReplacementService.replaceVariablesInObject(auth);
     }
-    
+
     // Convert the processed headers and params arrays to dictionary format expected by the backend
     const headersDict = this.convertArrayToDictionary(processedHeaders);
     const paramsDict = this.convertArrayToDictionary(processedParams);
 
-    // Prepare the request payload according to the PerformRequestDto format
-    const requestPayload = {
-      httpMethod: method,
-      url: processedUrl,
-      headers: headersDict,
-      parameters: paramsDict,
-      body: processedBody,
-      authentication: processedAuth
-    };
-    
     // Log the processed request for debugging
     console.log('Processed request with variables replaced:', {
       url: processedUrl,
@@ -108,7 +98,7 @@ export class HttpClientService {
           bodyType: bodyType
         }
       };
-      
+
       // Save to history - use first() to complete the observable after first emission
       // This prevents duplicate history saving since we're not subscribing here
       return this.historyService.SaveHistory(historyData).pipe(
@@ -146,17 +136,33 @@ export class HttpClientService {
     params: Record<string, string>,
     body?: any
   ): Observable<any> {
-    // Create the request payload
+    // Ensure method is in the correct format (uppercase) for the backend
+    const formattedMethod = method.toUpperCase();
+    
+    // Create the request payload matching the PerformRequestDto
     const requestPayload = {
+      httpMethod: formattedMethod as any,  // Cast to any to match the enum type
       url: url,
-      method: method,
       headers: headers,
       parameters: params,
-      body: body
+      body: body,
+      authentication: null  // This will be set by the backend if needed
     };
     
-    // Send the HTTP request with authorization header and processed data
-    return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions());
+    console.log('Sending request with payload:', {
+      url: this.apiUrl,
+      method: formattedMethod,
+      payload: requestPayload,
+      headers: this.getHttpOptions().headers
+    });
+    
+    // Send the request to the PerformRequest endpoint
+    return this.http.post<any>(this.apiUrl, requestPayload, this.getHttpOptions()).pipe(
+      catchError(error => {
+        console.error('Request failed:', error);
+        throw error;
+      })
+    );
   }
 
   /**
