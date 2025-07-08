@@ -12,12 +12,6 @@
   color: var(--text-color) ;
 }
 
-
-
-
-
-
-/* URL and Method Container - Postman-like styling */
 .url-method-container {
   display: flex;
   flex-direction: row;
@@ -41,7 +35,6 @@
   font-size: 13px;
 }
 
-/* Override mat-form-field styles to match method-select's compact look */
 .env-selector ::ng-deep .mat-mdc-form-field {
   width: 100%;
 }
@@ -66,7 +59,6 @@
   color: var(--text-color);
 }
 
-/* Override mat-form-field styles to match Postman's compact look */
 .method-select ::ng-deep .mat-mdc-form-field {
   width: 100%;
 }
@@ -104,11 +96,11 @@
   border-color: var(--request-editor-focus-border);
   box-shadow: 0 0 0 1px var(--request-editor-focus-border);
 }
+
 .full-width {
   width: 100%;
 }
 
-/* Split button styling */
 .send-button-container {
   display: flex;
   margin-left: 8px;
@@ -132,7 +124,6 @@
   margin-top: -20px;
 }
 
-/* Ensure the dropdown button icon is properly aligned */
 .dropdown-button .mat-icon {
   margin: 0;
   font-size: 20px;
@@ -141,13 +132,11 @@
   line-height: 20px;
 }
 
-/* Hover effects */
 .send-button:hover:not([disabled]),
 .dropdown-button:hover:not([disabled]) {
   background-color: #651fff;
 }
 
-/* Disabled state */
 .send-button[disabled],
 .dropdown-button[disabled] {
   background-color: rgba(124, 77, 255, 0.5);
@@ -171,10 +160,10 @@
   box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
 }
 
-
 .custom-colored-tab{
   color: var(--text-color) ;
 }
+
 .request-tabs{
   overflow: auto;
 }
@@ -208,19 +197,17 @@
 
 .tab-content {
   padding: 16px;
-  height: 350px; /* Fixed height for tab content */
+  height: 350px; 
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Key-value table styling */
 .key-value-table {
   width: 100%;
-  height: 280px; /* Fixed height for the table container */
+  height: 280px; 
   overflow-y: auto;
-  overflow-x: auto; /* Allow horizontal scroll if needed */
-  /* Custom scrollbar styling */
+  overflow-x: auto; 
   scrollbar-width: thin;
   scrollbar-color: var(--primary-color) var(--background-color);
   border: 1px solid var(--border-color);
@@ -230,7 +217,7 @@
 
 table {
   width: 100%;
-  min-width: 650px; /* Ensures minimum width for the table */
+  min-width: 650px; 
   border-collapse: collapse;
   table-layout: fixed;
   position: relative;
@@ -278,7 +265,6 @@ th {
   text-align: center;
 }
 
-/* Styling form fields to be more compact */
 td mat-form-field {
   margin: 0;
   width: 100%;
@@ -293,7 +279,6 @@ td ::ng-deep .mat-mdc-form-field-infix {
   text-overflow: ellipsis;
 }
 
-/* Ensure input text doesn't shrink */
 td input {
   width: 100%;
   font-size: 14px;
@@ -313,10 +298,9 @@ td ::ng-deep .mat-mdc-form-field-flex {
   height: 36px !important;
 }
 
-/* Custom scrollbar styling for WebKit browsers */
 .key-value-table::-webkit-scrollbar {
   width: 6px;
-  height: 6px; /* Show horizontal scrollbar with same styling */
+  height: 6px; 
 }
 
 .key-value-table::-webkit-scrollbar-track {
@@ -330,7 +314,6 @@ td ::ng-deep .mat-mdc-form-field-flex {
   border: 1px solid var(--background-color);
 }
 
-/* Fixed column widths for better layout */
 table th:nth-child(2),
 table td:nth-child(2) {
   width: 200px;
@@ -345,7 +328,6 @@ table td:nth-child(3) {
   max-width: 300px;
 }
 
-/* Hover effect for rows */
 tbody tr:hover {
   background-color: rgba(var(--primary-color-rgb), 0.05);
 }
@@ -354,20 +336,16 @@ tbody tr:hover {
   background-color: rgba(var(--primary-color-rgb), 0.1);
 }
 
-/* Add some spacing between rows */
 tbody tr {
   border-bottom: 1px solid var(--border-color);
 }
 
-/* Style for the fixed table */
 .fixed-table {
   width: 100%;
 }
 
-
-/* Editor styling */
 .editor-container {
-  height: 280px; /* Match the height of the key-value-table */
+  height: 280px; 
   border: 1px solid var(--border-color);
   border-radius: 4px;
   margin-top: 12px;
@@ -378,7 +356,7 @@ tbody tr {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 280px; /* Match the height of the key-value-table */
+  height: 280px; 
   background-color: var(--request-editor-input-bg);
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -399,28 +377,24 @@ tbody tr {
   transition: color 0.3s ease;
 }
 
-/* Make sure the form takes up the full height */
 form {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* Make the tab group have a fixed height */
 ::ng-deep .mat-tab-group {
   display: flex;
   flex-direction: column;
-  height: 400px; /* Fixed height for the entire tab group */
+  height: 400px; 
 }
 
 ::ng-deep .mat-tab-body-wrapper {
-  height: 350px; /* Fixed height for the tab body */
+  height: 350px; 
 }
 
-/* Body type selector styling */
 .body-type-selector {
   margin-bottom: 12px;
-
 }
 
 .body-type-selector ::ng-deep .mat-button-toggle-group {
@@ -440,7 +414,6 @@ form {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Auth styling */
 .auth-type-selector {
   max-width: 300px;
   margin-bottom: 16px;
@@ -487,7 +460,6 @@ form {
   border: 1px solid var(--background-color);
 }
 
-/* Loading spinner */
 mat-spinner {
   margin: 0 auto;
 }

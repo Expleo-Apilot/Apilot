@@ -41,7 +41,6 @@ public class CollaborationController : ControllerBase
                 
             var collaboration = await _collaborationService.CreateCollaborationAsync(request);
             
-            // Send real-time notification to the invited user
             await _hubContext.Clients.User(collaboration.InvitedUserId)
                 .SendAsync("ReceiveInvitation", collaboration);
                 
@@ -89,9 +88,6 @@ public class CollaborationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Updates the status of a collaboration (accept/decline)
-    /// </summary>
     [HttpPut("status")]
     public async Task<ActionResult<ApiResponse<CollaborationDto>>> UpdateCollaborationStatus([FromBody] UpdateCollaborationStatusRequest request)
     {
@@ -102,7 +98,6 @@ public class CollaborationController : ControllerBase
                 
             var collaboration = await _collaborationService.UpdateCollaborationStatusAsync(request);
             
-            // Send real-time notification to the user who sent the invitation
             await _hubContext.Clients.User(collaboration.InvitedByUserId)
                 .SendAsync("ReceiveInvitationResponse", collaboration);
                 
@@ -141,9 +136,6 @@ public class CollaborationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Gets all collaborations for a collection
-    /// </summary>
     [HttpGet("collection/{collectionId}")]
     public async Task<ActionResult<ApiResponse<IEnumerable<CollaborationDto>>>> GetCollaborationsByCollection(int collectionId)
     {
@@ -188,9 +180,6 @@ public class CollaborationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Gets all collaborations for the current user
-    /// </summary>
     [HttpGet("user")]
     public async Task<ActionResult<ApiResponse<IEnumerable<CollaborationDto>>>> GetCollaborationsForUser()
     {
@@ -228,9 +217,6 @@ public class CollaborationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Gets all pending invitations for the current user
-    /// </summary>
     [HttpGet("pending")]
     public async Task<ActionResult<ApiResponse<IEnumerable<CollaborationDto>>>> GetPendingInvitations()
     {

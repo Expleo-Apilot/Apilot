@@ -27,7 +27,6 @@ namespace dev.Api.Controllers
             _logger = logger;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
-            // Ensure we're using the correct API key format
             _defaultApiKey = "6vJPWu1GXCqtWBPpk0pgUPMTRUyOPRBm";
             _logger.LogInformation("MistralController initialized");
         }
@@ -37,7 +36,6 @@ namespace dev.Api.Controllers
         {
             try
             {
-                // Always use the hardcoded API key for now to ensure it works
                 var apiKey = _defaultApiKey;
                 
                 _logger.LogInformation($"Using Mistral API key");
@@ -46,11 +44,9 @@ namespace dev.Api.Controllers
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-                // Log the request details for debugging
                 _logger.LogInformation($"Received request with model: {request.Model}");
                 _logger.LogInformation($"Prompt: {request.Prompt.Substring(0, Math.Min(50, request.Prompt.Length))}...");
                 
-                // Create the request payload for Mistral API
                 var mistralRequest = new
                 {
                     model = request.Model ?? "mistral-large-latest",
@@ -74,7 +70,6 @@ namespace dev.Api.Controllers
                 _logger.LogInformation($"Sending request to Mistral API: {_mistralApiUrl}");
                 var response = await client.PostAsync(_mistralApiUrl, content);
                 
-                // Log the complete response for debugging
                 var responseContent = await response.Content.ReadAsStringAsync();
                 _logger.LogInformation($"Response status code: {response.StatusCode}");
                 _logger.LogInformation($"Response content: {responseContent.Substring(0, Math.Min(500, responseContent.Length))}");
@@ -85,7 +80,6 @@ namespace dev.Api.Controllers
                     return StatusCode((int)response.StatusCode, responseContent);
                 }
 
-                // Use a try-catch block to handle potential JSON deserialization errors
                 try
                 {
                     var options = new JsonSerializerOptions

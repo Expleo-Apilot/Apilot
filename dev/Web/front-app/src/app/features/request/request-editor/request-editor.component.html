@@ -1,9 +1,7 @@
 <div class="request-editor">
-  <!-- Tab Bar -->
-  <app-tab-bar></app-tab-bar>
+    <app-tab-bar></app-tab-bar>
   <form [formGroup]="requestForm" (ngSubmit)="sendRequest()">
-    <!-- URL and Method Row -->
-    <div class="url-method-container">
+        <div class="url-method-container">
       <div class="env-selector">
         <mat-form-field appearance="outline">
           <mat-select 
@@ -44,19 +42,16 @@
       </div>
 
       <div class="send-button-container">
-        <!-- Main Send button -->
-        <button mat-stroked-button type="submit" class="send-button" [disabled]="requestForm.invalid || isLoading">
+                <button mat-stroked-button type="submit" class="send-button" [disabled]="requestForm.invalid || isLoading">
           <span *ngIf="!isLoading" style="color: white">Send</span>
           <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
         </button>
 
-        <!-- Dropdown trigger button -->
-        <button mat-stroked-button type="button" class="dropdown-button" [disabled]="requestForm.invalid || isLoading" [matMenuTriggerFor]="sendMenu">
+                <button mat-stroked-button type="button" class="dropdown-button" [disabled]="requestForm.invalid || isLoading" [matMenuTriggerFor]="sendMenu">
           <mat-icon style="color: white">arrow_drop_down</mat-icon>
         </button>
 
-        <!-- Dropdown menu -->
-        <mat-menu #sendMenu="matMenu">
+                <mat-menu #sendMenu="matMenu">
           <button mat-menu-item (click)="saveRequest()">
             <mat-icon>save</mat-icon>
             <span>Save</span>
@@ -66,10 +61,8 @@
     </div>
 
 
-    <!-- Tabs Section -->
-    <mat-tab-group animationDuration="0ms" class="request-tabs">
-      <!-- Params Tab -->
-      <mat-tab>
+        <mat-tab-group animationDuration="0ms" class="request-tabs">
+            <mat-tab>
         <ng-template mat-tab-label>
           <span class="custom-colored-tab">Params</span>
         </ng-template>
@@ -117,8 +110,7 @@
         </div>
       </mat-tab>
 
-      <!-- Headers Tab -->
-      <mat-tab >
+            <mat-tab >
         <ng-template mat-tab-label>
           <span class="custom-colored-tab">Headers</span>
         </ng-template>
@@ -183,11 +175,9 @@
             </mat-button-toggle-group>
           </div>
 
-          <!-- Only show body editor for non-GET requests and when bodyType is not 'none' -->
-          <div *ngIf="requestForm.get('method')?.value !== 'GET' && bodyType !== 'none'">
+                    <div *ngIf="requestForm.get('method')?.value !== 'GET' && bodyType !== 'none'">
             <div class="editor-container">
-              <!-- Ensure editor container has height (e.g., via CSS) -->
-              <ngx-monaco-editor
+                            <ngx-monaco-editor
                 [options]="bodyEditorOptions"
                 formControlName="body">
               </ngx-monaco-editor>
@@ -201,8 +191,7 @@
       </mat-tab>
 
 
-      <!-- Auth Tab -->
-      <mat-tab>
+            <mat-tab>
         <ng-template mat-tab-label>
           <span class="custom-colored-tab" disableRipple>Auth</span>
         </ng-template>
@@ -217,13 +206,11 @@
           </div>
 
           <div class="auth-content">
-            <!-- No Auth -->
-            <div *ngIf="selectedAuthType === 'none'" class="auth-none">
+                        <div *ngIf="selectedAuthType === 'none'" class="auth-none">
               <p>No authentication will be sent with this request.</p>
             </div>
 
-            <!-- Basic Auth -->
-            <div *ngIf="selectedAuthType === 'basic'" class="auth-basic">
+                        <div *ngIf="selectedAuthType === 'basic'" class="auth-basic">
               <div class="auth-field">
                 <mat-form-field appearance="outline" class="full-width">
                   <mat-label>Username</mat-label>
@@ -238,8 +225,7 @@
               </div>
             </div>
 
-            <!-- Bearer Token -->
-            <div *ngIf="selectedAuthType === 'bearer'" class="auth-bearer">
+                        <div *ngIf="selectedAuthType === 'bearer'" class="auth-bearer">
               <div class="auth-field">
                 <mat-form-field appearance="outline" class="full-width">
                   <mat-label>Token</mat-label>
@@ -248,13 +234,11 @@
               </div>
             </div>
 
-            <!-- OAuth 2.0 -->
-            <div *ngIf="selectedAuthType === 'oauth2'" class="auth-oauth">
+                        <div *ngIf="selectedAuthType === 'oauth2'" class="auth-oauth">
               <p>OAuth 2.0 authentication will be implemented in a future update.</p>
             </div>
 
-            <!-- API Key -->
-            <div *ngIf="selectedAuthType === 'apikey'" class="auth-apikey">
+                        <div *ngIf="selectedAuthType === 'apikey'" class="auth-apikey">
               <p>API Key authentication will be implemented in a future update.</p>
             </div>
           </div>

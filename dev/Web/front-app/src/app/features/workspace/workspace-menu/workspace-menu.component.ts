@@ -42,7 +42,7 @@ export class WorkspaceMenuComponent implements OnInit {
   modalWorkspace: Partial<Workspace> = {};
   isSubmitting = false;
   errorMsg = '';
-  activeTab = 'all'; // 'all', 'personal', 'team', 'public'
+  activeTab = 'all';
   user: any
 
   constructor(private workspaceService: WorkspaceService) {}
@@ -54,9 +54,6 @@ export class WorkspaceMenuComponent implements OnInit {
     this.loadSelectedWorkspaceFromLocalStorage();
   }
 
-  /**
-   * Loads the previously selected workspace from local storage
-   */
   private loadSelectedWorkspaceFromLocalStorage(): void {
     if (!this.isBrowser()) return;
 
@@ -68,7 +65,6 @@ export class WorkspaceMenuComponent implements OnInit {
         this.selectedWorkspaceId = workspace.id;
         console.log('Loaded previously selected workspace from local storage:', workspace);
 
-        // Emit the selected workspace to notify parent components
         this.workspaceSelected.emit(workspace);
       }
     } catch (e) {
@@ -160,7 +156,7 @@ export class WorkspaceMenuComponent implements OnInit {
   
   openWorkspacesModal() {
     this.showWorkspacesModal = true;
-    this.loadWorkspaces(); // Refresh the workspaces list
+    this.loadWorkspaces();
   }
   
   closeWorkspacesModal() {
@@ -236,14 +232,12 @@ export class WorkspaceMenuComponent implements OnInit {
     this.saveRecent(ws.id);
     this.workspaceSelected.emit(ws);
     
-    // Load the workspace data and then open the edit modal
     this.workspaceService.getWorkspace(ws.id).subscribe({
       next: (res) => {
         if (res.isSuccess) {
           this.selectedWorkspace = res.data;
           this.saveSelectedWorkspaceToLocalStorage(res.data);
           
-          // Open the edit modal with the loaded workspace data
           this.openEditModal(res.data);
         } else {
           console.error('Error loading workspace:', res.error);
@@ -266,7 +260,6 @@ export class WorkspaceMenuComponent implements OnInit {
       next : (res) => {
         if (res.isSuccess) {
           this.selectedWorkspace = res.data;
-          // Save the selected workspace to local storage
           this.saveSelectedWorkspaceToLocalStorage(res.data);
           console.log('Workspace loaded and saved to local storage:', this.selectedWorkspace);
         } else {

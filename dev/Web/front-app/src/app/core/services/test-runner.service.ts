@@ -23,15 +23,10 @@ export interface TestResponse {
 })
 export class TestRunnerService {
   private apiUrl = '/api/testrunner/run';
-  private timeoutDuration = 30000; // 30 seconds timeout
+  private timeoutDuration = 30000;
 
   constructor(private http: HttpClient) { }
 
-  /**
-   * Runs C# test code on the backend
-   * @param testCode The C# test code to execute
-   * @returns Observable with test results
-   */
   runTests(testCode: string): Observable<TestResponse> {
     return this.http.post<TestResponse>(this.apiUrl, { TestCode: testCode })
       .pipe(
@@ -40,29 +35,20 @@ export class TestRunnerService {
       );
   }
 
-  /**
-   * Error handler for HTTP requests
-   */
   private handleError(error: HttpErrorResponse | Error) {
     let errorMessage = 'Unknown error occurred';
     
-    // Check if it's a timeout error
     if ('name' in error && error.name === 'TimeoutError') {
       errorMessage = 'Request timed out - the test execution took too long';
     }
-    // Check if it's an HttpErrorResponse
     else if (error instanceof HttpErrorResponse) {
       if (error.error instanceof ErrorEvent) {
-        // Client-side error
         errorMessage = `Client error: ${error.error.message}`;
       } else if (error.status === 0) {
-        // Network error
         errorMessage = 'Network error - please check if the backend server is running';
       } else if (error.status === 408) {
-        // HTTP timeout error
         errorMessage = 'Request timed out - the test execution took too long';
       } else {
-        // Server-side error
         errorMessage = `Server error: ${error.status} ${error.statusText}\n${error.error?.message || ''}`;
       }
     }

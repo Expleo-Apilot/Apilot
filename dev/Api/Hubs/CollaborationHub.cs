@@ -25,7 +25,6 @@ public class CollaborationHub : Hub
         
         if (!string.IsNullOrEmpty(userId))
         {
-            // Add user to a group with their user ID
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
             _logger.LogInformation("User {UserId} connected to CollaborationHub", userId);
         }
@@ -39,7 +38,6 @@ public class CollaborationHub : Hub
         
         if (!string.IsNullOrEmpty(userId))
         {
-            // Remove user from their user ID group
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, userId);
             _logger.LogInformation("User {UserId} disconnected from CollaborationHub", userId);
         }
@@ -47,7 +45,6 @@ public class CollaborationHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    // Methods that can be called from the client
     public async Task JoinCollectionGroup(int collectionId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"collection_{collectionId}");

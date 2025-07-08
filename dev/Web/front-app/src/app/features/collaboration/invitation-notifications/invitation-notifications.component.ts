@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { Collaboration, CollaborationStatus } from '../../../core/models/collaboration.model';
+import { Collaboration, CollaborationStatus, CollaborationPermission } from '../../../core/models/collaboration.model';
 import { CollaborationService } from '../../../core/services/collaboration.service';
 import { SignalRService } from '../../../core/services/signalr.service';
 import { CollectionService } from '../../../core/services/collection.service';
@@ -13,6 +13,9 @@ import { Router } from '@angular/router';
   styleUrls: ['./invitation-notifications.component.css']
 })
 export class InvitationNotificationsComponent implements OnInit, OnDestroy {
+  // Make CollaborationPermission available to the template
+  CollaborationPermission = CollaborationPermission;
+  
   pendingInvitations: Collaboration[] = [];
   showNotificationsPanel = false;
   loading = false;
@@ -56,7 +59,6 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Unsubscribe to prevent memory leaks
     if (this.invitationSubscription) {
       this.invitationSubscription.unsubscribe();
     }
@@ -73,9 +75,17 @@ export class InvitationNotificationsComponent implements OnInit, OnDestroy {
     this.collaborationService.getPendingCollaborationsForUser().subscribe({
       next: (response) => {
         this.loading = false;
-        console.log(response);
+        console.log('Pending invitations response:', response);
         if (response.success && response.data) {
           this.pendingInvitations = response.data;
+          // Log the permissions to debug the issue
+          console.log('Pending invitations with permissions:', 
+            this.pendingInvitations.map(inv => ({
+              id: inv.id,
+              collectionName: inv.collectionName,
+              permission: inv.permission,
+              permissionType: inv.permission === CollaborationPermission.View ? 'View' : 'Edit'
+            })));
         } else {
           this.error = response.message || 'Failed to load invitations';
         }
