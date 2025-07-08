@@ -1,5 +1,43 @@
 /* src/app/layout/sidebar/sidebar.component.css */
+@import url('./response-styles.css');
 /* Base styles */
+
+/* No responses message styling */
+.no-responses-message {
+  padding: 12px 15px;
+  color: #666;
+  font-size: 0.9em;
+  text-align: center;
+  border: 1px dashed #ddd;
+  border-radius: 6px;
+  margin: 8px 4px;
+  background-color: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.no-responses-message span {
+  display: flex;
+  align-items: center;
+}
+
+.no-responses-message span::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 24 24" fill="%23999"><path d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 :root {
   --sidebar-width: 320px; /* Increased from 280px */
   --nav-width: 68px;     /* Increased from 56px */
@@ -238,6 +276,68 @@
   width: 32px;
   margin-bottom: 12px;
   opacity: 0.7;
+}
+
+/* Environments Menu Dropdown Styles */
+.environments-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.environments-menu-wrapper {
+  position: absolute;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  padding: 8px 0;
+  pointer-events: all;
+  z-index: 1001;
+}
+
+.environments-menu-wrapper .menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--primary-color);
+}
+
+.environments-menu-wrapper .menu-item:hover {
+  background-color: var(--hover-color);
+}
+
+.environments-menu-wrapper .menu-item mat-icon {
+  margin-right: 12px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--primary-color);
+}
+
+.environments-menu-wrapper .menu-item span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Style the Environment dropdown button to match Collections */
+.environments-area .action-buttons button[mat-icon-button] {
+  color: var(--primary-color);
+}
+
+.environments-area .action-buttons button[mat-icon-button]:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.environments-area .action-buttons button[mat-icon-button] mat-icon {
+  color: var(--primary-color);
 }
 
 .empty-search-result span {

@@ -1,4 +1,4 @@
-﻿using dev.Application.Common.Models;
+using dev.Application.Common.Models;
 using dev.Application.DTOs.Environment;
 using dev.Application.Interfaces;
 using MediatR;
@@ -25,7 +25,7 @@ public class AddVariablesToEnvironmentCommandHandler : IRequestHandler<AddVariab
     {
         try
         {
-            var environment = await _environmentService.AddVariablesToEnvironment(request.Environment);
+            var environment = await _environmentService.AddVariablesToEnvironmentAsync(request.Environment);
             return Result<EnvironmentDto>.Success(environment);
         }
         catch (Exception ex)

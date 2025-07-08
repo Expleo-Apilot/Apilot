@@ -1,7 +1,6 @@
-/* Workspace Menu Container */
 .workspace-menu-container {
   width: 360px;
-  height: 80vh; /* Fixed height instead of max-height */
+  height: 80vh;
   background-color: var(--background-color);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -19,7 +18,6 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-/* Header */
 .workspace-menu-header {
   display: flex;
   justify-content: space-between;
@@ -45,7 +43,6 @@
   color: var(--text-secondary);
 }
 
-/* Actions */
 .workspace-menu-actions {
   padding: 16px 20px;
   display: flex;
@@ -117,7 +114,6 @@
   margin-left: 4px;
 }
 
-/* Tabs */
 .workspace-tabs {
   display: flex;
   padding: 0 20px;
@@ -156,7 +152,6 @@
   border-bottom-color: var(--primary-color);
 }
 
-/* Sections */
 .workspace-section {
   padding: 16px 0;
 }
@@ -184,7 +179,6 @@
   border-radius: 10px;
 }
 
-/* Workspace List */
 .workspace-list {
   max-height: 300px;
   overflow-y: auto;
@@ -311,7 +305,6 @@
   color: var(--text-secondary);
 }
 
-/* No workspaces */
 .no-workspaces {
   display: flex;
   flex-direction: column;
@@ -327,7 +320,6 @@
   opacity: 0.5;
 }
 
-/* Scrollable Content Area */
 .workspace-content-scrollable {
   flex: 1;
   overflow-y: auto;
@@ -353,7 +345,6 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Footer */
 .workspace-menu-footer {
   padding: 16px 20px;
   display: flex;
@@ -420,7 +411,6 @@
   color: var(--text-secondary);
 }
 
-/* Modal */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -432,7 +422,6 @@
   z-index: 1000;
 }
 
-/* Workspaces Modal Specific Styles */
 .workspaces-modal {
   width: 560px;
   max-height: 80vh;
@@ -523,7 +512,6 @@
   border-top: 1px solid var(--border-color);
 }
 
-/* Form fields */
 .full-width {
   width: 100%;
   margin-bottom: 16px;
@@ -578,7 +566,6 @@
   margin-top: 8px;
 }
 
-/* Responsive adjustments */
 @media (max-width: 600px) {
   .workspace-menu-container {
     width: 100%;

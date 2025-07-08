@@ -48,6 +48,18 @@ export interface RemoveVariableFromEnvironmentRequest {
   key: string;
 }
 
+export interface ImportEnvironmentsRequest {
+  workspaceId: number;
+  environments: ImportEnvironmentData[];
+  exportedAt?: string;
+  exportedBy?: string;
+}
+
+export interface ImportEnvironmentData {
+  name: string;
+  variables: { [key: string]: string };
+  id?: number; // Original ID from export (will be ignored during import)
+}
 
 export interface EnvironmentResponse {
   isSuccess: boolean;

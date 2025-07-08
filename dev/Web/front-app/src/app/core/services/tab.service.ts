@@ -18,11 +18,12 @@ export interface RequestTab {
   basicAuthPassword: string;
   bearerToken: string;
   active: boolean;
-  parentId?: number;           // ID of parent collection or folder for saved requests
-  parentType?: 'collection' | 'folder';  // Type of parent for saved requests
-  isShared?: boolean;          // Indicates if the request belongs to a shared collection
-  targetType?: 'collection' | 'folder';  // Type of target for unsaved draft requests
-  targetId?: number;           // ID of target collection or folder for unsaved draft requests
+  parentId?: number;
+  parentType?: 'collection' | 'folder';
+  isShared?: boolean;
+  targetType?: 'collection' | 'folder';
+  targetId?: number;
+  script?: string;
 }
 
 @Injectable({
@@ -66,7 +67,6 @@ export class TabService {
       if (storedTabs) {
         const tabs = JSON.parse(storedTabs) as RequestTab[];
 
-        // If there are tabs but no active tab, set the first one as active
         if (tabs.length > 0) {
           const activeTab = tabs.find(tab => tab.active);
           if (!activeTab) {
@@ -97,10 +97,8 @@ export class TabService {
   createNewTab(initialData?: Partial<RequestTab>): RequestTab {
     const tabs = this.tabs;
 
-    // Set all existing tabs as inactive
     tabs.forEach(tab => tab.active = false);
 
-    // Create a new tab with default values
     const newTab: RequestTab = {
       id: this.generateId(),
       name: initialData?.name || 'New Request',
@@ -119,7 +117,8 @@ export class TabService {
       parentType: initialData?.parentType,
       isShared: initialData?.isShared,
       targetType: initialData?.targetType,
-      targetId: initialData?.targetId
+      targetId: initialData?.targetId,
+      script: initialData?.script || ''
     };
 
     tabs.push(newTab);
@@ -139,13 +138,11 @@ export class TabService {
     const isActiveTab = tabs[tabIndex].active;
     tabs = tabs.filter(tab => tab.id !== tabId);
 
-    // If we closed the active tab and there are other tabs, make another one active
     if (isActiveTab && tabs.length > 0) {
       const newActiveIndex = Math.min(tabIndex, tabs.length - 1);
       tabs[newActiveIndex].active = true;
       this._activeTabId.next(tabs[newActiveIndex].id);
     } else if (tabs.length === 0) {
-      // If we closed the last tab, create a new one
       this._tabs.next(tabs);
       this.createNewTab();
       return;
@@ -161,14 +158,11 @@ export class TabService {
 
     if (!tab) return;
 
-    // Deactivate all tabs
     tabs.forEach(t => t.active = false);
 
-    // Activate the selected tab
     tab.active = true;
     this._activeTabId.next(tabId);
 
-    // Store the selected request details in localStorage
     this.storeSelectedRequestDetails(tab);
 
     this._tabs.next(tabs);
@@ -181,10 +175,8 @@ export class TabService {
 
     if (tabIndex === -1) return;
 
-    // Update the tab with new data
     tabs[tabIndex] = { ...tabs[tabIndex], ...data };
 
-    // If the URL changed, update the tab name based on the URL
     if (data.url && data.url !== tabs[tabIndex].url) {
       tabs[tabIndex].name = this.generateTabNameFromUrl(data.url);
     }

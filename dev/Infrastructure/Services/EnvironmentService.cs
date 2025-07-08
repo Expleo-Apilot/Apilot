@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using dev.Application.DTOs.Environment;
 using dev.Application.Interfaces;
 using dev.Application.Interfaces.Services;
@@ -304,7 +304,7 @@ public class EnvironmentService : IEnvironmentService
 
     
     
-    public async Task<EnvironmentDto> AddVariablesToEnvironment(AddVariablesToEnvironmentRequest addVariablesToEnvironmentRequest)
+    public async Task<EnvironmentDto> AddVariablesToEnvironmentAsync(AddVariablesToEnvironmentRequest addVariablesToEnvironmentRequest)
     {
         try
         {

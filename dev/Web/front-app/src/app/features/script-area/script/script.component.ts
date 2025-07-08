@@ -2,21 +2,6 @@ import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEm
 import { PrismService } from '../../../services/prism.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-/**
- * Script Component for API test scripts
- *
- * Features:
- * - Syntax highlighting via Prism.js
- * - Pre-request and test script support
- * - Example scripts
- * - Real-time change detection
- *
- * Usage:
- * <app-script
- *   [scriptType]="'pre-request' | 'test'"
- *   (scriptChanged)="onScriptChange($event)">
- * </app-script>
- */
 @Component({
   selector: 'app-script',
   templateUrl: './script.component.html',
@@ -30,23 +15,21 @@ export class ScriptComponent implements AfterViewInit {
   scriptContent = '';
 
   readonly examples = {
-    'pre-request': `// Set environment variables
-pm.environment.set('api_key', '12345');
+    'pre-request': `const baseUrl = "http://localhost:5051";
+request.headers.set('Content-Type', 'application/json');`,
 
-// Add headers
-pm.request.headers.add({
-  key: 'Authorization',
-  value: 'Bearer ' + pm.environment.get('token')
-});`,
-
-    'test': `// Basic test example
-pm.test('Status code is 200', () => {
-  pm.expect(pm.response.code).to.equal(200);
+    'test': `Test("Status code is 200", () => {
+  Assert(response.status === 200);
 });
 
-// Response time test
-pm.test('Response time is less than 200ms', () => {
-  pm.expect(pm.response.responseTime).to.be.below(200);
+Test("Response is JSON", () => {
+  Assert(response.headers.get('content-type')?.includes('application/json'));
+});
+
+Test("Response has required fields", () => {
+  const body = response.json();
+  Assert(body.id);
+  Assert(body.name);
 });`
   };
 

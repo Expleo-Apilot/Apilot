@@ -132,4 +132,15 @@ public class EnvironmentController : ControllerBase
         var result = await _mediator.Send(cmd);
         return Ok(result);
     }
+
+    [HttpPost("/ImportEnvironments")]
+    public async Task<IActionResult> ImportEnvironments([FromBody] ImportEnvironmentsRequest request)
+    {
+        var cmd = new ImportEnvironmentsCommand
+        {
+            ImportRequest = request
+        };
+        var result = await _mediator.Send(cmd);
+        return Ok(result);
+    }
 }

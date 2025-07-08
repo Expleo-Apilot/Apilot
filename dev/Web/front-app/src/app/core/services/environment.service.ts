@@ -9,7 +9,10 @@ import {
   AddVariableToEnvironmentRequest,
   UpdateVariableInEnvironmentRequest,
   AddVariablesToEnvironmentRequest,
-  RemoveVariableFromEnvironmentRequest, EnvironmentResponse, EnvironmentsResponse
+  RemoveVariableFromEnvironmentRequest,
+  ImportEnvironmentsRequest,
+  EnvironmentResponse,
+  EnvironmentsResponse
 } from '../models/environment.model';
 import { ApiResponse } from '../models/api-response.model';
 
@@ -161,6 +164,21 @@ export class EnvironmentService {
         ...this.getHttpOptions(),
         body: request  // Send the request as the body instead of query parameters
       }
+    );
+  }
+
+  importEnvironments(request: ImportEnvironmentsRequest): Observable<ApiResponse<Environment[]>> {
+    return this.http.post<ApiResponse<Environment[]>>(
+      `${this.baseUrl}/ImportEnvironments`,
+      request,
+      this.getHttpOptions()
+    ).pipe(
+      tap(response => {
+        if (response.isSuccess) {
+          // Notify that environments have changed for this workspace
+          this.environmentsChanged.next(request.workspaceId);
+        }
+      })
     );
   }
 }

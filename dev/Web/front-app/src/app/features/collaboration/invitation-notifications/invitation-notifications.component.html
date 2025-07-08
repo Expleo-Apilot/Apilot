@@ -48,9 +48,9 @@
             <div class="invitation-main-content">
               <div class="invitation-title-row">
                 <h4 class="collection-name" [matTooltip]="invitation.collectionName">{{ invitation.collectionName }}</h4>
-                <div class="permission-badge" [ngClass]="invitation.permission === 0 ? 'view' : 'edit'">
-                  <mat-icon>{{ invitation.permission === 0 ? 'visibility' : 'edit' }}</mat-icon>
-                  {{ invitation.permission === 0 ? 'View' : 'Edit' }}
+                <div class="permission-badge" [ngClass]="{view: invitation.permission === CollaborationPermission.View, edit: invitation.permission === CollaborationPermission.Edit}">
+                  <mat-icon>{{ invitation.permission === CollaborationPermission.View ? 'visibility' : 'edit' }}</mat-icon>
+                  {{invitation.permission.valueOf()}}
                 </div>
               </div>
               <div class="invitation-details-row">

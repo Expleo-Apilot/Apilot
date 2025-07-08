@@ -12,20 +12,16 @@ import {Workspace} from '../../core/models/workspace.model';
 })
 export class WorkspaceComponent implements OnInit{
 
-  // Layout sizes
   sidebarSize: number = 20;
   mainContentSize: number = 60;
   toolsPanelSize: number = 20;
   
-  // Vertical split settings
   requestPaneSize: number = 60;
   responsePaneSize: number = 40;
   panelMinSize: number = 20;
 
-  // Flag to check if we're in browser
   private isBrowser: boolean;
   
-  // Current workspace
   currentWorkspace: Workspace | null = null;
 
   constructor(
@@ -40,21 +36,17 @@ export class WorkspaceComponent implements OnInit{
     if (this.isBrowser) {
       this.loadSplitSizes();
       
-      // Extract workspace ID and environment ID from route parameters
       this.route.paramMap.subscribe(params => {
         const workspaceId = params.get('id');
         const environmentId = params.get('environmentId');
         
         if (workspaceId) {
-          // Load workspace data by ID
           this.loadWorkspaceById(Number(workspaceId));
           
-          // If environment ID is present, handle it without changing the view
           if (environmentId) {
             this.handleEnvironmentSelection(Number(environmentId));
           }
         } else {
-          // If no ID in URL, try to load from localStorage
           this.loadWorkspaceFromLocalStorage();
         }
       });
@@ -78,9 +70,6 @@ export class WorkspaceComponent implements OnInit{
     localStorage.setItem('verticalSplitSizes', JSON.stringify(event.sizes));
   }
 
-  /**
-   * Load workspace by ID from the API
-   */
   private loadWorkspaceById(id: number) {
     this.workspaceService.getWorkspace(id).subscribe({
       next: (response: any) => {
@@ -97,24 +86,10 @@ export class WorkspaceComponent implements OnInit{
     });
   }
   
-  /**
-   * Handle environment selection from URL without changing the view
-   * @param environmentId The ID of the selected environment
-   */
   handleEnvironmentSelection(environmentId: number): void {
     console.log(`Environment selected from URL: ${environmentId}`);
-    // This method can be used to notify other components about the selected environment
-    // For example, you could use a shared service to broadcast the selected environment ID
-    
-    // Example: If you have an environment service with a selectEnvironment method
-    // this.environmentService.selectEnvironment(environmentId);
-    
-    // For now, we'll just log the selection
   }
 
-  /**
-   * Load workspace from localStorage if available
-   */
   private loadWorkspaceFromLocalStorage() {
     if (!this.isBrowser) return;
     
@@ -128,9 +103,6 @@ export class WorkspaceComponent implements OnInit{
     }
   }
 
-  /**
-   * Save workspace to localStorage
-   */
   private saveWorkspaceToLocalStorage(workspace: Workspace) {
     if (!this.isBrowser) return;
     
@@ -141,9 +113,6 @@ export class WorkspaceComponent implements OnInit{
     }
   }
 
-  /**
-   * Load split sizes from localStorage
-   */
   private loadSplitSizes() {
     if (!this.isBrowser) return;
 

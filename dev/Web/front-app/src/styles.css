@@ -1,94 +1,55 @@
-/* Apilot API Testing Platform - Global Styles */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
 
 html, body { height: 100%; }
 body { margin: 0; font-family: 'Inter', 'Helvetica Neue', sans-serif; }
 
 :root {
-  /* Core colors */
-  --primary-color: #6200EA;  /* Main brand color */
-  --primary-color-rgb: 98, 0, 234; /* RGB values for primary color */
-  --primary-light: #B388FF; /* Lighter variant */
-  --primary-dark: #4A148C;  /* Darker variant */
-  --accent-color: #00BFA5;  /* Secondary accent */
-  
-  /* Common */
+  --primary-color: #6200EA;  --primary-color-rgb: 98, 0, 234;
+  --primary-light: #B388FF;  --primary-dark: #4A148C;  --accent-color: #00BFA5;  
   --border-color: #e2e2e2;
-  --border-radius: 8px;     /* Consistent border radius */
-  --box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  --border-radius: 8px;     --box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   
-  /* Header */
   --header-bg: #FFFFFF;
   --header-color: #333333;
   --background-color: #FAFAFA;
   --invite-bg: var(--primary-color);
   
-  /* Sidebar */
   --sidebar-bg: #FFFFFF;
   --sidebar-color: #333333;
-  --sidebar-hover-bg: rgba(98, 0, 234, 0.08); /* Primary with opacity */
-  --sidebar-active-bg: rgba(98, 0, 234, 0.16); /* Primary with opacity */
+  --sidebar-hover-bg: rgba(98, 0, 234, 0.08); 
+  --sidebar-active-bg: rgba(98, 0, 234, 0.16); 
   --sidebar-filter-bg: #F5F5F5;
   
-  /* Text */
   --text-color: #333333;
-  --text-color-rgb: 51, 51, 51; /* For rgba() usage */
+  --text-color-rgb: 51, 51, 51; 
   --text-secondary: #757575;
   --text-disabled: #BDBDBD;
   
-  /* Request editor */
-  --request-editor-bg: #FFFFFF;       /* Light mode background */
-  --request-editor-border: #EEEEEE;   /* Light mode border */
-  --request-editor-input-bg: #F9F9F9; /* Light mode input background */
-  
-  /* HTTP Method Colors - More vibrant and accessible */
-  --method-get-color: #00C853;      /* Green */
-  --method-post-color: #FF9100;     /* Orange */
-  --method-put-color: #2979FF;      /* Blue */
-  --method-delete-color: #F50057;   /* Red */
-  --method-patch-color: #AA00FF;    /* Purple */
-  --method-options-color: #00B0FF;  /* Light Blue */
-  --method-head-color: #6D4C41;     /* Brown */
-  
-  /* Buttons */
-  --send-button-bg: var(--primary-color);  /* Primary color */
+  --request-editor-bg: #FFFFFF;       --request-editor-border: #EEEEEE;   --request-editor-input-bg: #F9F9F9;  
+  --method-get-color: #00C853;      --method-post-color: #FF9100;     --method-put-color: #2979FF;      --method-delete-color: #F50057;   --method-patch-color: #AA00FF;    --method-options-color: #00B0FF;  --method-head-color: #6D4C41;     
+  --send-button-bg: var(--primary-color);  
   --send-button-text-color: #FFFFFF;
   
-  /* Legacy variable kept for compatibility */
   --perple-color: var(--primary-color);
   
-  /* Status Codes */
-  --status-success: #00C853;     /* 2xx */
-  --status-redirect: #FFAB00;    /* 3xx */
-  --status-client-error: #FF5252; /* 4xx */
-  --status-server-error: #D50000; /* 5xx */
+  --status-success: #00C853;     --status-redirect: #FFAB00;    --status-client-error: #FF5252; --status-server-error: #D50000; 
 }
+
 .dark-theme {
-  /* Core colors - Dark theme - Enhanced for professional look */
-  --primary-color: #9D7FFF;  /* Refined purple for dark theme */
-  --primary-color-rgb: 157, 127, 255; /* RGB values for primary color */
-  --primary-light: #C4B5FF; /* Lighter variant with better contrast */
-  --primary-dark: #7C4DFF;  /* Mid-tone purple for dark theme */
-  --accent-color: #56EECB;  /* Refined teal accent for dark theme */
-  
-  /* Common - Enhanced for better definition */
+  --primary-color: #9D7FFF;  --primary-color-rgb: 157, 127, 255; 
+  --primary-light: #C4B5FF;  --primary-dark: #7C4DFF;  --accent-color: #56EECB;  
   --border-color: #3A3A3A;
-  --border-radius: 8px; /* Consistent border radius */
+  --border-radius: 8px; 
   --box-shadow: 0 6px 16px rgba(0,0,0,0.3);
   
-  /* Header - Enhanced with deeper colors */
   --header-bg: #1A1A1A;
   --header-color: #FFFFFF;
-  --background-color: #121212; /* Material dark theme background */
-  --card-bg: #1E1E1E; /* Card background for better contrast */
-  --hover-bg: rgba(255, 255, 255, 0.05); /* Subtle hover effect */
-  --invite-bg: var(--primary-color);
+  --background-color: #121212;  --card-bg: #1E1E1E;  --hover-bg: rgba(255, 255, 255, 0.05);  --invite-bg: var(--primary-color);
   
-  /* Sidebar - Enhanced for better visual hierarchy */
   --sidebar-bg: #1A1A1A;
   --sidebar-color: #FFFFFF;
-  --sidebar-hover-bg: rgba(157, 127, 255, 0.12); /* Primary with opacity */
-  --sidebar-active-bg: rgba(157, 127, 255, 0.2); /* Primary with opacity */
+  --sidebar-hover-bg: rgba(157, 127, 255, 0.12); 
+  --sidebar-active-bg: rgba(157, 127, 255, 0.2); 
   --sidebar-filter-bg: #2A2A2A;
   --sidebar-border: #303030; /* Border for sidebar items */
   

@@ -19,7 +19,6 @@
 
 .script-header h3 {
   font-size: 1.1rem;
-  font-weight: 600;
   color: var(--text-color, #333);
   margin: 0;
 }
@@ -90,7 +89,6 @@ button:active {
   transform: translateY(0);
 }
 
-/* Dark theme support */
 .dark-theme .script-container {
   background-color: var(--card-bg, #2d2d2d);
 }

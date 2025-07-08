@@ -64,10 +64,8 @@ namespace Apilot.Api.Controllers
 
             try
             {
-                // Add necessary references and usings to the test code
                 var completeCode = GenerateCompleteTestCode(request.TestCode);
 
-                // Compile the test code
                 var assembly = CompileCode(completeCode);
                 if (assembly == null)
                 {
@@ -78,7 +76,6 @@ namespace Apilot.Api.Controllers
                     });
                 }
 
-                // Execute the tests
                 response = await ExecuteTests(assembly);
             }
             catch (Exception ex)
@@ -95,7 +92,6 @@ namespace Apilot.Api.Controllers
         {
             var sb = new StringBuilder();
 
-            // Add necessary using statements
             sb.AppendLine("using System;");
             sb.AppendLine("using System.Collections.Generic;");
             sb.AppendLine("using System.Linq;");
@@ -111,12 +107,10 @@ namespace Apilot.Api.Controllers
             sb.AppendLine("using System.IO;");
             sb.AppendLine("using System.Threading;");
             
-            // Add test framework
             sb.AppendLine("public class TestFramework {");
             sb.AppendLine("    public static List<TestResult> Results = new List<TestResult>();");
             sb.AppendLine("    public static HttpClient HttpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };");
             
-            // Test function for synchronous tests
             sb.AppendLine("    public static void Test(string name, Func<bool> testAction) {");
             sb.AppendLine("        var result = new TestResult { Name = name };");
             sb.AppendLine("        var stopwatch = Stopwatch.StartNew();");
@@ -135,7 +129,6 @@ namespace Apilot.Api.Controllers
             sb.AppendLine("        }");
             sb.AppendLine("    }");
             
-            // Test function for asynchronous tests (for API calls)
             sb.AppendLine("    public static void TestAsync(string name, Func<Task<bool>> testAction) {");
             sb.AppendLine("        var result = new TestResult { Name = name };");
             sb.AppendLine("        var stopwatch = Stopwatch.StartNew();");
@@ -158,12 +151,10 @@ namespace Apilot.Api.Controllers
             sb.AppendLine("        }");
             sb.AppendLine("    }");
             
-            // Basic assertion
             sb.AppendLine("    public static void Assert(bool condition, string message = null) {");
             sb.AppendLine("        if (!condition) throw new Exception(message ?? \"Assertion failed\");");
             sb.AppendLine("    }");
             
-            // API response validation helpers
             sb.AppendLine("    public static void AssertStatusCode(HttpResponseMessage response, HttpStatusCode expectedCode) {");
             sb.AppendLine("        if (response.StatusCode != expectedCode) {");
             sb.AppendLine("            throw new Exception($\"Expected status code {expectedCode} but got {response.StatusCode}. Response: {response.Content.ReadAsStringAsync().GetAwaiter().GetResult()}\");");
@@ -282,7 +273,6 @@ namespace Apilot.Api.Controllers
             
             sb.AppendLine("}");
             
-            // Add TestResult class
             sb.AppendLine("public class TestResult {");
             sb.AppendLine("    public string Name { get; set; }");
             sb.AppendLine("    public bool Passed { get; set; }");
@@ -290,7 +280,6 @@ namespace Apilot.Api.Controllers
             sb.AppendLine("    public long Duration { get; set; }");
             sb.AppendLine("}");
             
-            // Add the main test class
             sb.AppendLine("public class TestRunner {");
             sb.AppendLine("    public static List<TestResult> RunTests() {");
             sb.AppendLine("        try {");
@@ -306,7 +295,6 @@ namespace Apilot.Api.Controllers
             sb.AppendLine("        return TestFramework.Results;");
             sb.AppendLine("    }");
             
-            // Add helper methods for the user's test code
             sb.AppendLine("    public static HttpClient GetClient() => TestFramework.HttpClient;");
             sb.AppendLine("    public static void Test(string name, Func<bool> testAction) => TestFramework.Test(name, testAction);");
             sb.AppendLine("    public static void TestAsync(string name, Func<Task<bool>> testAction) => TestFramework.TestAsync(name, testAction);");
@@ -324,7 +312,6 @@ namespace Apilot.Api.Controllers
             sb.AppendLine("    public static bool JsonPropertyExists(JsonElement element, string propertyName) => TestFramework.JsonPropertyExists(element, propertyName);");
             sb.AppendLine("    public static void AssertResponseTime(long actualMs, long maxExpectedMs) => TestFramework.AssertResponseTime(actualMs, maxExpectedMs);");
             
-            // Add the user's test code
             sb.AppendLine("    public static void Run() {");
             sb.AppendLine(userCode);
             sb.AppendLine("    }");
@@ -359,28 +346,24 @@ namespace Apilot.Api.Controllers
                 MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "Microsoft.CSharp.dll"))
             };
 
-            // Add additional references as needed for your specific tests
             var systemRuntimePath = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "System.Runtime.dll");
             if (System.IO.File.Exists(systemRuntimePath))
             {
                 references.Add(MetadataReference.CreateFromFile(systemRuntimePath));
             }
             
-            // Add System.Private.Uri reference
             var systemPrivateUriPath = Path.Combine(Path.GetDirectoryName(typeof(Uri).Assembly.Location), "System.Private.Uri.dll");
             if (System.IO.File.Exists(systemPrivateUriPath))
             {
                 references.Add(MetadataReference.CreateFromFile(systemPrivateUriPath));
             }
             
-            // Add System.Net.Http.Json reference
             var systemNetHttpJsonPath = Path.Combine(Path.GetDirectoryName(typeof(System.Net.Http.HttpClient).Assembly.Location), "System.Net.Http.Json.dll");
             if (System.IO.File.Exists(systemNetHttpJsonPath))
             {
                 references.Add(MetadataReference.CreateFromFile(systemNetHttpJsonPath));
             }
             
-            // Add System.Text.Json reference
             var systemTextJsonPath = Path.Combine(Path.GetDirectoryName(typeof(System.Text.Json.JsonSerializer).Assembly.Location), "System.Text.Json.dll");
             if (System.IO.File.Exists(systemTextJsonPath))
             {
@@ -423,10 +406,8 @@ namespace Apilot.Api.Controllers
                 var testRunnerType = assembly.GetType("TestRunner");
                 var runTestsMethod = testRunnerType.GetMethod("RunTests", BindingFlags.Public | BindingFlags.Static);
                 
-                // Get the results from the dynamic assembly
                 var dynamicResults = runTestsMethod.Invoke(null, null);
                 
-                // Convert the dynamic results to our TestResult type using reflection
                 var results = new List<TestResult>();
                 var resultsList = (System.Collections.IEnumerable)dynamicResults;
                 

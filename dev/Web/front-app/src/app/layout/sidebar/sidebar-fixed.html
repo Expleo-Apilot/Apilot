@@ -1,0 +1,26 @@
+                    </button>
+                  </div>
+                </div>
+                <!-- Responses for this request -->
+                <div *ngIf="isExpandedResponses(request.id) && requestResponses && requestResponses[request.id as number]" class="responses-container">
+                  <div *ngFor="let response of requestResponses[request.id as number]" class="response-item">
+                    <div class="response-header" (click)="openResponseInTab(response, request)">
+                      <div class="response-icon">
+                        <span class="response-status" [ngClass]="getStatusClass(response.statusCode)">{{ response.statusCode }}</span>
+                      </div>
+                      <span class="response-name">{{ response.statusText || 'Response' }} ({{ formatDate(response.createdAt) }})</span>
+                      <div class="response-actions">
+                        <button mat-icon-button class="action-button small" (click)="toggleItemMenu($event, 'response', response.id || 0); $event.stopPropagation();">
+                          <mat-icon class="small-icon">more_horiz</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Toggle responses button -->
+                <div class="toggle-responses" (click)="toggleResponses(request.id, $event)">
+                  <mat-icon class="small-icon">{{ isExpandedResponses(request.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  <span>{{ isExpandedResponses(request.id) ? 'Hide Responses' : 'Show Responses' }}</span>
+                </div>
+              </div>
+            </div>

@@ -183,5 +183,16 @@ export class RequestService {
    * @deprecated Use saveScript instead
    */
 
-
+  /**
+   * Get a script for a request by request ID
+   * @param requestId The ID of the request to get the script for
+   * @returns Observable of the API response containing the test script
+   */
+  getScriptByRequestId(requestId: number): Observable<ApiResponse<TestScript>> {
+    let params = new HttpParams().set('requestId', requestId.toString());
+    return this.http.get<ApiResponse<TestScript>>(`${this.baseUrl}/GetScriptByRequestId`, {
+      params,
+      headers: this.getAuthHeaders()
+    });
+  }
 }

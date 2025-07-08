@@ -54,10 +54,9 @@ export class HeaderComponent implements OnInit {
 
     this.applyTheme();
 
-    // Subscribe to auth state changes from the BehaviorSubject
     this.authService.isAuthenticated$.subscribe(isAuthenticated => {
       this.isLoggedIn = isAuthenticated;
-      this.cdr.detectChanges(); // Force change detection to update UI
+      this.cdr.detectChanges(); 
     });
 
     this.authService.currentUser$.subscribe(user => {

@@ -28,7 +28,6 @@ namespace dev.Api.Controllers
             _logger = logger;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
-            // Ensure we're using the correct API key
             _defaultApiKey = "AIzaSyBBDR43wevhWtK9S5PHG3gw-KQWk1q7lQk";
             _logger.LogInformation("GeminiController initialized");
         }
@@ -38,7 +37,6 @@ namespace dev.Api.Controllers
         {
             try
             {
-                // Always use the hardcoded API key for now to ensure it works
                 var apiKey = _defaultApiKey;
                 
                 _logger.LogInformation($"Using Gemini API key");
@@ -46,11 +44,9 @@ namespace dev.Api.Controllers
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 
-                // Log the request details for debugging
                 _logger.LogInformation($"Received request with model: {request.Model}");
                 _logger.LogInformation($"Prompt: {request.Prompt.Substring(0, Math.Min(50, request.Prompt.Length))}...");
                 
-                // Create the request payload for Gemini API
                 var geminiRequest = new
                 {
                     contents = new[] 
@@ -84,14 +80,12 @@ namespace dev.Api.Controllers
                     Encoding.UTF8,
                     "application/json");
 
-                // Construct the URL with the API key as a query parameter
                 var modelName = request.Model ?? _defaultModel;
                 var endpoint = $"{_geminiApiUrl}/{modelName}:generateContent?key={apiKey}";
                 _logger.LogInformation($"Sending request to Gemini API: {endpoint}");
                 
                 var response = await client.PostAsync(endpoint, content);
                 
-                // Log the complete response for debugging
                 var responseContent = await response.Content.ReadAsStringAsync();
                 _logger.LogInformation($"Response status code: {response.StatusCode}");
                 _logger.LogInformation($"Response content: {responseContent.Substring(0, Math.Min(500, responseContent.Length))}");
@@ -102,7 +96,6 @@ namespace dev.Api.Controllers
                     return StatusCode((int)response.StatusCode, responseContent);
                 }
 
-                // Use a try-catch block to handle potential JSON deserialization errors
                 try
                 {
                     var options = new JsonSerializerOptions

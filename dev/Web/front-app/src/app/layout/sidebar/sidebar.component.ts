@@ -2,6 +2,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { Subscription, forkJoin } from 'rxjs';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
@@ -16,6 +17,7 @@ import { TabService } from '../../core/services/tab.service';
 import { HistoryService } from '../../core/services/history.service';
 import { CollectionImportService } from '../../core/services/collection-import.service';
 import { CollaborationService } from '../../core/services/collaboration.service';
+import { ResponseService } from '../../core/services/response.service';
 
 // Models
 import { Workspace } from '../../core/models/workspace.model';
@@ -31,6 +33,7 @@ import { Request, KeyValuePair, Authentication } from '../../core/models/request
 import { AuthType } from '../../core/models/auth-type.enum';
 import { Folder, CreateFolderRequest } from '../../core/models/folder.model';
 import { HttpMethod } from '../../core/models/http-method.enum';
+import { ImportEnvironmentModalComponent } from '../../shared/components/import-environment-modal/import-environment-modal.component';
 
 // Define a type for the navigation items
 type NavItem = 'collections' | 'environments' | 'flows' | 'history';
@@ -83,8 +86,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Item context menu properties
   showItemMenu = false;
   itemMenuPosition = { top: '0px', left: '0px' };
-  activeItemType: 'collection' | 'folder' | 'request' | null = null;
+  activeItemType: 'collection' | 'folder' | 'request' | 'response' | null = null;
   activeItemId: number | null = null;
+  
+  // Response properties
+  expandedResponses: Set<number> = new Set<number>();
+  requestResponses: { [requestId: number]: any[] } = {};
 
   // Modal states
   showNewCollectionModal = false;
@@ -149,7 +156,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private tabService: TabService,
     private historyService: HistoryService,
     private snackBar: MatSnackBar,
-    private variableReplacementService: VariableReplacementService
+    private variableReplacementService: VariableReplacementService,
+    private responseService: ResponseService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit() {
@@ -305,7 +314,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
   };
   
   importEnvironment(): void {
-    console.log('Environment import functionality to be implemented');
+    // Close the environments menu
+    this.closeEnvironmentsMenu();
+    
+    const dialogRef = this.dialog.open(ImportEnvironmentModalComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: { workspaceId: this.workspaceId }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        this.snackBar.open(`Successfully imported ${result.importedCount} environment(s)`, 'Close', {
+          duration: 3000
+        });
+        // Refresh the environments list
+        this.loadEnvironments();
+      }
+    });
   }
   
   /**
@@ -865,7 +892,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   // Toggle item menu (for collection, folder, or request)
-  toggleItemMenu(event: MouseEvent, itemType: 'collection' | 'folder' | 'request', itemId: number) {
+  toggleItemMenu(event: MouseEvent, itemType: 'collection' | 'folder' | 'request' | 'response', itemId: number) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -2659,7 +2686,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
    * Get CSS class based on HTTP status code
    * @param status The HTTP status code
    */
-  getStatusClass(status: number): string {
+  getStatusClassForHistory(status: number): string {
     if (status >= 200 && status < 300) {
       return 'status-success';
     } else if (status >= 300 && status < 400) {
@@ -2691,41 +2718,94 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Extract parameters from the request
     const params = requestData.parameters ? this.objectToKeyValuePairs(requestData.parameters) : [];
     
-    // Ensure we have at least one empty row for user input if no data exists
-    if (headers.length === 0) {
-      headers.push({ key: '', value: '', enabled: true });
+    // Extract authentication data
+    const authType = requestData.authentication?.type || AuthType.NONE;
+    const authData = requestData.authentication?.data || {};
+    
+    // Check if there's a cached script in localStorage first
+    const cachedScript = localStorage.getItem(`apilot_script_${history.id}`);
+    
+    if (cachedScript) {
+      // If we have a cached script, create the tab immediately with the script
+      this.createTabWithRequestData(requestData, headers, params, authType, authData, history.id, cachedScript);
+    } else {
+      // Try to fetch the script from the backend
+      this.requestService.getScriptByRequestId(history.id)
+        .subscribe({
+          next: (response) => {
+            // Create the tab with the script if available
+            const script = response.isSuccess && response.data ? response.data.Script : '';
+            
+            // Cache the script in localStorage for future use
+            if (script) {
+              localStorage.setItem(`apilot_script_${history.id}`, script);
+            }
+            
+            this.createTabWithRequestData(requestData, headers, params, authType, authData, history.id, script);
+          },
+          error: (error) => {
+            console.error('Error fetching script for request:', error);
+            // If there's an error, create the tab without the script
+            this.createTabWithRequestData(requestData, headers, params, authType, authData, history.id);
+          }
+        });
     }
+  }
+
+  /**
+   * Generate a name for a request based on its URL
+   * @param url The URL to generate a name from
+   * @returns A name generated from the URL
+   */
+  private generateNameFromUrl(url: string): string {
+    if (!url) return 'New Request';
     
-    if (params.length === 0) {
-      params.push({ key: '', value: '', enabled: true });
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      
+      // Get the last segment of the path
+      const segments = path.split('/');
+      const lastSegment = segments[segments.length - 1] || segments[segments.length - 2] || '';
+      
+      // If we have a meaningful path segment, use it
+      if (lastSegment) {
+        return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
+      }
+      
+      // Otherwise use the hostname
+      return urlObj.hostname;
+    } catch (e) {
+      // If URL parsing fails, return a generic name
+      return 'New Request';
     }
-    
-    // Determine authentication information
-    const authType = requestData.authentication?.authType || AuthType.NONE;
-    const authData = requestData.authentication?.authData || {};
-    
-    // Create new tab with the request data
-    const newTab = this.tabService.createNewTab({
-      name: `${requestData.httpMethod} ${this.getUrlPath(requestData.url)}`,
+  }
+  
+  /**
+   * Helper method to create a new tab with request data
+   */
+  private createTabWithRequestData(requestData: any, headers: any[], params: any[], authType: AuthType, authData: any, historyId: number, script?: string): void {
+    // Create a new tab with the request data
+    this.tabService.createNewTab({
+      name: requestData.name || this.generateNameFromUrl(requestData.url),
       url: requestData.url || '',
-      method: requestData.httpMethod,
-      params: params,
+      method: requestData.httpMethod || HttpMethod.GET,
       headers: headers,
-      body: typeof requestData.body === 'string' ? requestData.body : JSON.stringify(requestData.body, null, 2) || '',
+      params: params,
+      body: requestData.body || '',
       bodyType: 'json', // Default to JSON, app can detect proper type based on content
       authType: authType,
       basicAuthUsername: authData['username'] || '',
       basicAuthPassword: authData['password'] || '',
       bearerToken: authData['token'] || '',
-      parentId: history.id,
-      parentType: 'collection' // Using 'collection' as the parentType since 'history' is not an allowed value
+      parentId: historyId,
+      parentType: 'collection', // Using 'collection' as the parentType since 'history' is not an allowed value
+      script: script || ''
     });
     
     // Notify user
     this.snackBar.open(`Request loaded from history`, 'Close', { duration: 2000 });
   }
-  
-  // Duplicate deleteHistoryItem function removed
   
   /**
    * Confirm clearing all history items
@@ -2795,11 +2875,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
   
   /**
-   * Formats a date for display in the UI
+   * Formats a date for display in the history UI
    * @param dateString The date string to format
-   * @returns Formatted date string
+   * @returns Formatted date string with year, month, and day
    */
-  formatDate(dateString: string | Date): string {
+  formatDateForHistory(dateString: string | Date): string {
     if (!dateString) return '';
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -2950,6 +3030,130 @@ export class SidebarComponent implements OnInit, OnDestroy {
     console.log('Opening add variable modal for environment:', environmentId);
     // In a real implementation, you would open a modal dialog here
     this.snackBar.open('Add variable functionality coming soon', 'Close', { duration: 2000 });
+  }
+
+  /**
+   * Toggle the visibility of responses for a request
+   * @param requestId The ID of the request to toggle responses for
+   * @param event The mouse event
+   */
+  toggleResponses(requestId: number | undefined, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    if (!requestId) return;
+    
+    if (this.expandedResponses.has(requestId)) {
+      this.expandedResponses.delete(requestId);
+    } else {
+      this.expandedResponses.add(requestId);
+      this.loadResponsesForRequest(requestId);
+    }
+  }
+  
+  /**
+   * Check if responses are expanded for a request
+   * @param requestId The ID of the request to check
+   * @returns True if responses are expanded for this request
+   */
+  isExpandedResponses(requestId: number | undefined): boolean {
+    if (!requestId) return false;
+    return this.expandedResponses.has(requestId);
+  }
+  
+  /**
+   * Load responses for a specific request
+   * @param requestId The ID of the request to load responses for
+   */
+  loadResponsesForRequest(requestId: number | undefined): void {
+    if (!requestId) return;
+    
+    // Only load if we don't already have responses for this request
+    if (!this.requestResponses[requestId]) {
+      this.responseService.getResponsesByRequestId(requestId).subscribe({
+        next: (response) => {
+          // Ensure responses is an array
+          let responseArray: any[] = [];
+          
+          // Check if response is an array
+          if (Array.isArray(response)) {
+            responseArray = response;
+          } 
+          // Check if response has a data property that is an array
+          else if (response && response.data && Array.isArray(response.data)) {
+            responseArray = response.data;
+          }
+          // If we have an object with properties, convert to array
+          else if (response && typeof response === 'object' && !Array.isArray(response)) {
+            // Handle case where the response might be a single object
+            if (response.id || response.statusCode) {
+              responseArray = [response];
+            }
+          }
+          
+          this.requestResponses[requestId] = responseArray;
+          console.log(`Loaded ${responseArray.length} responses for request ${requestId}`);
+        },
+        error: (error) => {
+          console.error(`Error loading responses for request ${requestId}:`, error);
+          this.snackBar.open('Error loading responses', 'Close', { 
+            duration: 3000,
+            panelClass: 'error-snackbar'
+          });
+        }
+      });
+    }
+  }
+  
+  /**
+   * Get the CSS class for a response status code
+   * @param statusCode The HTTP status code
+   * @returns The CSS class name based on the status code range
+   */
+  getStatusClass(statusCode: number): string {
+    if (statusCode >= 200 && statusCode < 300) {
+      return 'success';
+    } else if (statusCode >= 300 && statusCode < 400) {
+      return 'redirect';
+    } else if (statusCode >= 400 && statusCode < 500) {
+      return 'client-error';
+    } else if (statusCode >= 500) {
+      return 'server-error';
+    }
+    return 'unknown';
+  }
+  
+  /**
+   * Format a date for display in the UI
+   * @param dateInput The date string or Date object to format
+   * @returns Formatted date string
+   */
+  formatDate(dateInput: string | Date): string {
+    if (!dateInput) return '';
+    
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    return date.toLocaleString();
+  }
+  
+  /**
+   * Open a response in a new tab
+   * @param response The response to open
+   * @param request The parent request
+   */
+  openResponseInTab(response: any, request: Request): void {
+    if (!response || !request) return;
+    
+    // Create a new tab for the response
+    const newTab = this.tabService.createNewTab({
+      name: `${request.name} - Response ${response.statusCode}`,
+      parentId: request.id, // Link to the parent request
+      parentType: 'collection'
+    });
+    
+    // Set the response data in the response service
+    this.responseService.updateResponseData(response, newTab.id);
+    
+    // Navigate to the response tab
+    this.router.navigate(['/workspace', this.workspaceId, 'response', newTab.id]);
   }
 
   ngOnDestroy(): void {
